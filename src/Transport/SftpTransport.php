@@ -122,6 +122,22 @@ final class SftpTransport implements TransportInterface {
     }
 
     /**
+     * @inheritDoc
+     */
+    public function rename(string $from, string $to): bool {
+        return $this->require_connection()->rename($this->absolute($from), $this->absolute($to));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function get(string $remote_path): string {
+        $data = $this->require_connection()->get($this->absolute($remote_path));
+
+        return is_string($data) ? $data : '';
+    }
+
+    /**
      * Resolve a path relative to the configured remote root.
      *
      * @param string $remote_path Relative remote path.

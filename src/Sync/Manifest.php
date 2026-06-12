@@ -104,6 +104,22 @@ final class Manifest {
     }
 
     /**
+     * Reduce a render manifest to the pushed form (size + hash only; the local
+     * `src` is irrelevant to what now lives on the destination).
+     *
+     * @param array<string,array{size:int,hash:string,src?:string}> $render Render manifest.
+     * @return array<string,array{size:int,hash:string}>
+     */
+    public static function pushed_from(array $render): array {
+        $pushed = [];
+        foreach ($render as $relative => $meta) {
+            $pushed[$relative] = ['size' => (int) $meta['size'], 'hash' => (string) $meta['hash']];
+        }
+
+        return $pushed;
+    }
+
+    /**
      * Save a named manifest option.
      *
      * @param string                                       $option   Option name.

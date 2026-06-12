@@ -63,14 +63,18 @@ final class Job {
         $job = new self([
             'type'      => $type,
             'phase'     => 'collect',
-            'queue'     => ['pages' => [], 'assets' => []],
-            'seen'      => ['pages' => [], 'assets' => []],
+            'queue'        => ['pages' => [], 'assets' => [], 'uploads' => []],
+            'seen'         => ['pages' => [], 'assets' => []],
             // Upload plan: output relative path => absolute local source file.
             // Cached files (pages, rewritten CSS) point into the cache; binary
             // assets point straight at the source filesystem (never copied).
-            'plan'      => [],
-            'counts'    => ['pagesDone' => 0, 'assetsDone' => 0, 'bytes' => 0, 'files' => 0],
-            'totals'    => ['pages' => 0, 'assets' => 0],
+            'plan'         => [],
+            'counts'       => ['pagesDone' => 0, 'assetsDone' => 0, 'uploaded' => 0, 'bytes' => 0, 'files' => 0],
+            'totals'       => ['pages' => 0, 'assets' => 0, 'uploads' => 0],
+            'htaccessDone' => false,
+            'holdingShown' => false,
+            'failed'       => [],
+            'removed'      => 0,
             'errors'    => [],
             'skipped'   => [],
             'cancel'    => false,

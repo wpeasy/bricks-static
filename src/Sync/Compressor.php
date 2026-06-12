@@ -64,4 +64,29 @@ final class Compressor {
 
         return file_put_contents($absolute_path . '.gz', $gz) !== false;
     }
+
+    /**
+     * Gzip a source file to a specific destination path.
+     *
+     * @param string $source      Absolute source file.
+     * @param string $destination Absolute destination (.gz) path.
+     * @return bool True on success.
+     */
+    public static function gzip_to(string $source, string $destination): bool {
+        if (!self::available()) {
+            return false;
+        }
+
+        $data = file_get_contents($source);
+        if ($data === false) {
+            return false;
+        }
+
+        $gz = gzencode($data, 9);
+        if ($gz === false) {
+            return false;
+        }
+
+        return file_put_contents($destination, $gz) !== false;
+    }
 }

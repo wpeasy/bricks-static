@@ -147,6 +147,31 @@ final class FtpTransport implements TransportInterface {
     }
 
     /**
+     * @inheritDoc
+     */
+    public function rename(string $from, string $to): bool {
+        return @ftp_rename($this->require_connection(), $this->absolute($from), $this->absolute($to));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function get(string $remote_path): string {
+        $conn = $this->require_connection();
+        $tmp  = wp_tempnam('bs-ftp-get');
+
+        if (!@ftp_get($conn, $tmp, $this->absolute($remote_path), FTP_BINARY)) {
+            @unlink($tmp);
+            return '';
+        }
+
+        $data = (string) file_get_contents($tmp);
+        @unlink($tmp);
+
+        return $data;
+    }
+
+    /**
      * Recursively create a remote directory tree.
      *
      * @param string $dir Absolute remote directory.

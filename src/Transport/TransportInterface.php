@@ -56,4 +56,21 @@ interface TransportInterface {
      * @param string $remote_path Remote path relative to the remote root.
      */
     public function exists(string $remote_path): bool;
+
+    /**
+     * Rename/move a remote path (both relative to the remote root).
+     *
+     * @param string $from Existing remote path.
+     * @param string $to   New remote path.
+     * @return bool True on success.
+     */
+    public function rename(string $from, string $to): bool;
+
+    /**
+     * Download a remote file's contents (relative to the remote root).
+     *
+     * @param string $remote_path Remote path relative to the remote root.
+     * @return string Contents, or '' if missing/unreadable.
+     */
+    public function get(string $remote_path): string;
 }

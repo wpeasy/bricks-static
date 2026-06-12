@@ -16,6 +16,8 @@ use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Render\UrlRewriter;
 use WPEasy\BricksStatic\Support\Paths;
 use WPEasy\BricksStatic\Support\Url;
+use WPEasy\BricksStatic\Transport\TransportFactory;
+use WPEasy\BricksStatic\Transport\TransportInterface;
 
 defined('ABSPATH') || exit;
 
@@ -35,6 +37,16 @@ final class Runner {
      * Assets copied per tick.
      */
     private const ASSET_BATCH = 10;
+
+    /**
+     * Files uploaded per tick (one connection per tick, so keep it generous).
+     */
+    private const UPLOAD_BATCH = 15;
+
+    /**
+     * The destination home page, deferred and swapped in last during a push.
+     */
+    private const HOME_FILE = 'index.html';
 
     /**
      * Start a fresh run: prepare the cache, seed the queue, enter render phase.
@@ -76,6 +88,10 @@ final class Runner {
         }
 
         if (!empty($job->data['cancel'])) {
+            // If we'd already swapped in the holding page, put the real home back.
+            if (!empty($job->data['holdingShown'])) {
+                self::restore_home();
+            }
             $job->data['phase']   = 'cancelled';
             $job->data['message'] = 'Cancelled.';
             $job->save();
@@ -91,6 +107,9 @@ final class Runner {
                 break;
             case 'finalize':
                 self::tick_finalize($job);
+                break;
+            case 'upload':
+                self::tick_upload($job);
                 break;
         }
 
@@ -251,8 +270,22 @@ final class Runner {
         self::write_manifest_file($job, $manifest);
 
         $job->data['counts']['files'] = count($manifest);
-        $job->data['phase']           = 'done';
-        $job->data['message']         = 'Done.';
+
+        if ($job->data['type'] !== 'sync') {
+            $job->data['phase']   = 'done';
+            $job->data['message'] = 'Done.';
+            $job->save();
+            return;
+        }
+
+        // Sync: compute the delta against what was last pushed and upload it.
+        $diff = Manifest::diff(Manifest::load(Manifest::PUSHED_OPTION), $manifest);
+
+        $job->data['queue']['uploads'] = $diff['changed'];
+        $job->data['totals']['uploads'] = count($diff['changed']);
+        $job->data['removed']           = count($diff['removed']);
+        $job->data['phase']             = 'upload';
+        $job->data['message']           = count($diff['changed']) > 0 ? 'Uploading…' : 'Already up to date — writing server config…';
         $job->save();
     }
 
@@ -288,6 +321,243 @@ final class Runner {
         $json = wp_json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         if ($json !== false) {
             file_put_contents(Paths::cache_dir() . '/manifest.json', $json);
+        }
+    }
+
+    /**
+     * Upload a batch of changed files (plus a one-time .htaccess) to the
+     * destination. Opens and closes the connection within the tick.
+     *
+     * @param Job $job Active job.
+     */
+    private static function tick_upload(Job $job): void {
+        $manifest = Manifest::load(Manifest::RENDER_OPTION);
+
+        try {
+            $transport = TransportFactory::make();
+            $transport->connect();
+        } catch (\Throwable $e) {
+            $job->data['phase']   = 'error';
+            $job->data['message'] = 'Upload connection failed: ' . $e->getMessage();
+            $job->save();
+            return;
+        }
+
+        try {
+            // One-time setup: defer the home page, show a holding page while the
+            // rest uploads, then write server config + store the nginx snippet.
+            if (empty($job->data['htaccessDone'])) {
+                $job->data['queue']['uploads'] = array_values(array_filter(
+                    $job->data['queue']['uploads'],
+                    static fn(string $rel): bool => $rel !== self::HOME_FILE
+                ));
+
+                if (!empty($job->data['queue']['uploads'])) {
+                    self::upload_holding_page($transport);
+                    $job->data['holdingShown'] = true;
+                }
+
+                self::upload_htaccess($transport);
+                update_option('bs_nginx_snippet', HtaccessBuilder::nginx(), false);
+                $job->data['htaccessDone'] = true;
+                // +1 for the deferred home page, uploaded last.
+                $job->data['totals']['uploads'] = count($job->data['queue']['uploads']) + 1;
+            }
+
+            $batch = array_splice($job->data['queue']['uploads'], 0, self::UPLOAD_BATCH);
+            foreach ($batch as $relative) {
+                $meta = $manifest[$relative] ?? null;
+                if ($meta === null || !is_file($meta['src'])) {
+                    $job->skip($relative, 'missing source');
+                    continue;
+                }
+
+                try {
+                    self::put_retry($transport, $meta['src'], $relative);
+                    self::upload_gz($transport, $relative, $meta['src']);
+                    $job->data['counts']['uploaded']++;
+                } catch (\Throwable $e) {
+                    $job->error($relative, $e->getMessage());
+                    $job->data['failed'][] = $relative;
+                }
+            }
+
+            // Everything else is up: swap the holding page for the real home,
+            // then record the push as complete.
+            if (empty($job->data['queue']['uploads'])) {
+                self::upload_home($transport, $manifest);
+                $job->data['counts']['uploaded']++;
+
+                // Mark only successfully-uploaded files as pushed, so any that
+                // failed are re-uploaded on the next sync (delta detects them).
+                $pushed = Manifest::pushed_from($manifest);
+                foreach ($job->data['failed'] as $failed_rel) {
+                    unset($pushed[$failed_rel]);
+                }
+                Manifest::save(Manifest::PUSHED_OPTION, $pushed);
+
+                $job->data['phase']   = 'done';
+                $job->data['message'] = empty($job->data['failed'])
+                    ? 'Pushed — destination is in sync.'
+                    : 'Pushed with ' . count($job->data['failed']) . ' failed file(s); re-run Sync to retry them.';
+            }
+        } finally {
+            $transport->disconnect();
+        }
+
+        $job->save();
+    }
+
+    /**
+     * Upload a file with a few retries, to ride out transient transport hiccups
+     * (FTPS data-channel resets are common).
+     *
+     * @param TransportInterface $transport Connected transport.
+     * @param string             $local     Local file path.
+     * @param string             $remote    Remote relative path.
+     * @throws \Throwable The last error if all attempts fail.
+     */
+    private static function put_retry(TransportInterface $transport, string $local, string $remote): void {
+        $last = null;
+
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            try {
+                $transport->put($local, $remote);
+                return;
+            } catch (\Throwable $e) {
+                $last = $e;
+            }
+        }
+
+        throw $last ?? new \RuntimeException('Upload failed: ' . $remote);
+    }
+
+    /**
+     * Upload the "Currently Synchronising" holding page to the destination home.
+     *
+     * @param TransportInterface $transport Connected transport.
+     */
+    private static function upload_holding_page(TransportInterface $transport): void {
+        $tmp = Paths::cache_dir() . '/.holding.out';
+        file_put_contents($tmp, self::holding_html());
+        self::put_retry($transport, $tmp, self::HOME_FILE);
+        @unlink($tmp);
+    }
+
+    /**
+     * Upload the real home page (and its gzip sibling) from the render manifest.
+     *
+     * @param TransportInterface                                          $transport Connected transport.
+     * @param array<string,array{size:int,hash:string,src:string}>        $manifest  Render manifest.
+     */
+    private static function upload_home(TransportInterface $transport, array $manifest): void {
+        $meta = $manifest[self::HOME_FILE] ?? null;
+        if ($meta === null || !is_file($meta['src'])) {
+            return;
+        }
+
+        self::put_retry($transport, $meta['src'], self::HOME_FILE);
+        self::upload_gz($transport, self::HOME_FILE, $meta['src']);
+    }
+
+    /**
+     * Best-effort restore of the real home page (used when a push is cancelled
+     * after the holding page has gone up).
+     */
+    private static function restore_home(): void {
+        try {
+            $transport = TransportFactory::make();
+            $transport->connect();
+            try {
+                self::upload_home($transport, Manifest::load(Manifest::RENDER_OPTION));
+            } finally {
+                $transport->disconnect();
+            }
+        } catch (\Throwable $e) {
+            // Best effort — the next successful sync will restore it.
+        }
+    }
+
+    /**
+     * Minimal, self-contained holding page shown at the destination home during
+     * a push. Auto-refreshes so visitors land on the real site once it's live.
+     */
+    private static function holding_html(): string {
+        return <<<'HTML'
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="10">
+<meta name="robots" content="noindex">
+<title>Updating…</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:#0f172a; color:#f1f5f9; }
+  .box { text-align:center; padding:2rem; }
+  .spin { width:42px; height:42px; margin:0 auto 1.25rem; border:4px solid rgba(255,255,255,.2); border-top-color:#3b82f6; border-radius:50%; animation:s 1s linear infinite; }
+  h1 { font-size:1.4rem; font-weight:600; margin:0 0 .5rem; }
+  p { margin:0; color:#94a3b8; }
+  @keyframes s { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="spin"></div>
+    <h1>Currently synchronising</h1>
+    <p>This site is being updated and will be back shortly.</p>
+  </div>
+</body>
+</html>
+HTML;
+    }
+
+    /**
+     * Write our .htaccess to the destination root, backing up any existing one.
+     *
+     * @param TransportInterface $transport Connected transport.
+     */
+    private static function upload_htaccess(TransportInterface $transport): void {
+        $existing = $transport->exists('.htaccess') ? $transport->get('.htaccess') : '';
+
+        // One-time backup of the original before we ever merge into it.
+        if ($existing !== '' && !$transport->exists('.htaccess.bricks-static.bak')) {
+            $bak = Paths::cache_dir() . '/.htaccess.bak.out';
+            file_put_contents($bak, $existing);
+            self::put_retry($transport, $bak, '.htaccess.bricks-static.bak');
+            @unlink($bak);
+        }
+
+        $tmp = Paths::cache_dir() . '/.htaccess.out';
+        file_put_contents($tmp, HtaccessBuilder::merge($existing));
+        self::put_retry($transport, $tmp, '.htaccess');
+        @unlink($tmp);
+    }
+
+    /**
+     * Upload a gzip sibling for a compressible file (cached .gz if present, else
+     * generated on the fly from the source).
+     *
+     * @param TransportInterface $transport Connected transport.
+     * @param string             $relative  Destination relative path.
+     * @param string             $source    Local source file.
+     */
+    private static function upload_gz(TransportInterface $transport, string $relative, string $source): void {
+        if (!Compressor::is_compressible($relative)) {
+            return;
+        }
+
+        $sibling = $source . '.gz';
+        if (is_file($sibling)) {
+            self::put_retry($transport, $sibling, $relative . '.gz');
+            return;
+        }
+
+        $tmp = Paths::cache_dir() . '/.tmp-upload.gz';
+        if (Compressor::gzip_to($source, $tmp)) {
+            self::put_retry($transport, $tmp, $relative . '.gz');
+            @unlink($tmp);
         }
     }
 
@@ -404,9 +674,11 @@ final class Runner {
             'counts'       => $d['counts'],
             'totals'       => $d['totals'],
             'queued'       => [
-                'pages'  => count($d['queue']['pages']),
-                'assets' => count($d['queue']['assets']),
+                'pages'   => count($d['queue']['pages']),
+                'assets'  => count($d['queue']['assets']),
+                'uploads' => count($d['queue']['uploads'] ?? []),
             ],
+            'removed'      => $d['removed'] ?? 0,
             'errorCount'   => count($d['errors']),
             'skippedCount' => count($d['skipped']),
             'errors'       => array_slice($d['errors'], -25),

@@ -28,6 +28,18 @@ final class TransportFactory {
     public static function make(?array $config = null): TransportInterface {
         $config = $config ?? Settings::connection_config();
 
+        /**
+         * Filters the transport instance, allowing a custom implementation
+         * (e.g. a local filesystem transport for testing).
+         *
+         * @param TransportInterface|null $transport Override, or null for default.
+         * @param array<string,mixed>     $config    Connection config.
+         */
+        $override = apply_filters('bs_transport', null, $config);
+        if ($override instanceof TransportInterface) {
+            return $override;
+        }
+
         switch ($config['transport'] ?? 'sftp') {
             case 'ftps':
                 return new FtpTransport($config, true);
