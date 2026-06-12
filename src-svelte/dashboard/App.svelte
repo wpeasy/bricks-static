@@ -183,7 +183,7 @@
     <div class="bs-globalbar">
       <DiscoveryToggle mode={status.discoveryMode} disabled={syncing} onChange={setDiscoveryMode} />
       <div class="bs-globalbar__notice">
-        <NoticePanel isLocal={status.isLocal} cli={status.cli} wpCli={status.wpCli} />
+        <NoticePanel isLocal={status.isLocal} cli={status.cli} wpCli={status.wpCli} inline />
       </div>
     </div>
   {/if}
@@ -276,12 +276,26 @@
     align-items: center;
     justify-content: flex-start;
     flex-wrap: wrap;
-    gap: var(--bs-space--md);
+    gap: var(--bs-space--sm) var(--bs-space--lg);
+    padding: var(--bs-space--sm) var(--bs-space--md);
+    background: var(--bs-color-surface--raised);
+    border: var(--bs-border--1) solid var(--bs-color-border);
+    border-radius: var(--bs-radius--md);
   }
 
   .bs-globalbar__notice {
     flex: 0 1 auto;
     min-width: 0;
+    /* Divider between the toggle and the status, like an app-bar group. */
+    padding-left: var(--bs-space--lg);
+    border-left: var(--bs-border--1) solid var(--bs-color-border);
+  }
+
+  @media (max-width: 640px) {
+    .bs-globalbar__notice {
+      padding-left: 0;
+      border-left: 0;
+    }
   }
 
   .bs-toptabs {

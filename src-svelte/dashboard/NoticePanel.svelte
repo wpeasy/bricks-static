@@ -2,7 +2,12 @@
   import { api } from '../shared/api';
   import type { Preflight, WpCliInfo } from '../shared/types';
 
-  let { isLocal, cli, wpCli }: { isLocal: boolean; cli: string; wpCli: WpCliInfo } = $props();
+  let {
+    isLocal,
+    cli,
+    wpCli,
+    inline = false,
+  }: { isLocal: boolean; cli: string; wpCli: WpCliInfo; inline?: boolean } = $props();
 
   let testing = $state(false);
   let result = $state<Preflight | null>(null);
@@ -43,7 +48,7 @@
 </script>
 
 {#if mode === 'cli'}
-  <section class="bs-notice bs-notice--ok bs-row">
+  <section class="bs-notice bs-notice--ok bs-row" class:bs-notice--inline={inline}>
     <span class="bs-notice__dot"></span>
     <p>
       <strong>WP-CLI detected{wpCli.version ? ` (${wpCli.version})` : ''}</strong> — pages are rendered
@@ -51,7 +56,7 @@
     </p>
   </section>
 {:else if mode === 'warn'}
-  <section class="bs-notice bs-notice--warn bs-stack bs-stack--sm">
+  <section class="bs-notice bs-notice--warn bs-stack bs-stack--sm" class:bs-notice--inline={inline}>
     <strong>Run Sync from the command line on this host</strong>
     <p>
       This environment serves PHP requests one at a time, so browser-driven Sync can
@@ -81,6 +86,14 @@
     border: var(--bs-border--1) solid var(--bs-color-border);
     border-radius: var(--bs-radius--lg);
     background: var(--bs-color-surface--raised);
+  }
+
+  /* Inside the app bar: drop the card chrome so it reads as a bar status. */
+  .bs-notice--inline {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
   }
 
   .bs-notice--ok {
