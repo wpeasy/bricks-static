@@ -130,15 +130,41 @@ final class Destinations {
 
         foreach ($list as $i => $data) {
             if ((string) ($data['id'] ?? '') === $id) {
+                $before  = self::target_signature(new Destination($data, $i === 0));
                 $dest    = new Destination($data, $i === 0);
                 $list[$i] = $dest->apply($input);
                 update_option(self::OPTION, $list, false);
 
-                return new Destination($list[$i], $i === 0);
+                $after = new Destination($list[$i], $i === 0);
+
+                // If the destination now points at a different server/location,
+                // its push record described the OLD target and is no longer valid
+                // — drop it so the next sync uploads everything afresh.
+                if (self::target_signature($after) !== $before) {
+                    delete_option(self::pushed_option($id));
+                }
+
+                return $after;
             }
         }
 
         return null;
+    }
+
+    /**
+     * A fingerprint of WHERE a destination uploads to (not the password). When
+     * this changes, any recorded push manifest no longer reflects the remote.
+     */
+    private static function target_signature(Destination $d): string {
+        $c = $d->connection_config();
+
+        return implode('|', [
+            (string) ($c['transport'] ?? ''),
+            strtolower((string) ($c['host'] ?? '')),
+            (string) ($c['port'] ?? ''),
+            (string) ($c['username'] ?? ''),
+            trim((string) ($c['remotePath'] ?? ''), '/'),
+        ]);
     }
 
     /**

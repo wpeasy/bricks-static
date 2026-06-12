@@ -193,7 +193,13 @@ final class SyncController {
      */
     public static function reset(): WP_REST_Response {
         Job::clear();
-        delete_option(Destinations::pushed_option(Destinations::primary()->id()));
+
+        // Clear EVERY destination's push record, not just the primary's — a reset
+        // means "forget what's on the remotes" so the next sync uploads in full.
+        foreach (Destinations::all() as $dest) {
+            delete_option(Destinations::pushed_option((string) ($dest['id'] ?? '')));
+        }
+
         delete_option(Manifest::RENDER_OPTION);
 
         return new WP_REST_Response(['ok' => true]);
