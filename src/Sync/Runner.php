@@ -148,7 +148,7 @@ final class Runner {
                     continue;
                 }
 
-                $job->data['counts']['bytes'] += self::write($relative, UrlRewriter::rewrite($result['body']));
+                self::cache_file($job, $relative, UrlRewriter::rewrite($result['body']));
                 $job->data['counts']['pagesDone']++;
 
                 foreach (AssetExtractor::extract_links($result['body'], $url) as $link) {
@@ -189,29 +189,41 @@ final class Runner {
                     continue;
                 }
 
+                $source = Paths::source_file($url);
+
+                // CSS is read and rewritten (origins → root-relative) and scanned
+                // for nested url()/@import background assets, then cached.
+                if (self::is_css_url($relative)) {
+                    $css = self::read_or_fetch_css($job, $url, $source);
+                    if ($css === null) {
+                        continue;
+                    }
+                    foreach (AssetExtractor::extract_css_assets($css, $url) as $nested) {
+                        $job->enqueue_asset($nested);
+                    }
+                    self::cache_file($job, $relative, UrlRewriter::rewrite($css));
+                    $job->data['counts']['assetsDone']++;
+                    continue;
+                }
+
+                // Static asset present on disk: list its source path, never copy.
+                if ($source !== null) {
+                    self::plan_source($job, $relative, $source);
+                    $job->data['counts']['assetsDone']++;
+                    continue;
+                }
+
+                // No source file (dynamic asset): fetch and cache it.
                 $result = PageRenderer::fetch_asset($url);
                 if ($result['code'] !== 200) {
                     $job->skip($url, 'HTTP ' . $result['code']);
                     continue;
                 }
-
-                // Safety net: a page that slipped into the asset queue (e.g. a
-                // rel="canonical" link) must not overwrite its rewritten page file.
+                // A page that slipped into the asset queue must not be written.
                 if (stripos($result['contentType'], 'html') !== false) {
                     continue;
                 }
-
-                $body = $result['body'];
-
-                // CSS: rewrite origins and discover nested url()/@import assets.
-                if (self::is_css($relative, $result['contentType'])) {
-                    foreach (AssetExtractor::extract_css_assets($body, $url) as $nested) {
-                        $job->enqueue_asset($nested);
-                    }
-                    $body = UrlRewriter::rewrite($body);
-                }
-
-                $job->data['counts']['bytes'] += self::write($relative, $body);
+                self::cache_file($job, $relative, $result['body']);
                 $job->data['counts']['assetsDone']++;
             } catch (\Throwable $e) {
                 $job->error($url, $e->getMessage());
@@ -234,7 +246,7 @@ final class Runner {
      * @param Job $job Active job.
      */
     private static function tick_finalize(Job $job): void {
-        $manifest = Manifest::build(Paths::output_dir());
+        $manifest = Manifest::from_plan($job->data['plan']);
         Manifest::save(Manifest::RENDER_OPTION, $manifest);
 
         $job->data['counts']['files'] = count($manifest);
@@ -244,41 +256,77 @@ final class Runner {
     }
 
     /**
-     * Write a file under the output directory (with gzip sibling), return bytes.
+     * Write generated content (a page or rewritten CSS) into the cache, gzip it,
+     * and record it in the upload plan.
      *
+     * @param Job    $job      Active job.
      * @param string $relative Relative file path.
      * @param string $content  File contents.
-     * @return int Bytes written (0 on failure).
      */
-    private static function write(string $relative, string $content): int {
+    private static function cache_file(Job $job, string $relative, string $content): void {
         $path = Paths::output_dir() . '/' . $relative;
         $dir  = dirname($path);
 
         if (!is_dir($dir) && !wp_mkdir_p($dir)) {
-            return 0;
+            return;
         }
 
         $bytes = file_put_contents($path, $content);
         if ($bytes === false) {
-            return 0;
+            return;
         }
 
         if (Compressor::is_compressible($relative)) {
             Compressor::write_sibling($path);
         }
 
-        return (int) $bytes;
+        $job->data['plan'][$relative]  = wp_normalize_path($path);
+        $job->data['counts']['bytes'] += (int) $bytes;
     }
 
     /**
-     * Whether a file is CSS (by extension or content type).
+     * Record a static asset to be uploaded straight from its source file —
+     * without copying it into the cache.
      *
-     * @param string $relative     Relative path.
-     * @param string $content_type Response content type.
+     * @param Job    $job      Active job.
+     * @param string $relative Relative destination path.
+     * @param string $source   Absolute source file path.
      */
-    private static function is_css(string $relative, string $content_type): bool {
-        return strtolower(pathinfo($relative, PATHINFO_EXTENSION)) === 'css'
-            || stripos($content_type, 'text/css') !== false;
+    private static function plan_source(Job $job, string $relative, string $source): void {
+        $job->data['plan'][$relative]  = wp_normalize_path($source);
+        $job->data['counts']['bytes'] += (int) @filesize($source);
+    }
+
+    /**
+     * Read CSS from its source file, or fetch it over HTTP if there is none.
+     *
+     * @param Job         $job    Active job.
+     * @param string      $url    CSS URL.
+     * @param string|null $source Source file path, if resolved.
+     * @return string|null CSS contents, or null to skip.
+     */
+    private static function read_or_fetch_css(Job $job, string $url, ?string $source): ?string {
+        if ($source !== null) {
+            $css = file_get_contents($source);
+            return $css === false ? null : $css;
+        }
+
+        $result = PageRenderer::fetch_asset($url);
+        if ($result['code'] !== 200) {
+            $job->skip($url, 'HTTP ' . $result['code']);
+            return null;
+        }
+
+        return $result['body'];
+    }
+
+    /**
+     * Whether a relative path is a CSS file (by extension).
+     *
+     * @param string $relative Relative path.
+     */
+    private static function is_css_url(string $relative): bool {
+        return strtolower(pathinfo($relative, PATHINFO_EXTENSION)) === 'css';
     }
 
     /**

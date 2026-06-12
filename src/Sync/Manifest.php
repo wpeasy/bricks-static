@@ -74,6 +74,36 @@ final class Manifest {
     }
 
     /**
+     * Build a manifest from an upload plan (relative path => source file path).
+     *
+     * Each entry records the destination size/hash plus the local source to read
+     * at upload time — a cache file (pages, rewritten CSS) or a source-tree file
+     * (binary assets, never copied).
+     *
+     * @param array<string,string> $plan Relative path => absolute source file.
+     * @return array<string,array{size:int,hash:string,src:string}>
+     */
+    public static function from_plan(array $plan): array {
+        $manifest = [];
+
+        foreach ($plan as $relative => $source) {
+            if (!is_file($source)) {
+                continue;
+            }
+
+            $manifest[$relative] = [
+                'size' => (int) filesize($source),
+                'hash' => (string) md5_file($source),
+                'src'  => wp_normalize_path($source),
+            ];
+        }
+
+        ksort($manifest);
+
+        return $manifest;
+    }
+
+    /**
      * Save a named manifest option.
      *
      * @param string                                       $option   Option name.

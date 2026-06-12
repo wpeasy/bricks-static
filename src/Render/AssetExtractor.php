@@ -45,9 +45,15 @@ final class AssetExtractor {
      */
     public static function extract_assets(string $html, string $base): array {
         $raw = array_merge(
-            self::match($html, '#\ssrc\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)#i'),
+            // src, data-src, data-lazy-src, lazy-src (covers <img>/<script>/<source>/<iframe>).
+            self::match($html, '#\s(?:data-(?:lazy-)?|lazy-)?src\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)#i'),
+            // Common single-URL lazy attributes and video posters.
+            self::match($html, '#\s(?:data-original|data-lazy|data-poster|poster)\s*=\s*("[^"]*"|\'[^\']*\')#i'),
             self::link_assets($html),
-            self::srcset($html),
+            // srcset, data-srcset, data-lazy-srcset, lazy-srcset, data-original-set.
+            self::srcset($html, '#\s(?:data-(?:lazy-)?|lazy-)?srcset\s*=\s*("[^"]*"|\'[^\']*\')#i'),
+            self::srcset($html, '#\sdata-original-set\s*=\s*("[^"]*"|\'[^\']*\')#i'),
+            self::background_refs($html),
             self::css_refs($html)
         );
 
@@ -119,15 +125,16 @@ final class AssetExtractor {
     }
 
     /**
-     * Parse srcset attributes into individual candidate URLs.
+     * Parse srcset-style attributes (matched by $regex) into candidate URLs.
      *
-     * @param string $html HTML.
+     * @param string $html  HTML.
+     * @param string $regex Regex whose group 1 captures the attribute value.
      * @return array<int,string>
      */
-    private static function srcset(string $html): array {
+    private static function srcset(string $html, string $regex): array {
         $out = [];
 
-        foreach (self::match($html, '#\ssrcset\s*=\s*("[^"]*"|\'[^\']*\')#i') as $value) {
+        foreach (self::match($html, $regex) as $value) {
             foreach (explode(',', $value) as $candidate) {
                 $candidate = trim($candidate);
                 if ($candidate === '') {
@@ -135,6 +142,29 @@ final class AssetExtractor {
                 }
                 // "url 2x" / "url 800w" → take the URL part.
                 $out[] = preg_split('/\s+/', $candidate)[0] ?? '';
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * URLs from lazy-load background attributes (data-bg / data-background…),
+     * whose value is either a plain URL or a CSS url(...) expression.
+     *
+     * @param string $html HTML.
+     * @return array<int,string>
+     */
+    private static function background_refs(string $html): array {
+        $out = [];
+
+        foreach (self::match($html, '#\sdata-(?:bg|background|background-image|bg-image)\s*=\s*("[^"]*"|\'[^\']*\')#i') as $value) {
+            if (stripos($value, 'url(') !== false) {
+                foreach (self::match($value, '#url\(\s*("[^"]*"|\'[^\']*\'|[^)\s]+)\s*\)#i') as $inner) {
+                    $out[] = $inner;
+                }
+            } else {
+                $out[] = $value;
             }
         }
 

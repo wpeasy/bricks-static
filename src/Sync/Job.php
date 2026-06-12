@@ -65,6 +65,10 @@ final class Job {
             'phase'     => 'collect',
             'queue'     => ['pages' => [], 'assets' => []],
             'seen'      => ['pages' => [], 'assets' => []],
+            // Upload plan: output relative path => absolute local source file.
+            // Cached files (pages, rewritten CSS) point into the cache; binary
+            // assets point straight at the source filesystem (never copied).
+            'plan'      => [],
             'counts'    => ['pagesDone' => 0, 'assetsDone' => 0, 'bytes' => 0, 'files' => 0],
             'totals'    => ['pages' => 0, 'assets' => 0],
             'errors'    => [],
