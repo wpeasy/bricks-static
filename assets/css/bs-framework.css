@@ -177,6 +177,8 @@
   line-height: var(--bs-leading--normal);
   color: var(--bs-color-text);
   background-color: var(--bs-color-surface);
+  padding: var(--bs-space--lg);
+  border-radius: var(--bs-radius--lg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
