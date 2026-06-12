@@ -34,6 +34,25 @@ export interface ConnectionResponse {
   capabilities: Capabilities;
 }
 
+export interface Replacement {
+  search: string;
+  replace: string;
+}
+
+export interface DestinationDisplay extends SettingsDisplay {
+  id: string;
+  name: string;
+  enabled: boolean;
+  includeInSinglePageSync: boolean;
+  isPrimary: boolean;
+  replacements: Replacement[];
+}
+
+export interface DestinationsResponse {
+  destinations: DestinationDisplay[];
+  capabilities: Capabilities;
+}
+
 export interface DiscoveryMethod {
   mode: string;
   description?: string;
@@ -123,7 +142,7 @@ export interface ServerConfig {
   nginx: string;
 }
 
-/** Payload sent to POST /connection and /connection/test. */
+/** Payload sent to the connection/destination save + test endpoints. */
 export interface ConnectionInput {
   transport?: Transport;
   host?: string;
@@ -134,4 +153,8 @@ export interface ConnectionInput {
   remotePath?: string;
   basePath?: string;
   destinationUrl?: string;
+  name?: string;
+  enabled?: boolean;
+  includeInSinglePageSync?: boolean;
+  replacements?: Replacement[];
 }

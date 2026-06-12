@@ -1,6 +1,7 @@
 import type {
   ConnectionInput,
   ConnectionResponse,
+  DestinationsResponse,
   Preflight,
   ServerConfig,
   Status,
@@ -59,7 +60,12 @@ export const api = {
   saveConnection: (data: ConnectionInput) => request<ConnectionResponse>('/connection', 'POST', data),
   testConnection: (data: ConnectionInput) => request<TestResult>('/connection/test', 'POST', data),
   getStatus: () => request<Status>('/status'),
-  syncStart: (type: 'check' | 'sync', opts: { prune?: boolean } = {}) =>
+  getDestinations: () => request<DestinationsResponse>('/destinations'),
+  addDestination: (data: ConnectionInput) => request<DestinationsResponse>('/destinations', 'POST', data),
+  updateDestination: (id: string, data: ConnectionInput) => request<DestinationsResponse>(`/destinations/${id}`, 'POST', data),
+  removeDestination: (id: string) => request<DestinationsResponse>(`/destinations/${id}`, 'DELETE'),
+  testDestination: (id: string, data: ConnectionInput) => request<TestResult>(`/destinations/${id}/test`, 'POST', data),
+  syncStart: (type: 'check' | 'sync', opts: { prune?: boolean; dest?: string } = {}) =>
     request<SyncSnapshot>('/sync/start', 'POST', { type, ...opts }),
   syncTick: () => request<SyncSnapshot>('/sync/tick', 'POST', {}),
   syncStatus: () => request<SyncSnapshot>('/sync'),

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Multiple destinations.** Sync one source to many destinations. Each destination has its own connection, per-destination **literal text replacements** (applied only to visible text and `<img>` sources), **Enabled** and **Include in single-page sync** (TBA) switches, and its own pushed-state. The site is **rendered once** and deployed to each destination in turn. Dashboard: a **tabbed, 2-column** UI (add/remove destinations, common status above, an **All Destinations** tab to sync all sequentially or pick one). REST `bs/v1/destinations` CRUD + per-destination test; CLI `wp bricks-static sync --dest=<id> | --all`. The previous single connection migrates automatically to "Destination 1".
 - Initial project scaffold.
 - Base framework CSS (`assets/css/bs-framework.css`): fluid spacing and type scales, border tokens, and a light/dark admin color palette scoped to `.bs`.
 - Plugin bootstrap (`bricks-static.php`) with a self-contained PSR-4 autoloader, `Plugin` bootstrap class, and a placeholder top-level admin page that enqueues the base framework CSS.
