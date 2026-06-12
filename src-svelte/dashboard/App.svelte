@@ -166,31 +166,33 @@
     {#if dests}
       <DestinationTabs {destinations} active={activeTab} onSelect={(t) => (activeTab = t)} onAdd={addDestination} onRename={renameDestination} />
 
-      {#if activeTab === 'all'}
-        <AllDestinationsPanel
-          {destinations}
-          running={syncing}
-          onSyncAll={(prune) => startSync('all', prune)}
-          onSyncOne={(id, prune) => startSync(id, prune)}
-          onSelect={(id) => (activeTab = id)}
-        />
-      {:else if activeDest}
-        {#key activeDest.id}
-          <DestinationPanel
-            destination={activeDest}
-            capabilities={dests.capabilities}
+      <div class="bs-panels">
+        {#if activeTab === 'all'}
+          <AllDestinationsPanel
+            {destinations}
             running={syncing}
-            canRemove={destinations.length > 1}
-            onSaved={loadDestinations}
-            onCheck={startCheck}
-            onSync={startSync}
-            onRemove={removeDestination}
+            onSyncAll={(prune) => startSync('all', prune)}
+            onSyncOne={(id, prune) => startSync(id, prune)}
+            onSelect={(id) => (activeTab = id)}
           />
-        {/key}
-      {/if}
-    {/if}
+        {:else if activeDest}
+          {#key activeDest.id}
+            <DestinationPanel
+              destination={activeDest}
+              capabilities={dests.capabilities}
+              running={syncing}
+              canRemove={destinations.length > 1}
+              onSaved={loadDestinations}
+              onCheck={startCheck}
+              onSync={startSync}
+              onRemove={removeDestination}
+            />
+          {/key}
+        {/if}
 
-    <ProgressPanel snapshot={sync} />
+        <ProgressPanel snapshot={sync} />
+      </div>
+    {/if}
 
     <div class="bs-row bs-row--between bs-controls">
       <span class="bs-controls__hint">Switched destinations or wiped the remote? Reset clears the local push record.</span>
@@ -202,15 +204,23 @@
       </div>
     </div>
   {:else}
-    <MethodPanel method={status?.method ?? null} />
-    <ServerConfigPanel />
+    <div class="bs-panels">
+      <MethodPanel method={status?.method ?? null} />
+      <ServerConfigPanel />
+    </div>
   {/if}
 </div>
 
 <style>
   .bs-dash {
-    max-width: 56rem;
     padding: var(--bs-space--lg) 0;
+  }
+
+  .bs-panels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 600px));
+    gap: var(--bs-space--lg);
+    align-items: start;
   }
 
   .bs-dash__lead {

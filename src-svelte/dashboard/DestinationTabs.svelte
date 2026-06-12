@@ -80,7 +80,7 @@
   }
 
   .bs-tab {
-    flex: 1 1 0;
+    flex: 0 0 auto;
     text-align: center;
     padding: var(--bs-space--xs) var(--bs-space--md);
     border: var(--bs-border--1) solid transparent;
