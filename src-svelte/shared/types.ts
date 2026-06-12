@@ -70,6 +70,7 @@ export interface TestResult {
 export interface SyncCounts {
   pagesDone: number;
   assetsDone: number;
+  uploaded: number;
   bytes: number;
   files: number;
 }
@@ -77,15 +78,17 @@ export interface SyncCounts {
 export interface SyncTotals {
   pages: number;
   assets: number;
+  uploads: number;
 }
 
 export interface SyncSnapshot {
-  phase: 'idle' | 'collect' | 'render' | 'assets' | 'finalize' | 'done' | 'error' | 'cancelled';
+  phase: 'idle' | 'collect' | 'render' | 'assets' | 'finalize' | 'upload' | 'done' | 'error' | 'cancelled';
   type?: 'check' | 'sync';
   message?: string;
   counts?: SyncCounts;
   totals?: SyncTotals;
-  queued?: { pages: number; assets: number };
+  queued?: { pages: number; assets: number; uploads: number };
+  removed?: number;
   errorCount?: number;
   skippedCount?: number;
   errors?: Array<{ url: string; error: string }>;
@@ -93,6 +96,11 @@ export interface SyncSnapshot {
   startedAt?: number;
   updatedAt?: number;
   running?: boolean;
+}
+
+export interface ServerConfig {
+  htaccess: string;
+  nginx: string;
 }
 
 /** Payload sent to POST /connection and /connection/test. */

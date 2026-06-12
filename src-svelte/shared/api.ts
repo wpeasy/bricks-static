@@ -1,6 +1,7 @@
 import type {
   ConnectionInput,
   ConnectionResponse,
+  ServerConfig,
   Status,
   SyncSnapshot,
   TestResult,
@@ -61,4 +62,5 @@ export const api = {
   syncTick: () => request<SyncSnapshot>('/sync/tick', 'POST', {}),
   syncStatus: () => request<SyncSnapshot>('/sync'),
   syncCancel: () => request<SyncSnapshot>('/sync/cancel', 'POST', {}),
+  serverConfig: () => request<ServerConfig>('/sync/server-config'),
 };

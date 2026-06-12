@@ -6,6 +6,7 @@
   import MethodPanel from './MethodPanel.svelte';
   import ActionsPanel from './ActionsPanel.svelte';
   import ProgressPanel from './ProgressPanel.svelte';
+  import ServerConfigPanel from './ServerConfigPanel.svelte';
   import ConnectionForm from './ConnectionForm.svelte';
 
   let connection = $state<ConnectionResponse | null>(null);
@@ -62,6 +63,21 @@
     }
   }
 
+  async function startSync(): Promise<void> {
+    const confirmed = window.confirm(
+      'This will render the site and push the changed files to the destination. Continue?',
+    );
+    if (!confirmed) {
+      return;
+    }
+    try {
+      sync = await api.syncStart('sync');
+      await drive();
+    } catch (e) {
+      loadError = (e as Error).message;
+    }
+  }
+
   async function cancelSync(): Promise<void> {
     try {
       sync = await api.syncCancel();
@@ -97,8 +113,9 @@
 
   <StatusPanel {status} />
   <MethodPanel method={status?.method ?? null} />
-  <ActionsPanel running={syncing} onCheck={startCheck} onCancel={cancelSync} />
+  <ActionsPanel running={syncing} onCheck={startCheck} onSync={startSync} onCancel={cancelSync} />
   <ProgressPanel snapshot={sync} />
+  <ServerConfigPanel />
 
   {#if connection}
     <ConnectionForm {connection} onsaved={handleSaved} onrefresh={loadStatus} />

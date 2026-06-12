@@ -12,6 +12,7 @@ namespace WPEasy\BricksStatic\REST;
 
 use WP_REST_Request;
 use WP_REST_Response;
+use WPEasy\BricksStatic\Sync\HtaccessBuilder;
 use WPEasy\BricksStatic\Sync\Runner;
 
 defined('ABSPATH') || exit;
@@ -55,6 +56,12 @@ final class SyncController {
             'callback'            => [self::class, 'cancel'],
             'permission_callback' => [self::class, 'can_manage'],
         ]);
+
+        register_rest_route(self::NS, '/sync/server-config', [
+            'methods'             => 'GET',
+            'callback'            => [self::class, 'server_config'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
     }
 
     /**
@@ -72,9 +79,8 @@ final class SyncController {
     public static function start(WP_REST_Request $request): WP_REST_Response {
         $type = (string) ($request->get_json_params()['type'] ?? 'check');
 
-        // Only the dry run is available until M3 adds the upload phase.
-        if ($type !== 'check') {
-            return new WP_REST_Response(['error' => 'Only "check" is available in this version.'], 400);
+        if (!in_array($type, ['check', 'sync'], true)) {
+            return new WP_REST_Response(['error' => 'Unknown run type.'], 400);
         }
 
         try {
@@ -109,5 +115,16 @@ final class SyncController {
         Runner::cancel();
 
         return new WP_REST_Response(Runner::status());
+    }
+
+    /**
+     * GET /sync/server-config — the .htaccess (uploaded automatically) and the
+     * nginx snippet (for manual paste).
+     */
+    public static function server_config(): WP_REST_Response {
+        return new WP_REST_Response([
+            'htaccess' => HtaccessBuilder::htaccess(),
+            'nginx'    => HtaccessBuilder::nginx(),
+        ]);
     }
 }

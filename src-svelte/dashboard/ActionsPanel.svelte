@@ -2,10 +2,12 @@
   let {
     running,
     onCheck,
+    onSync,
     onCancel,
   }: {
     running: boolean;
     onCheck: () => void;
+    onSync: () => void;
     onCancel: () => void;
   } = $props();
 </script>
@@ -13,18 +15,19 @@
 <section class="bs-card bs-stack bs-stack--sm">
   <h2>Actions</h2>
   <p class="bs-actions__lead">
-    <strong>Check sync</strong> renders the whole site to the local cache and reports what would be pushed — it does not upload anything yet.
+    <strong>Check sync</strong> renders the site locally and reports what would change — no upload.
+    <strong>Sync</strong> renders and pushes the changed files to the destination (a holding page is shown while it runs).
   </p>
   <div class="bs-row bs-row--wrap">
-    <button type="button" class="bs-btn bs-btn--primary" onclick={onCheck} disabled={running}>
+    <button type="button" class="bs-btn bs-btn--secondary" onclick={onCheck} disabled={running}>
       {running ? 'Working…' : 'Check sync'}
+    </button>
+    <button type="button" class="bs-btn bs-btn--primary" onclick={onSync} disabled={running}>
+      {running ? 'Working…' : 'Sync to destination'}
     </button>
     {#if running}
       <button type="button" class="bs-btn bs-btn--secondary" onclick={onCancel}>Cancel</button>
     {/if}
-    <button type="button" class="bs-btn bs-btn--secondary" disabled title="Uploading lands in the next milestone (M3)">
-      Sync (coming soon)
-    </button>
   </div>
 </section>
 
