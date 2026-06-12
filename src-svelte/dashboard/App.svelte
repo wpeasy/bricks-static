@@ -6,6 +6,7 @@
   import MethodPanel from './MethodPanel.svelte';
   import DestinationTabs from './DestinationTabs.svelte';
   import DestinationPanel from './DestinationPanel.svelte';
+  import DestinationToolbar from './DestinationToolbar.svelte';
   import ReplacementsPanel from './ReplacementsPanel.svelte';
   import AllDestinationsPanel from './AllDestinationsPanel.svelte';
   import ProgressPanel from './ProgressPanel.svelte';
@@ -165,6 +166,7 @@
 
   {#if topTab === 'destinations'}
     {#if dests}
+      <DestinationToolbar destination={activeTab === 'all' ? null : activeDest} />
       <DestinationTabs {destinations} active={activeTab} onSelect={(t) => (activeTab = t)} onAdd={addDestination} onRename={renameDestination} />
 
       <div class="bs-panels">

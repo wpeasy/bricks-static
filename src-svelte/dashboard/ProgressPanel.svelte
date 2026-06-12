@@ -116,10 +116,17 @@
 
     {#if snapshot.compat && snapshot.compat.length > 0}
       <details>
-        <summary>Won't work on static ({snapshot.compatCount}) — forms / dynamic endpoints</summary>
+        <summary>Won't work on static ({snapshot.compatCount}) — forms / dynamic endpoints (notice only; pages are still uploaded)</summary>
         <ul class="bs-progress__list">
           {#each snapshot.compat as c}
-            <li><code>{c.url}</code> — {c.issues.join(', ')}</li>
+            <li>
+              <code>{c.url}</code>
+              <ul class="bs-progress__sublist">
+                {#each c.issues as issue}
+                  <li><span class="bs-progress__itype">{issue.type}</span>{#if issue.link}: <code>{issue.link}</code>{/if}</li>
+                {/each}
+              </ul>
+            </li>
           {/each}
         </ul>
       </details>
@@ -227,6 +234,17 @@
   }
 
   .bs-progress__list code {
+    color: var(--bs-color-text);
+  }
+
+  .bs-progress__sublist {
+    margin: var(--bs-space--3xs) 0 var(--bs-space--xs);
+    padding-left: var(--bs-space--md);
+    list-style: none;
+  }
+
+  .bs-progress__itype {
+    font-weight: var(--bs-weight--medium);
     color: var(--bs-color-text);
   }
 

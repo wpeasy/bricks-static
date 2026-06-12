@@ -101,12 +101,6 @@
 </script>
 
 <section class="bs-card bs-stack bs-stack--md">
-  <div class="bs-dstatus">
-    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.connected ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>Connected</span>
-    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.hasPushed ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>Pushed</span>
-    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.inSync ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>In sync</span>
-  </div>
-
   <div class="bs-grid">
     <label class="bs-switch"><input type="checkbox" bind:checked={enabled} disabled={busy} /> Enabled</label>
     <label class="bs-switch"><input type="checkbox" bind:checked={singlePage} disabled={busy} /> Include in single-page sync</label>
@@ -227,35 +221,6 @@
     align-items: center;
     gap: var(--bs-space--xs);
     font-size: var(--bs-text--sm);
-  }
-
-  .bs-dstatus {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--bs-space--md);
-  }
-
-  .bs-dstatus__item {
-    display: flex;
-    align-items: center;
-    gap: var(--bs-space--2xs);
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-text--muted);
-  }
-
-  .bs-dstatus__dot {
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: var(--bs-radius--full);
-    background: var(--bs-color-text--subtle);
-  }
-
-  .bs-dstatus__item--on .bs-dstatus__dot {
-    background: var(--bs-color-success);
-  }
-
-  .bs-dstatus__item--off .bs-dstatus__dot {
-    background: var(--bs-color-danger);
   }
 
   .bs-btn {

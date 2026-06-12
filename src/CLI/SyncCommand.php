@@ -103,7 +103,11 @@ final class SyncCommand {
         if (($snapshot['compatCount'] ?? 0) > 0) {
             \WP_CLI::warning(sprintf('%d page(s) contain forms or dynamic endpoints that will not work on the static copy:', $snapshot['compatCount']));
             foreach (array_slice($snapshot['compat'] ?? [], 0, 10) as $c) {
-                \WP_CLI::log('  - ' . $c['url'] . ' (' . implode(', ', $c['issues']) . ')');
+                \WP_CLI::log('  - ' . $c['url']);
+                foreach ($c['issues'] as $issue) {
+                    $detail = $issue['link'] !== '' ? $issue['link'] : '(no link)';
+                    \WP_CLI::log('      ' . $issue['type'] . ': ' . $detail);
+                }
             }
         }
 

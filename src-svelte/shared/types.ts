@@ -137,7 +137,7 @@ export interface SyncSnapshot {
   compatCount?: number;
   errors?: Array<{ url: string; error: string }>;
   skipped?: Array<{ url: string; reason: string }>;
-  compat?: Array<{ url: string; issues: string[] }>;
+  compat?: Array<{ url: string; issues: Array<{ type: string; link: string }> }>;
   startedAt?: number;
   updatedAt?: number;
   running?: boolean;
