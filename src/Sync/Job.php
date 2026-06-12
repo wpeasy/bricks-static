@@ -79,6 +79,7 @@ final class Job {
             'removed'      => 0,
             'errors'    => [],
             'skipped'   => [],
+            'compat'    => [],
             'cancel'    => false,
             'message'   => 'Collecting URLs…',
             'startedAt' => time(),

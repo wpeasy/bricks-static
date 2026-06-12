@@ -12,6 +12,7 @@ namespace WPEasy\BricksStatic\Sync;
 
 use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Render\AssetExtractor;
+use WPEasy\BricksStatic\Render\CompatibilityScanner;
 use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Render\UrlRewriter;
 use WPEasy\BricksStatic\Support\Paths;
@@ -209,6 +210,11 @@ final class Runner {
 
                 self::cache_file($job, $relative, UrlRewriter::rewrite($result['body']));
                 $job->data['counts']['pagesDone']++;
+
+                $compat = CompatibilityScanner::scan($result['body']);
+                if (!empty($compat) && count($job->data['compat']) < 200) {
+                    $job->data['compat'][] = ['url' => $url, 'issues' => $compat];
+                }
 
                 foreach (AssetExtractor::extract_links($result['body'], $url) as $link) {
                     $job->enqueue_page($link);
@@ -793,8 +799,10 @@ HTML;
             'prune'        => !empty($d['prune']),
             'errorCount'   => count($d['errors']),
             'skippedCount' => count($d['skipped']),
+            'compatCount'  => count($d['compat'] ?? []),
             'errors'       => array_slice($d['errors'], -25),
             'skipped'      => array_slice($d['skipped'], -25),
+            'compat'       => array_slice($d['compat'] ?? [], 0, 25),
             'startedAt'    => $d['startedAt'],
             'updatedAt'    => $d['updatedAt'],
             'running'      => !in_array($d['phase'], ['done', 'error', 'cancelled', 'idle'], true),

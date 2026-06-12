@@ -88,6 +88,7 @@
       <span>{humanBytes(snapshot.counts?.bytes ?? 0)}</span>
       {#if (snapshot.counts?.pruned ?? 0) > 0}<span>{snapshot.counts?.pruned} removed</span>{/if}
       {#if (snapshot.skippedCount ?? 0) > 0}<span>{snapshot.skippedCount} skipped</span>{/if}
+      {#if (snapshot.compatCount ?? 0) > 0}<span class="bs-progress__warn">{snapshot.compatCount} not static-friendly</span>{/if}
       {#if (snapshot.errorCount ?? 0) > 0}<span class="bs-progress__err">{snapshot.errorCount} errors</span>{/if}
     </div>
 
@@ -108,6 +109,17 @@
         <ul class="bs-progress__list">
           {#each snapshot.skipped as s}
             <li><code>{s.url}</code> — {s.reason}</li>
+          {/each}
+        </ul>
+      </details>
+    {/if}
+
+    {#if snapshot.compat && snapshot.compat.length > 0}
+      <details>
+        <summary>Won't work on static ({snapshot.compatCount}) — forms / dynamic endpoints</summary>
+        <ul class="bs-progress__list">
+          {#each snapshot.compat as c}
+            <li><code>{c.url}</code> — {c.issues.join(', ')}</li>
           {/each}
         </ul>
       </details>
@@ -199,6 +211,10 @@
 
   .bs-progress__err {
     color: var(--bs-color-danger);
+  }
+
+  .bs-progress__warn {
+    color: var(--bs-color-warning);
   }
 
   .bs-progress__list {

@@ -83,6 +83,13 @@ final class SyncCommand {
             \WP_CLI::warning(sprintf('%s — %s', $error['url'], $error['error']));
         }
 
+        if (($snapshot['compatCount'] ?? 0) > 0) {
+            \WP_CLI::warning(sprintf('%d page(s) contain forms or dynamic endpoints that will not work on the static copy:', $snapshot['compatCount']));
+            foreach (array_slice($snapshot['compat'] ?? [], 0, 10) as $c) {
+                \WP_CLI::log('  - ' . $c['url'] . ' (' . implode(', ', $c['issues']) . ')');
+            }
+        }
+
         if (($snapshot['phase'] ?? '') === 'done') {
             \WP_CLI::success((string) ($snapshot['message'] ?? 'Done.'));
         } else {

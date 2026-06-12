@@ -117,9 +117,12 @@ and `<img>` src/srcset only; "All Destinations" syncs **sequentially**.
 
 **Data model**
 - `bs_common` — shared settings + master enable (shown above the tabs).
-- `bs_destinations` — list; each `{ id, name, enabled, connection (transport/
-  host/port/user/password(enc)/remotePath/basePath/destinationUrl),
-  replacements: [{search, replace}] }`.
+- `bs_destinations` — list; each `{ id, name, enabled,
+  includeInSinglePageSync, connection (transport/host/port/user/password(enc)/
+  remotePath/basePath/destinationUrl), replacements: [{search, replace}] }`.
+  - **enabled** — include this destination in full syncs / "All Destinations".
+  - **includeInSinglePageSync** — include it when a single page is pushed from
+    the editor (that editor button is TBA; the switch is wired now).
 - `bs_pushed_{id}` — per-destination pushed manifest (independent sync state).
 - Migration: existing single `bs_settings` → `destinations[0]`; `bs_pushed_manifest`
   → `bs_pushed_{id0}`.
@@ -139,8 +142,10 @@ and `<img>` src/srcset only; "All Destinations" syncs **sequentially**.
 
 **UI**: tabs with `+` to add; common settings + shared status message above; each
 tab = connection + a Search/Replace repeater (optional, with a "be specific"
-warning) + its own Check/Sync; with >1 destination, a first "All Destinations"
-tab to sync all or pick one.
+warning) + per-destination **Enabled** and **Include in single-page sync** (TBA)
+switches + its own Check/Sync; with >1 destination, a first "All Destinations"
+tab to sync all or pick one. Each destination's settings are laid out as a
+**2-column grid**.
 
 **Risk — text replacement**: a too-broad literal search can still alter intended
 text. Scoping to text + `<img>` src (never href/class/script/style) limits the

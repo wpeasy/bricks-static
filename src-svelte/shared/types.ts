@@ -108,8 +108,10 @@ export interface SyncSnapshot {
   removed?: number;
   errorCount?: number;
   skippedCount?: number;
+  compatCount?: number;
   errors?: Array<{ url: string; error: string }>;
   skipped?: Array<{ url: string; reason: string }>;
+  compat?: Array<{ url: string; issues: string[] }>;
   startedAt?: number;
   updatedAt?: number;
   running?: boolean;
