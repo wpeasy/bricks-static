@@ -89,4 +89,27 @@ final class SyncCommand {
             \WP_CLI::error((string) ($snapshot['message'] ?? 'Finished with errors.'));
         }
     }
+
+    /**
+     * Drive an already-started job to completion (used by the dashboard's
+     * auto-run; not normally invoked by hand).
+     *
+     * @param array<int,string>    $args       Positional args (unused).
+     * @param array<string,string> $assoc_args Flags (unused).
+     * @when after_wp_load
+     */
+    public function run(array $args, array $assoc_args): void {
+        $snapshot = Runner::status();
+
+        if (($snapshot['phase'] ?? 'idle') === 'idle') {
+            \WP_CLI::warning('No active job to run.');
+            return;
+        }
+
+        while (!empty($snapshot['running'])) {
+            $snapshot = Runner::tick();
+        }
+
+        \WP_CLI::success((string) ($snapshot['message'] ?? 'Done.'));
+    }
 }

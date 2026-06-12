@@ -1,8 +1,8 @@
 <script lang="ts">
   import { api } from '../shared/api';
-  import type { Preflight } from '../shared/types';
+  import type { Preflight, WpCliInfo } from '../shared/types';
 
-  let { isLocal, cli }: { isLocal: boolean; cli: string } = $props();
+  let { isLocal, cli, wpCli }: { isLocal: boolean; cli: string; wpCli: WpCliInfo } = $props();
 
   let testing = $state(false);
   let result = $state<Preflight | null>(null);
@@ -49,6 +49,11 @@
       <button type="button" class="bs-link" onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
     </div>
     <p class="bs-notice__hint">Add <code>--check</code> for a dry run, or <code>--prune</code> to remove deleted files.</p>
+    {#if wpCli.detected}
+      <p class="bs-notice__hint">✓ WP-CLI detected on this server: <code>{wpCli.version}</code></p>
+    {:else}
+      <p class="bs-notice__hint">Local includes WP-CLI — run the command in Local's “Open site shell”, or your terminal.</p>
+    {/if}
     <div class="bs-row">
       <button type="button" class="bs-btn bs-btn--secondary" onclick={test} disabled={testing}>
         {testing ? 'Testing…' : 'Test browser rendering'}

@@ -37,15 +37,24 @@
     void loadStatus();
   }
 
-  // Drive the batched run: tick until the job is no longer running.
-  async function drive(): Promise<void> {
+  const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+  // Run the active job: if a WP-CLI process is driving it (driver = 'cli'), just
+  // poll status; otherwise drive it from the browser via tick requests.
+  async function runActiveJob(): Promise<void> {
     if (syncing) {
       return;
     }
     syncing = true;
     try {
+      const viaCli = sync?.driver === 'cli';
       while (sync && sync.running) {
-        sync = await api.syncTick();
+        if (viaCli) {
+          await sleep(1500);
+          sync = await api.syncStatus();
+        } else {
+          sync = await api.syncTick();
+        }
       }
     } catch (e) {
       loadError = (e as Error).message;
@@ -58,7 +67,7 @@
   async function startCheck(): Promise<void> {
     try {
       sync = await api.syncStart('check');
-      await drive();
+      await runActiveJob();
     } catch (e) {
       loadError = (e as Error).message;
     }
@@ -73,7 +82,7 @@
     }
     try {
       sync = await api.syncStart('sync', { prune });
-      await drive();
+      await runActiveJob();
     } catch (e) {
       loadError = (e as Error).message;
     }
@@ -129,7 +138,7 @@
   {/if}
 
   {#if status}
-    <NoticePanel isLocal={status.isLocal} cli={status.cli} />
+    <NoticePanel isLocal={status.isLocal} cli={status.cli} wpCli={status.wpCli} />
   {/if}
 
   <StatusPanel {status} />

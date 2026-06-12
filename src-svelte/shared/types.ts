@@ -63,6 +63,13 @@ export interface Status {
   method: Method;
   isLocal: boolean;
   cli: string;
+  wpCli: WpCliInfo;
+}
+
+export interface WpCliInfo {
+  execAvailable: boolean;
+  detected: boolean;
+  version: string;
 }
 
 export interface Preflight {
@@ -106,6 +113,7 @@ export interface SyncSnapshot {
   startedAt?: number;
   updatedAt?: number;
   running?: boolean;
+  driver?: 'cli' | 'browser';
 }
 
 export interface ServerConfig {

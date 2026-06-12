@@ -74,6 +74,7 @@ final class StatusController {
             'method'    => MethodResolver::resolve(),
             'isLocal'   => Environment::is_local(),
             'cli'       => Environment::cli_command(),
+            'wpCli'     => Environment::wp_cli(),
         ]);
     }
 }

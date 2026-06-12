@@ -12,6 +12,7 @@ namespace WPEasy\BricksStatic\REST;
 
 use WP_REST_Request;
 use WP_REST_Response;
+use WPEasy\BricksStatic\CLI\Background;
 use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Sync\HtaccessBuilder;
 use WPEasy\BricksStatic\Sync\Job;
@@ -100,7 +101,13 @@ final class SyncController {
         }
 
         try {
-            return new WP_REST_Response(Runner::start($type, ['prune' => !empty($params['prune'])]));
+            $snapshot = Runner::start($type, ['prune' => !empty($params['prune'])]);
+
+            // Prefer WP-CLI where the host can spawn it (no web-worker contention);
+            // otherwise the browser drives the run via curl/loopback ticks.
+            $snapshot['driver'] = Background::spawn_run() ? 'cli' : 'browser';
+
+            return new WP_REST_Response($snapshot);
         } catch (\Throwable $e) {
             return new WP_REST_Response(['phase' => 'error', 'message' => $e->getMessage()], 200);
         }
