@@ -33,7 +33,7 @@ final class UrlRewriter {
     public static function rewrite(string $content): string {
         $search = [];
 
-        foreach (self::hosts() as $host) {
+        foreach (self::source_hosts() as $host) {
             // Order matters: scheme-qualified forms before bare "//host", so the
             // latter can't chew the slashes out of the former. Both plain and
             // JSON-escaped (\/\/) slash forms are covered.
@@ -55,7 +55,7 @@ final class UrlRewriter {
      *
      * @return array<int,string>
      */
-    private static function hosts(): array {
+    public static function source_hosts(): array {
         $hosts = [];
 
         foreach (array_unique([home_url(), site_url()]) as $base) {

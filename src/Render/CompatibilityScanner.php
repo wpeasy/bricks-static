@@ -16,7 +16,10 @@ defined('ABSPATH') || exit;
  * Scans rendered HTML for things that depend on PHP/WordPress at request time —
  * forms and dynamic links — which silently break once served as flat files.
  * Each finding carries the actual link so the user can see what was flagged.
- * WordPress-core boilerplate (login, xmlrpc, RSD, feeds in <head>) is ignored.
+ * Only same-origin targets are flagged: external links/actions (e.g. a
+ * facebook.com/sharer.php share button, or a Mailchimp form) keep working on
+ * the static copy because they hit a third-party server, not ours. WordPress-core
+ * boilerplate (login, xmlrpc, RSD, feeds in <head>) is also ignored.
  */
 final class CompatibilityScanner {
 
@@ -34,29 +37,54 @@ final class CompatibilityScanner {
     public static function scan(string $html): array {
         $found = [];
         $seen  = [];
+        $hosts = UrlRewriter::source_hosts();
 
-        // Forms (real <form> elements) — submissions won't work statically.
+        // Forms (real <form> elements) posting back to our own site — those
+        // submissions won't work statically. An external action keeps working.
         if (preg_match_all('#<form\b[^>]*>#i', $html, $forms)) {
             foreach ($forms[0] as $tag) {
-                $type   = preg_match('#\b(role="search"|class="[^"]*\bsearch)#i', $tag) ? 'search-form' : 'form';
                 $action = preg_match('#\saction\s*=\s*("([^"]*)"|\'([^\']*)\')#i', $tag, $m)
                     ? ($m[2] !== '' ? $m[2] : ($m[3] ?? ''))
                     : '';
+                if (!self::is_internal($action, $hosts)) {
+                    continue;
+                }
+                $type = preg_match('#\b(role="search"|class="[^"]*\bsearch)#i', $tag) ? 'search-form' : 'form';
                 self::add($found, $seen, $type, $action);
             }
         }
 
-        // Anchor links to a .php script (excluding WP-core boilerplate).
+        // Anchor links to a .php script on our own site (external share links
+        // like facebook.com/sharer.php still work; WP-core boilerplate ignored).
         if (preg_match_all('#<a\b[^>]*\shref\s*=\s*("([^"]*\.php\b[^"]*)"|\'([^\']*\.php\b[^\']*)\')#i', $html, $links, PREG_SET_ORDER)) {
             foreach ($links as $m) {
                 $href = $m[2] !== '' ? $m[2] : ($m[3] ?? '');
-                if ($href !== '' && !preg_match(self::BOILERPLATE, $href)) {
+                if ($href !== '' && self::is_internal($href, $hosts) && !preg_match(self::BOILERPLATE, $href)) {
                     self::add($found, $seen, 'php-link', $href);
                 }
             }
         }
 
         return $found;
+    }
+
+    /**
+     * Whether a URL targets our own site (relative, root-relative, or a host in
+     * the source-host list). Empty = self-submitting form, i.e. internal.
+     *
+     * @param string             $url   Href or form action.
+     * @param array<int,string>  $hosts Source hostnames.
+     */
+    private static function is_internal(string $url, array $hosts): bool {
+        $url = trim($url);
+        if ($url === '' || $url[0] === '/' || $url[0] === '#' || $url[0] === '?') {
+            return true;
+        }
+        $host = \wp_parse_url($url, PHP_URL_HOST);
+        if (!is_string($host) || $host === '') {
+            return true; // Relative path with no host (e.g. "submit.php").
+        }
+        return in_array(strtolower($host), array_map('strtolower', $hosts), true);
     }
 
     /**
