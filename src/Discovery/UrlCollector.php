@@ -41,13 +41,33 @@ final class UrlCollector {
     }
 
     /**
-     * Permalinks of all published public posts (all public types bar attachments).
+     * Post types that are registered `public` (so they'd be seeded) but are not
+     * real site content — builder previews, design templates, etc. Bricks
+     * registers `bricks_template` as public with a `/template/...` rewrite; those
+     * URLs 301-redirect and must never end up in the static export.
+     *
+     * @return array<int,string>
+     */
+    private static function excluded_post_types(): array {
+        /**
+         * Filters post types excluded from the crawl seed.
+         *
+         * @param array<int,string> $types Post type names to skip.
+         */
+        return (array) apply_filters('bs_excluded_post_types', ['attachment', 'bricks_template']);
+    }
+
+    /**
+     * Permalinks of all published public posts (public types bar builder/preview
+     * types — see excluded_post_types()).
      *
      * @return array<int,string>
      */
     private static function post_urls(): array {
         $types = get_post_types(['public' => true], 'names');
-        unset($types['attachment']);
+        foreach (self::excluded_post_types() as $skip) {
+            unset($types[$skip]);
+        }
 
         if (empty($types)) {
             return [];
