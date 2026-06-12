@@ -33,7 +33,7 @@ final class Schema {
      */
     public static function fields(): array {
         return [
-            'transport'      => ['type' => 'enum',   'default' => 'sftp',          'constant' => 'BS_TRANSPORT',       'options' => ['sftp', 'ftps', 'ftp']],
+            'transport'      => ['type' => 'enum',   'default' => 'ftps',          'constant' => 'BS_TRANSPORT',       'options' => ['sftp', 'ftps', 'ftp']],
             'host'           => ['type' => 'string', 'default' => '',              'constant' => 'BS_HOST'],
             'port'           => ['type' => 'int',    'default' => 0,               'constant' => 'BS_PORT'],
             'username'       => ['type' => 'string', 'default' => '',              'constant' => 'BS_USERNAME'],
