@@ -761,6 +761,10 @@ final class Runner {
                     $job->error($relative, $e->getMessage());
                     $job->data['failed'][] = $relative;
                 }
+
+                // Persist after each file so the dashboard's status poll shows
+                // upload progress smoothly, not one jump per batch.
+                $job->save();
             }
 
             // Everything else is up: swap the holding page for the real home,

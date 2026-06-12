@@ -91,7 +91,10 @@
     } finally {
       syncing = false;
       manualRun = false;
+      // Refresh BOTH: the global status panel and the per-destination dots in
+      // the toolbar (Connected / Pushed / In sync), which come from /destinations.
       void loadStatus();
+      void loadDestinations();
     }
   }
 
