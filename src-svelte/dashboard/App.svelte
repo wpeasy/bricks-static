@@ -44,33 +44,20 @@
     }
   }
 
-  // Polls (×1.5s) with no progress before we assume the spawned WP-CLI process
-  // never actually started and the browser takes over driving the job.
-  const CLI_STALL_POLLS = 6;
-
   async function runActiveJob(): Promise<void> {
     if (syncing) return;
     syncing = true;
     try {
-      let viaCli = sync?.driver === 'cli';
-      let lastUpdatedAt = sync?.updatedAt ?? 0;
-      let stalledPolls = 0;
+      // When a WP-CLI process drives the run we only POLL read-only status — we
+      // must NOT also tick from the browser. On Local a /sync/tick web request
+      // holds a php-fpm worker AND fires a loopback render, which saturates the
+      // worker pool and deadlocks the whole site. The CLI process renders
+      // without that contention, even when a single page is slow.
+      const viaCli = sync?.driver === 'cli';
       while (sync && sync.running) {
         if (viaCli) {
           await sleep(1500);
           sync = await api.syncStatus();
-          const updatedAt = sync?.updatedAt ?? 0;
-          if (updatedAt === lastUpdatedAt) {
-            // The CLI process isn't advancing the job (a detached spawn from the
-            // web-server context can silently fail to launch). After a grace
-            // window, drive the run from the browser instead of hanging forever.
-            if (++stalledPolls >= CLI_STALL_POLLS) {
-              viaCli = false;
-            }
-          } else {
-            stalledPolls = 0;
-            lastUpdatedAt = updatedAt;
-          }
         } else {
           sync = await api.syncTick();
         }
