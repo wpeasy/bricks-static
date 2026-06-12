@@ -9,6 +9,7 @@
   import DestinationPanel from './DestinationPanel.svelte';
   import DestinationToolbar from './DestinationToolbar.svelte';
   import ReplacementsPanel from './ReplacementsPanel.svelte';
+  import ManualRunBanner from './ManualRunBanner.svelte';
   import AllDestinationsPanel from './AllDestinationsPanel.svelte';
   import ProgressPanel from './ProgressPanel.svelte';
   import ServerConfigPanel from './ServerConfigPanel.svelte';
@@ -17,6 +18,7 @@
   let status = $state<Status | null>(null);
   let sync = $state<SyncSnapshot | null>(null);
   let syncing = $state(false);
+  let manualRun = $state(false);
   let topTab = $state<'destinations' | 'server'>('destinations');
   let activeTab = $state('');
   let loadError = $state('');
@@ -45,50 +47,56 @@
     }
   }
 
-  // Grace period for a spawned WP-CLI process to show a heartbeat before the
-  // browser concludes the spawn never launched and drives the job itself.
+  // Grace period for a spawned WP-CLI process to show a heartbeat before we
+  // conclude the auto-spawn didn't launch and ask the user to run it by hand.
   const CLI_SPAWN_GRACE_MS = 8000;
 
   async function runActiveJob(): Promise<void> {
     if (syncing) return;
     syncing = true;
+    manualRun = false;
     try {
-      // When a WP-CLI process drives the run we only POLL read-only status — we
-      // must NOT also tick from the browser. On Local a /sync/tick web request
-      // holds a php-fpm worker AND fires a loopback render, which saturates the
-      // worker pool and deadlocks the whole site. The CLI process renders
-      // without that contention, even when a single page is slow.
-      //
-      // But the detached spawn can silently fail to launch from the web-server
-      // process. We watch for the CLI heartbeat: if none appears within a grace
-      // window, the browser tries to CLAIM the driver lock and take over ticking.
-      // The atomic claim guarantees only one driver ever advances the job, so a
-      // browser tick and a (late) CLI process can't both run loopback renders and
-      // starve Local's tiny worker pool — the deadlock that broke this before.
+      // The browser only drives the run itself when there is NO WP-CLI to do it
+      // (driver === 'browser'). A /sync/tick web request holds a PHP worker AND
+      // fires a loopback render needing a second worker — on hosts with very few
+      // workers (Local on Windows runs just two php-cgi processes) the loopback
+      // can route back to the busy worker and deadlock. So when WP-CLI IS present
+      // (driver === 'cli') we never tick: we poll for the CLI process, and if its
+      // auto-spawn never starts we ask the user to run the command instead — then
+      // pick the run back up here the moment it's going.
       let driving = false;
       if (sync?.driver !== 'cli') {
         driving = (await api.syncClaim()).owner === 'browser';
       }
       const startedAt = Date.now();
-      while (sync && sync.running) {
+      while ((sync && sync.running) || manualRun) {
         if (driving) {
           sync = await api.syncTick();
-        } else {
-          await sleep(1500);
-          sync = await api.syncStatus();
-          if (!sync?.cliAlive && Date.now() - startedAt > CLI_SPAWN_GRACE_MS) {
-            // No CLI heartbeat — try to take over. We only drive if we win the
-            // claim; if the CLI just grabbed it, keep polling.
-            driving = (await api.syncClaim()).owner === 'browser';
-          }
+          continue;
+        }
+
+        await sleep(manualRun ? 2500 : 1500);
+        sync = await api.syncStatus();
+
+        if (sync?.cliAlive) {
+          manualRun = false; // a CLI process is driving it (auto-spawn or user-run)
+        } else if (sync?.running && Date.now() - startedAt > CLI_SPAWN_GRACE_MS) {
+          manualRun = true; // auto-spawn didn't start — prompt the user to run it
+        } else if (!sync?.running && !manualRun) {
+          break; // finished, nothing pending
         }
       }
     } catch (e) {
       loadError = (e as Error).message;
     } finally {
       syncing = false;
+      manualRun = false;
       void loadStatus();
     }
+  }
+
+  function dismissManualRun(): void {
+    manualRun = false; // the run loop exits on its next tick if no job is active
   }
 
   async function setDiscoveryMode(mode: DiscoveryMode): Promise<void> {
@@ -243,6 +251,10 @@
             />
             <ReplacementsPanel destination={activeDest} running={syncing} onSaved={loadDestinations} />
           {/key}
+        {/if}
+
+        {#if manualRun && status}
+          <ManualRunBanner command={status.cli} onDismiss={dismissManualRun} />
         {/if}
 
         <ProgressPanel snapshot={sync} onRetry={retryUploads} retrying={syncing} />
