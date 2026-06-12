@@ -87,7 +87,8 @@
     <label for="bs-transport">Transport</label>
     <select id="bs-transport" bind:value={transport} disabled={s.transport.fromConstant || busy}>
       <option value="sftp" disabled={!caps.sftp}>SFTP{caps.sftp ? '' : ' (unavailable)'}</option>
-      <option value="ftp" disabled={!caps.ftp}>FTP{caps.ftp ? '' : ' (unavailable)'}</option>
+      <option value="ftps" disabled={!caps.ftps}>FTPS (FTP over TLS){caps.ftps ? '' : ' (unavailable)'}</option>
+      <option value="ftp" disabled={!caps.ftp}>FTP (insecure){caps.ftp ? '' : ' (unavailable)'}</option>
     </select>
     {#if s.transport.fromConstant}<small>Set in wp-config.php</small>{/if}
   </div>
@@ -100,7 +101,7 @@
     </div>
     <div class="bs-field bs-field--port">
       <label for="bs-port">Port</label>
-      <input id="bs-port" type="number" bind:value={port} placeholder={transport === 'ftp' ? '21' : '22'} disabled={s.port.fromConstant || busy} />
+      <input id="bs-port" type="number" bind:value={port} placeholder={transport === 'sftp' ? '22' : '21'} disabled={s.port.fromConstant || busy} />
     </div>
   </div>
 

@@ -13,16 +13,17 @@ namespace WPEasy\BricksStatic\Transport;
 defined('ABSPATH') || exit;
 
 /**
- * Plain FTP destination using PHP's ext-ftp.
+ * FTP / FTPS destination using PHP's ext-ftp.
  *
- * Availability is runtime-detected; the dashboard disables this option when the
- * extension is absent. FTP is unencrypted and slow for many small files — SFTP
- * is preferred where the host supports it.
+ * In secure mode it uses explicit FTPS (FTP over TLS via ftp_ssl_connect()).
+ * Implicit FTPS (port 990) is not supported by ext-ftp. Availability is
+ * runtime-detected; the dashboard disables options the server can't provide.
+ * Plain FTP is unencrypted — prefer FTPS or SFTP where the host supports them.
  */
 final class FtpTransport implements TransportInterface {
 
     /**
-     * Default FTP control port.
+     * Default FTP/FTPS (explicit) control port.
      */
     private const DEFAULT_PORT = 21;
 
@@ -34,6 +35,11 @@ final class FtpTransport implements TransportInterface {
     private array $config;
 
     /**
+     * Whether to use explicit FTPS (TLS).
+     */
+    private bool $secure;
+
+    /**
      * Active FTP connection resource/object.
      *
      * @var \FTP\Connection|resource|null
@@ -42,41 +48,57 @@ final class FtpTransport implements TransportInterface {
 
     /**
      * @param array<string,mixed> $config Connection config.
+     * @param bool                $secure Use explicit FTPS (TLS) instead of plain FTP.
      */
-    public function __construct(array $config) {
+    public function __construct(array $config, bool $secure = false) {
         $this->config = $config;
+        $this->secure = $secure;
     }
 
     /**
-     * Whether ext-ftp is loaded.
+     * Whether plain FTP is available.
      */
     public static function is_available(): bool {
         return function_exists('ftp_connect');
     }
 
     /**
+     * Whether explicit FTPS (FTP over TLS) is available.
+     */
+    public static function is_secure_available(): bool {
+        return function_exists('ftp_ssl_connect');
+    }
+
+    /**
      * @inheritDoc
      */
     public function connect(): void {
-        if (!self::is_available()) {
+        $label = $this->secure ? 'FTPS' : 'FTP';
+
+        if ($this->secure && !self::is_secure_available()) {
+            throw new \RuntimeException('FTPS (FTP over TLS) is not available on this server.');
+        }
+        if (!$this->secure && !self::is_available()) {
             throw new \RuntimeException('FTP support (ext-ftp) is not available on this server.');
         }
 
         $host = (string) ($this->config['host'] ?? '');
         if ($host === '') {
-            throw new \RuntimeException('FTP host is required.');
+            throw new \RuntimeException(sprintf('%s host is required.', $label));
         }
 
         $port = (int) ($this->config['port'] ?? 0) ?: self::DEFAULT_PORT;
-        $conn = @ftp_connect($host, $port, 15);
+        $conn = $this->secure
+            ? @ftp_ssl_connect($host, $port, 15)
+            : @ftp_connect($host, $port, 15);
 
         if ($conn === false) {
-            throw new \RuntimeException(sprintf('Could not connect to FTP host %s:%d.', $host, $port));
+            throw new \RuntimeException(sprintf('Could not establish a %s connection to %s:%d.', $label, $host, $port));
         }
 
         if (!@ftp_login($conn, (string) ($this->config['username'] ?? ''), (string) ($this->config['password'] ?? ''))) {
             ftp_close($conn);
-            throw new \RuntimeException('FTP authentication failed. Check username and password.');
+            throw new \RuntimeException(sprintf('%s authentication failed. Check username and password.', $label));
         }
 
         ftp_pasv($conn, true);

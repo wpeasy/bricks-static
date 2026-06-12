@@ -1,6 +1,6 @@
 // Shared types mirroring the REST payloads (src/REST/*Controller.php).
 
-export type Transport = 'sftp' | 'ftp';
+export type Transport = 'sftp' | 'ftps' | 'ftp';
 
 export interface ValueField<T> {
   value: T;
@@ -25,6 +25,7 @@ export interface SettingsDisplay {
 
 export interface Capabilities {
   sftp: boolean;
+  ftps: boolean;
   ftp: boolean;
 }
 

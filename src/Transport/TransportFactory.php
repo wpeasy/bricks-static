@@ -27,19 +27,27 @@ final class TransportFactory {
      */
     public static function make(?array $config = null): TransportInterface {
         $config = $config ?? Settings::connection_config();
-        $type   = ($config['transport'] ?? 'sftp') === 'ftp' ? 'ftp' : 'sftp';
 
-        return $type === 'ftp' ? new FtpTransport($config) : new SftpTransport($config);
+        switch ($config['transport'] ?? 'sftp') {
+            case 'ftps':
+                return new FtpTransport($config, true);
+            case 'ftp':
+                return new FtpTransport($config, false);
+            case 'sftp':
+            default:
+                return new SftpTransport($config);
+        }
     }
 
     /**
      * Which transports are usable on this server.
      *
-     * @return array{sftp:bool,ftp:bool}
+     * @return array{sftp:bool,ftps:bool,ftp:bool}
      */
     public static function capabilities(): array {
         return [
             'sftp' => SftpTransport::is_available(),
+            'ftps' => FtpTransport::is_secure_available(),
             'ftp'  => FtpTransport::is_available(),
         ];
     }

@@ -12,9 +12,13 @@
       : `Crawl from homepage (${method.discovery.seed ?? ''})`;
   });
 
-  let transportLabel = $derived(
-    method ? (method.transport === 'ftp' ? 'FTP' : 'SFTP') : '…',
-  );
+  let transportLabel = $derived.by(() => {
+    if (!method) {
+      return '…';
+    }
+    const labels: Record<string, string> = { sftp: 'SFTP', ftps: 'FTPS', ftp: 'FTP' };
+    return labels[method.transport] ?? method.transport;
+  });
 
   let gzip = $derived(method ? (method.compression.gzip ? 'gzip ✓' : 'gzip ✗') : '…');
 
