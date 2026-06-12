@@ -225,7 +225,7 @@ final class Runner {
 
         if (empty($job->data['queue']['pages'])) {
             $job->data['phase']           = 'assets';
-            $job->data['message']         = 'Copying assets…';
+            $job->data['message']         = $job->data['type'] === 'sync' ? 'Copying assets…' : 'Cataloguing assets…';
             $job->data['totals']['assets'] = count($job->data['queue']['assets']);
         }
 

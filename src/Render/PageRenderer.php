@@ -77,7 +77,7 @@ final class PageRenderer {
      */
     public static function request_args(string $url = ''): array {
         $args = [
-            'timeout'     => 20,
+            'timeout'     => 60,
             'redirection' => 5,
             'sslverify'   => self::should_verify_ssl(),
             'user-agent'  => 'BricksStatic/' . BS_VERSION,

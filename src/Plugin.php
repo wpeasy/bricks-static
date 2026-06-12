@@ -31,6 +31,10 @@ final class Plugin {
         }
 
         add_action('rest_api_init', [self::class, 'register_rest_routes']);
+
+        if (defined('WP_CLI') && \WP_CLI) {
+            \WP_CLI::add_command('bricks-static', new \WPEasy\BricksStatic\CLI\SyncCommand());
+        }
     }
 
     /**

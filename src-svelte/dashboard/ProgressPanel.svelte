@@ -6,7 +6,7 @@
   const PHASE_LABELS: Record<string, string> = {
     collect: 'Collecting URLs',
     render: 'Rendering pages',
-    assets: 'Copying assets',
+    assets: 'Processing assets',
     finalize: 'Finalising',
     upload: 'Uploading',
     prune: 'Removing old files',
