@@ -104,6 +104,15 @@
     }
   }
 
+  async function retryUploads(): Promise<void> {
+    try {
+      sync = await api.syncRetry();
+      await runActiveJob();
+    } catch (e) {
+      loadError = (e as Error).message;
+    }
+  }
+
   async function cancelSync(): Promise<void> {
     try {
       sync = await api.syncCancel();
@@ -216,7 +225,7 @@
           {/key}
         {/if}
 
-        <ProgressPanel snapshot={sync} />
+        <ProgressPanel snapshot={sync} onRetry={retryUploads} retrying={syncing} />
       </div>
     {/if}
 
@@ -244,7 +253,7 @@
 
   .bs-panels {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 800px));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 500px));
     gap: var(--bs-space--lg);
     align-items: stretch;
   }

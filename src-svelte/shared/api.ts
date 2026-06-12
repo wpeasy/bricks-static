@@ -73,6 +73,7 @@ export const api = {
   syncTick: () => request<SyncSnapshot>('/sync/tick', 'POST', {}),
   syncStatus: () => request<SyncSnapshot>('/sync'),
   syncCancel: () => request<SyncSnapshot>('/sync/cancel', 'POST', {}),
+  syncRetry: () => request<SyncSnapshot>('/sync/retry', 'POST', {}),
   syncReset: () => request<{ ok: boolean }>('/sync/reset', 'POST', {}),
   preflight: () => request<Preflight>('/sync/preflight', 'POST', {}),
   serverConfig: () => request<ServerConfig>('/sync/server-config'),

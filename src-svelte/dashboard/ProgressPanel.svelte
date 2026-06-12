@@ -1,7 +1,18 @@
 <script lang="ts">
   import type { SyncSnapshot } from '../shared/types';
 
-  let { snapshot }: { snapshot: SyncSnapshot | null } = $props();
+  let {
+    snapshot,
+    onRetry,
+    retrying = false,
+  }: {
+    snapshot: SyncSnapshot | null;
+    onRetry?: () => void;
+    retrying?: boolean;
+  } = $props();
+
+  let failedCount = $derived(snapshot?.failedCount ?? 0);
+  let canRetry = $derived(failedCount > 0 && !snapshot?.running && !!onRetry);
 
   const PHASE_LABELS: Record<string, string> = {
     collect: 'Collecting URLs',
@@ -90,7 +101,19 @@
       {#if (snapshot.skippedCount ?? 0) > 0}<span>{snapshot.skippedCount} skipped</span>{/if}
       {#if (snapshot.compatCount ?? 0) > 0}<span class="bs-progress__warn">{snapshot.compatCount} not static-friendly</span>{/if}
       {#if (snapshot.errorCount ?? 0) > 0}<span class="bs-progress__err">{snapshot.errorCount} errors</span>{/if}
+      {#if failedCount > 0}<span class="bs-progress__err">{failedCount} failed upload{failedCount === 1 ? '' : 's'}</span>{/if}
     </div>
+
+    {#if failedCount > 0}
+      <div class="bs-progress__retry">
+        <span>{failedCount} file{failedCount === 1 ? '' : 's'} failed to upload.</span>
+        {#if canRetry}
+          <button type="button" class="bs-btn bs-btn--primary" onclick={onRetry} disabled={retrying}>
+            {retrying ? 'Retrying…' : `Retry ${failedCount} upload${failedCount === 1 ? '' : 's'}`}
+          </button>
+        {/if}
+      </div>
+    {/if}
 
     {#if snapshot.errors && snapshot.errors.length > 0}
       <details>
@@ -222,6 +245,45 @@
 
   .bs-progress__warn {
     color: var(--bs-color-warning);
+  }
+
+  .bs-progress__retry {
+    display: flex;
+    align-items: center;
+    gap: var(--bs-space--md);
+    padding: var(--bs-space--sm) var(--bs-space--md);
+    border: var(--bs-border--1) solid var(--bs-color-danger);
+    border-radius: var(--bs-radius--md);
+    background: color-mix(in srgb, var(--bs-color-danger) 7%, var(--bs-color-surface--raised));
+    font-size: var(--bs-text--sm);
+  }
+
+  .bs-progress__retry span {
+    flex: 1;
+  }
+
+  .bs-btn {
+    padding: var(--bs-space--xs) var(--bs-space--md);
+    border: var(--bs-border--1) solid var(--bs-color-border--strong);
+    border-radius: var(--bs-radius--md);
+    background: var(--bs-color-surface);
+    color: var(--bs-color-text);
+    font: inherit;
+    font-size: var(--bs-text--sm);
+    font-weight: var(--bs-weight--medium);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .bs-btn--primary {
+    background: var(--bs-color-primary);
+    border-color: transparent;
+    color: var(--bs-color-primary--contrast);
+  }
+
+  .bs-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .bs-progress__list {

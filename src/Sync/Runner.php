@@ -96,6 +96,55 @@ final class Runner {
     }
 
     /**
+     * Re-upload just the files that failed to push, without re-rendering.
+     *
+     * Reuses the last render: start_target() rebuilds the deploy manifest from it
+     * and diffs against the pushed manifest, which still excludes the previously
+     * failed files — so the upload queue becomes exactly those files. Targets the
+     * same destination(s) as the run that left failures.
+     *
+     * @return array<string,mixed> Snapshot.
+     * @throws \RuntimeException If nothing has been rendered yet.
+     */
+    public static function start_retry(): array {
+        if (!Paths::ensure()) {
+            throw new \RuntimeException('The staging cache directory is not writable: ' . Paths::cache_dir());
+        }
+
+        if (empty(Manifest::load(Manifest::RENDER_OPTION))) {
+            throw new \RuntimeException('Nothing has been rendered yet — run Sync first.');
+        }
+
+        $previous = Job::load();
+        $targets  = ($previous !== null && !empty($previous->data['targets']))
+            ? array_values(array_map('strval', $previous->data['targets']))
+            : [Destinations::primary()->id()];
+
+        Job::clear();
+        delete_option(self::CANCEL_FLAG);
+
+        $job = Job::create('sync');
+        $job->data['prune']       = false; // A retry only re-pushes, never deletes.
+        $job->data['targets']     = $targets;
+        $job->data['targetIndex'] = 0;
+        self::start_target($job); // → phase 'upload', queue = the still-missing files
+        $job->save();
+
+        return self::snapshot($job);
+    }
+
+    /**
+     * Build a transport for the job's current target destination (falls back to
+     * the primary/saved config when the destination can't be resolved).
+     *
+     * @param Job $job Active job.
+     */
+    private static function target_transport(Job $job): TransportInterface {
+        $dest = Destinations::get((string) ($job->data['destId'] ?? ''));
+        return TransportFactory::make($dest !== null ? $dest->connection_config() : null);
+    }
+
+    /**
      * Process one batch of the active job.
      *
      * @return array<string,mixed> Snapshot.
@@ -522,7 +571,7 @@ final class Runner {
         $manifest = Manifest::load(Manifest::DEPLOY_OPTION);
 
         try {
-            $transport = TransportFactory::make();
+            $transport = self::target_transport($job);
             $transport->connect();
         } catch (\Throwable $e) {
             $job->data['phase']   = 'error';
@@ -611,7 +660,7 @@ final class Runner {
      */
     private static function tick_prune(Job $job): void {
         try {
-            $transport = TransportFactory::make();
+            $transport = self::target_transport($job);
             $transport->connect();
         } catch (\Throwable $e) {
             // Uploads already succeeded; leave leftovers for the next run.
@@ -974,6 +1023,7 @@ HTML;
             ],
             'errorCount'   => count($d['errors']),
             'skippedCount' => count($d['skipped']),
+            'failedCount'  => count($d['failed'] ?? []),
             'compatCount'  => count($d['compat'] ?? []),
             'errors'       => array_slice($d['errors'], -25),
             'skipped'      => array_slice($d['skipped'], -25),

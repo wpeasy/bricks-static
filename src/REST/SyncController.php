@@ -62,6 +62,12 @@ final class SyncController {
             'permission_callback' => [self::class, 'can_manage'],
         ]);
 
+        register_rest_route(self::NS, '/sync/retry', [
+            'methods'             => 'POST',
+            'callback'            => [self::class, 'retry'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
+
         register_rest_route(self::NS, '/sync/server-config', [
             'methods'             => 'GET',
             'callback'            => [self::class, 'server_config'],
@@ -116,6 +122,21 @@ final class SyncController {
 
             // Prefer WP-CLI where the host can spawn it (no web-worker contention);
             // otherwise the browser drives the run via curl/loopback ticks.
+            $snapshot['driver'] = Background::spawn_run() ? 'cli' : 'browser';
+
+            return new WP_REST_Response($snapshot);
+        } catch (\Throwable $e) {
+            return new WP_REST_Response(['phase' => 'error', 'message' => $e->getMessage()], 200);
+        }
+    }
+
+    /**
+     * POST /sync/retry — re-upload the files that failed to push, without
+     * re-rendering. Driven the same way as a fresh run.
+     */
+    public static function retry(): WP_REST_Response {
+        try {
+            $snapshot           = Runner::start_retry();
             $snapshot['driver'] = Background::spawn_run() ? 'cli' : 'browser';
 
             return new WP_REST_Response($snapshot);
