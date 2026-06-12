@@ -43,9 +43,20 @@ final class Paths {
     }
 
     /**
-     * Create the cache directory (and access guards) if needed.
+     * Absolute path to the rendered output directory (no trailing slash).
      *
-     * @return bool True if the directory exists and is writable.
+     * Kept in a `site/` subdirectory so the actual deliverable is isolated from
+     * the staging guards (index.html / .htaccess) in the parent, and so M3 can
+     * upload the whole subtree without filtering meta files.
+     */
+    public static function output_dir(): string {
+        return self::cache_dir() . '/site';
+    }
+
+    /**
+     * Create the cache directory, output subdir, and access guards if needed.
+     *
+     * @return bool True if the directories exist and are writable.
      */
     public static function ensure(): bool {
         $dir = self::cache_dir();
@@ -56,7 +67,12 @@ final class Paths {
 
         self::write_guards($dir);
 
-        return wp_is_writable($dir);
+        $output = self::output_dir();
+        if (!is_dir($output) && !wp_mkdir_p($output)) {
+            return false;
+        }
+
+        return wp_is_writable($output);
     }
 
     /**

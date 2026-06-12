@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Sync;
 
+use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Settings\Settings;
 
 defined('ABSPATH') || exit;
@@ -72,8 +73,11 @@ final class MethodResolver {
 
         $found = null;
         foreach (self::SITEMAP_CANDIDATES as $path) {
-            $url      = home_url('/' . $path);
-            $response = wp_remote_head($url, ['timeout' => 5, 'redirection' => 2]);
+            $url            = home_url('/' . $path);
+            $args           = PageRenderer::request_args($url);
+            $args['method'] = 'HEAD';
+            $args['timeout'] = 5;
+            $response       = wp_remote_request($url, $args);
 
             if (!is_wp_error($response) && (int) wp_remote_retrieve_response_code($response) === 200) {
                 $found = $url;
