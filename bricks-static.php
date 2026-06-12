@@ -35,10 +35,20 @@ define('BS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('BS_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
 /**
+ * Composer autoloader for bundled dependencies (phpseclib).
+ *
+ * Shipped in the plugin zip so end users don't need Composer. Loaded if present;
+ * the self-contained autoloader below still handles the plugin's own classes.
+ */
+if (is_readable(BS_PLUGIN_DIR . 'vendor/autoload.php')) {
+    require BS_PLUGIN_DIR . 'vendor/autoload.php';
+}
+
+/**
  * PSR-4 autoloader for the plugin namespace.
  *
- * Kept self-contained (no Composer `vendor/autoload.php` required at runtime)
- * so the plugin works on a fresh install. Composer is only used for tooling.
+ * Kept self-contained (independent of Composer) so the plugin's own classes load
+ * even if `vendor/` is absent.
  */
 spl_autoload_register(static function (string $class): void {
     $prefix = __NAMESPACE__ . '\\';

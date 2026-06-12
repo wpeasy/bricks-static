@@ -11,6 +11,8 @@ declare(strict_types=1);
 namespace WPEasy\BricksStatic;
 
 use WPEasy\BricksStatic\Admin\Menu;
+use WPEasy\BricksStatic\REST\ConnectionController;
+use WPEasy\BricksStatic\REST\StatusController;
 
 defined('ABSPATH') || exit;
 
@@ -26,5 +28,15 @@ final class Plugin {
         if (is_admin()) {
             Menu::init();
         }
+
+        add_action('rest_api_init', [self::class, 'register_rest_routes']);
+    }
+
+    /**
+     * Register REST API controllers.
+     */
+    public static function register_rest_routes(): void {
+        ConnectionController::register();
+        StatusController::register();
     }
 }

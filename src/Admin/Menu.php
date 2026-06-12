@@ -28,6 +28,11 @@ final class Menu {
     private const CAPABILITY = 'manage_options';
 
     /**
+     * Script handle for the dashboard bundle (loaded as an ES module).
+     */
+    private const SCRIPT_HANDLE = 'bs-dashboard';
+
+    /**
      * The page hook suffix returned by add_menu_page(), used to scope asset
      * enqueuing to our page only.
      *
@@ -41,6 +46,7 @@ final class Menu {
     public static function init(): void {
         add_action('admin_menu', [self::class, 'register_menu']);
         add_action('admin_enqueue_scripts', [self::class, 'enqueue_assets']);
+        add_filter('script_loader_tag', [self::class, 'script_as_module'], 10, 3);
     }
 
     /**
@@ -59,7 +65,7 @@ final class Menu {
     }
 
     /**
-     * Enqueue the base framework CSS on our admin page only.
+     * Enqueue the base framework CSS and built dashboard bundle on our page only.
      *
      * @param string $hook The current admin page hook suffix.
      */
@@ -74,6 +80,76 @@ final class Menu {
             [],
             BS_VERSION
         );
+
+        $entry = self::manifest_entry();
+
+        if ($entry === null) {
+            add_action('admin_notices', static function (): void {
+                echo '<div class="notice notice-error"><p>'
+                    . esc_html__('Bricks Static: the dashboard assets are not built. Run "npm run build" in the plugin directory.', 'bricks-static')
+                    . '</p></div>';
+            });
+            return;
+        }
+
+        foreach ((array) ($entry['css'] ?? []) as $i => $css_file) {
+            wp_enqueue_style(
+                'bs-dashboard-' . $i,
+                BS_PLUGIN_URL . 'assets/dist/' . $css_file,
+                ['bs-framework'],
+                BS_VERSION
+            );
+        }
+
+        wp_enqueue_script(
+            self::SCRIPT_HANDLE,
+            BS_PLUGIN_URL . 'assets/dist/' . $entry['file'],
+            [],
+            BS_VERSION,
+            true
+        );
+
+        wp_localize_script(self::SCRIPT_HANDLE, 'bsData', [
+            'restUrl' => esc_url_raw(rest_url('bs/v1')),
+            'nonce'   => wp_create_nonce('wp_rest'),
+        ]);
+    }
+
+    /**
+     * Output the dashboard script tag as an ES module.
+     *
+     * @param string $tag    The script tag HTML.
+     * @param string $handle The script handle.
+     * @param string $src    The script source URL.
+     */
+    public static function script_as_module(string $tag, string $handle, string $src): string {
+        if ($handle !== self::SCRIPT_HANDLE) {
+            return $tag;
+        }
+
+        return sprintf(
+            '<script type="module" src="%s" id="%s-js"></script>' . "\n",
+            esc_url($src),
+            esc_attr($handle)
+        );
+    }
+
+    /**
+     * Read the dashboard entry from the Vite manifest.
+     *
+     * @return array<string,mixed>|null Entry data, or null if the build is missing.
+     */
+    private static function manifest_entry(): ?array {
+        $path = BS_PLUGIN_DIR . 'assets/dist/.vite/manifest.json';
+
+        if (!is_readable($path)) {
+            return null;
+        }
+
+        $manifest = json_decode((string) file_get_contents($path), true);
+        $entry    = is_array($manifest) ? ($manifest['src-svelte/dashboard/main.ts'] ?? null) : null;
+
+        return is_array($entry) ? $entry : null;
     }
 
     /**

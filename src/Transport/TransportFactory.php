@@ -1,0 +1,46 @@
+<?php
+/**
+ * Transport factory + capability detection.
+ *
+ * @package WPEasy\BricksStatic
+ * @since   0.0.1
+ */
+
+declare(strict_types=1);
+
+namespace WPEasy\BricksStatic\Transport;
+
+use WPEasy\BricksStatic\Settings\Settings;
+
+defined('ABSPATH') || exit;
+
+/**
+ * Builds a transport from a config array and reports which transports the
+ * current runtime can use.
+ */
+final class TransportFactory {
+
+    /**
+     * Build a transport for the given config (defaults to the saved settings).
+     *
+     * @param array<string,mixed>|null $config Connection config, or null to use saved settings.
+     */
+    public static function make(?array $config = null): TransportInterface {
+        $config = $config ?? Settings::connection_config();
+        $type   = ($config['transport'] ?? 'sftp') === 'ftp' ? 'ftp' : 'sftp';
+
+        return $type === 'ftp' ? new FtpTransport($config) : new SftpTransport($config);
+    }
+
+    /**
+     * Which transports are usable on this server.
+     *
+     * @return array{sftp:bool,ftp:bool}
+     */
+    public static function capabilities(): array {
+        return [
+            'sftp' => SftpTransport::is_available(),
+            'ftp'  => FtpTransport::is_available(),
+        ];
+    }
+}
