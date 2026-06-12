@@ -6,6 +6,7 @@
   import MethodPanel from './MethodPanel.svelte';
   import DestinationTabs from './DestinationTabs.svelte';
   import DestinationPanel from './DestinationPanel.svelte';
+  import ReplacementsPanel from './ReplacementsPanel.svelte';
   import AllDestinationsPanel from './AllDestinationsPanel.svelte';
   import ProgressPanel from './ProgressPanel.svelte';
   import ServerConfigPanel from './ServerConfigPanel.svelte';
@@ -187,6 +188,7 @@
               onSync={startSync}
               onRemove={removeDestination}
             />
+            <ReplacementsPanel destination={activeDest} running={syncing} onSaved={loadDestinations} />
           {/key}
         {/if}
 

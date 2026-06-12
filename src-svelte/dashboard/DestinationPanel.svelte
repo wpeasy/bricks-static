@@ -1,8 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { api } from '../shared/api';
-  import type { Capabilities, ConnectionInput, DestinationDisplay, Replacement, Transport } from '../shared/types';
-  import ReplacementsRepeater from './ReplacementsRepeater.svelte';
+  import type { Capabilities, ConnectionInput, DestinationDisplay, Transport } from '../shared/types';
 
   let {
     destination,
@@ -39,7 +38,6 @@
   let destinationUrl = $state(d.destinationUrl.value);
   let enabled = $state(d.enabled);
   let singlePage = $state(d.includeInSinglePageSync);
-  let replacements = $state<Replacement[]>(d.replacements.map((r) => ({ ...r })));
 
   let saving = $state(false);
   let testing = $state(false);
@@ -62,7 +60,6 @@
       data.destinationUrl = destinationUrl;
       data.enabled = enabled;
       data.includeInSinglePageSync = singlePage;
-      data.replacements = replacements.filter((r) => r.search !== '');
     }
     return data;
   }
@@ -91,6 +88,9 @@
       const r = await api.testDestination(d.id, payload(false));
       message = r.message;
       messageOk = r.ok;
+      if (r.ok) {
+        onSaved(); // refresh the Connected indicator from the stored test result
+      }
     } catch (e) {
       message = (e as Error).message;
       messageOk = false;
@@ -102,9 +102,9 @@
 
 <section class="bs-card bs-stack bs-stack--md">
   <div class="bs-dstatus">
-    <span class="bs-dstatus__item bs-dstatus__item--{d.status.connected ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>Connected</span>
-    <span class="bs-dstatus__item bs-dstatus__item--{d.status.hasPushed ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>Pushed</span>
-    <span class="bs-dstatus__item bs-dstatus__item--{d.status.inSync ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>In sync</span>
+    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.connected ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>Connected</span>
+    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.hasPushed ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>Pushed</span>
+    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.inSync ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>In sync</span>
   </div>
 
   <div class="bs-grid">
@@ -153,8 +153,6 @@
       <input id="bs-base-{d.id}" type="text" bind:value={basePath} placeholder="/" disabled={d.basePath.fromConstant || busy} />
     </div>
   </div>
-
-  <ReplacementsRepeater bind:replacements disabled={busy} />
 
   {#if message}
     <p class="bs-msg bs-msg--{messageOk ? 'ok' : 'err'}">{message}</p>
