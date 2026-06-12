@@ -30,6 +30,7 @@ final class PageRenderer {
      * @throws \RuntimeException On transport error.
      */
     public static function render(string $url): array {
+        self::release_session();
         $response = wp_remote_get($url, self::request_args($url));
 
         if (is_wp_error($response)) {
@@ -51,6 +52,7 @@ final class PageRenderer {
      * @throws \RuntimeException On transport error.
      */
     public static function fetch_asset(string $url): array {
+        self::release_session();
         $args            = self::request_args($url);
         $args['timeout'] = 30;
 
@@ -89,6 +91,16 @@ final class PageRenderer {
          * @param string              $url  Requested URL.
          */
         return (array) apply_filters('bs_render_request_args', $args, $url);
+    }
+
+    /**
+     * Release the PHP session lock before a loopback request, so the rendered
+     * page (a request to the same site) isn't blocked waiting for our session.
+     */
+    private static function release_session(): void {
+        if (function_exists('session_status') && session_status() === PHP_SESSION_ACTIVE) {
+            @session_write_close();
+        }
     }
 
     /**

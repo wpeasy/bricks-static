@@ -29,9 +29,10 @@ defined('ABSPATH') || exit;
 final class Runner {
 
     /**
-     * Pages rendered per tick.
+     * Pages rendered per tick. Kept small so progress updates frequently and
+     * each tick holds a worker only briefly (helps low-worker hosts).
      */
-    private const PAGE_BATCH = 5;
+    private const PAGE_BATCH = 2;
 
     /**
      * Assets copied per tick.

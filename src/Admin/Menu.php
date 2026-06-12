@@ -74,6 +74,11 @@ final class Menu {
             return;
         }
 
+        // The browser-driven sync needs PHP workers free for its loopback page
+        // renders. The admin heartbeat would periodically consume one, stalling
+        // the render on low-worker hosts (e.g. Local). It isn't needed here.
+        wp_deregister_script('heartbeat');
+
         wp_enqueue_style(
             'bs-framework',
             BS_PLUGIN_URL . 'assets/css/bs-framework.css',
