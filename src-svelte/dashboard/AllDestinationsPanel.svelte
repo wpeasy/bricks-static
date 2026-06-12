@@ -32,6 +32,9 @@
         <span class="bs-all__meta">
           {d.enabled ? (d.host.value || '—') : 'disabled'}
         </span>
+        <span class="bs-all__status bs-all__status--{d.status.inSync ? 'ok' : d.status.hasPushed ? 'warn' : 'off'}">
+          {d.status.inSync ? 'In sync' : d.status.hasPushed ? 'Out of date' : 'Not pushed'}
+        </span>
         <button type="button" class="bs-btn bs-btn--secondary" onclick={() => onSyncOne(d.id, prune)} disabled={running || !d.enabled}>
           Sync
         </button>
@@ -76,7 +79,7 @@
 
   .bs-all__item {
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr auto auto auto;
     align-items: center;
     gap: var(--bs-space--sm);
     padding: var(--bs-space--xs) var(--bs-space--sm);
@@ -99,6 +102,24 @@
     font-size: var(--bs-text--sm);
     color: var(--bs-color-text--muted);
     font-family: var(--bs-font--mono);
+  }
+
+  .bs-all__status {
+    font-size: var(--bs-text--xs);
+    padding: var(--bs-space--3xs) var(--bs-space--xs);
+    border-radius: var(--bs-radius--pill);
+    background: var(--bs-color-surface--sunken);
+    color: var(--bs-color-text--muted);
+  }
+
+  .bs-all__status--ok {
+    color: var(--bs-color-success);
+    background: color-mix(in srgb, var(--bs-color-success) 14%, transparent);
+  }
+
+  .bs-all__status--warn {
+    color: var(--bs-color-warning);
+    background: color-mix(in srgb, var(--bs-color-warning) 14%, transparent);
   }
 
   .bs-btn {

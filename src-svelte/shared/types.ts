@@ -39,6 +39,12 @@ export interface Replacement {
   replace: string;
 }
 
+export interface DestinationStatus {
+  connected: boolean;
+  hasPushed: boolean;
+  inSync: boolean;
+}
+
 export interface DestinationDisplay extends SettingsDisplay {
   id: string;
   name: string;
@@ -46,6 +52,7 @@ export interface DestinationDisplay extends SettingsDisplay {
   includeInSinglePageSync: boolean;
   isPrimary: boolean;
   replacements: Replacement[];
+  status: DestinationStatus;
 }
 
 export interface DestinationsResponse {

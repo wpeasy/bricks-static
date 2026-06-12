@@ -29,7 +29,6 @@
 
   const d = untrack(() => destination);
 
-  let name = $state(d.name);
   let transport = $state<Transport>(d.transport.value);
   let host = $state(d.host.value);
   let port = $state<number>(d.port.value || DEFAULT_PORTS[d.transport.value]);
@@ -46,6 +45,7 @@
   let testing = $state(false);
   let message = $state('');
   let messageOk = $state(true);
+  let confirmRemove = $state(false);
   let busy = $derived(saving || testing || running);
 
   function handleTransportChange(): void {
@@ -58,7 +58,6 @@
     const data: ConnectionInput = { transport, host, port, username, remotePath };
     if (password) data.password = password;
     if (includeMeta) {
-      data.name = name;
       data.basePath = basePath;
       data.destinationUrl = destinationUrl;
       data.enabled = enabled;
@@ -102,9 +101,15 @@
 </script>
 
 <section class="bs-card bs-stack bs-stack--md">
-  <div class="bs-field">
-    <label for="bs-name-{d.id}">Destination name</label>
-    <input id="bs-name-{d.id}" type="text" bind:value={name} disabled={busy} />
+  <div class="bs-dstatus">
+    <span class="bs-dstatus__item bs-dstatus__item--{d.status.connected ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>Connected</span>
+    <span class="bs-dstatus__item bs-dstatus__item--{d.status.hasPushed ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>Pushed</span>
+    <span class="bs-dstatus__item bs-dstatus__item--{d.status.inSync ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>In sync</span>
+  </div>
+
+  <div class="bs-grid">
+    <label class="bs-switch"><input type="checkbox" bind:checked={enabled} disabled={busy} /> Enabled</label>
+    <label class="bs-switch"><input type="checkbox" bind:checked={singlePage} disabled={busy} /> Include in single-page sync</label>
   </div>
 
   <div class="bs-grid">
@@ -149,11 +154,6 @@
     </div>
   </div>
 
-  <div class="bs-grid">
-    <label class="bs-switch"><input type="checkbox" bind:checked={enabled} disabled={busy} /> Enabled</label>
-    <label class="bs-switch"><input type="checkbox" bind:checked={singlePage} disabled={busy} /> Include in single-page sync</label>
-  </div>
-
   <ReplacementsRepeater bind:replacements disabled={busy} />
 
   {#if message}
@@ -168,7 +168,15 @@
       <button type="button" class="bs-btn bs-btn--primary" onclick={() => onSync(d.id, false)} disabled={busy}>Sync</button>
     </div>
     {#if canRemove}
-      <button type="button" class="bs-link bs-link--danger" onclick={() => onRemove(d.id)} disabled={busy}>Remove destination</button>
+      {#if confirmRemove}
+        <span class="bs-remove">
+          <span class="bs-remove__q">Remove this destination?</span>
+          <button type="button" class="bs-link bs-link--danger" onclick={() => onRemove(d.id)} disabled={busy}>Yes, remove</button>
+          <button type="button" class="bs-link" onclick={() => (confirmRemove = false)}>Cancel</button>
+        </span>
+      {:else}
+        <button type="button" class="bs-link bs-link--danger" onclick={() => (confirmRemove = true)} disabled={busy}>Remove destination</button>
+      {/if}
     {/if}
   </div>
 </section>
@@ -223,6 +231,35 @@
     font-size: var(--bs-text--sm);
   }
 
+  .bs-dstatus {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bs-space--md);
+  }
+
+  .bs-dstatus__item {
+    display: flex;
+    align-items: center;
+    gap: var(--bs-space--2xs);
+    font-size: var(--bs-text--sm);
+    color: var(--bs-color-text--muted);
+  }
+
+  .bs-dstatus__dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: var(--bs-radius--full);
+    background: var(--bs-color-text--subtle);
+  }
+
+  .bs-dstatus__item--on .bs-dstatus__dot {
+    background: var(--bs-color-success);
+  }
+
+  .bs-dstatus__item--off .bs-dstatus__dot {
+    background: var(--bs-color-danger);
+  }
+
   .bs-btn {
     padding: var(--bs-space--xs) var(--bs-space--md);
     border: var(--bs-border--1) solid var(--bs-color-border--strong);
@@ -269,6 +306,17 @@
   }
 
   .bs-link--danger {
+    color: var(--bs-color-danger);
+  }
+
+  .bs-remove {
+    display: flex;
+    align-items: center;
+    gap: var(--bs-space--sm);
+  }
+
+  .bs-remove__q {
+    font-size: var(--bs-text--sm);
     color: var(--bs-color-danger);
   }
 

@@ -3,7 +3,6 @@
   import { api } from '../shared/api';
   import type { DestinationsResponse, Status, SyncSnapshot } from '../shared/types';
   import NoticePanel from './NoticePanel.svelte';
-  import StatusPanel from './StatusPanel.svelte';
   import MethodPanel from './MethodPanel.svelte';
   import DestinationTabs from './DestinationTabs.svelte';
   import DestinationPanel from './DestinationPanel.svelte';
@@ -15,6 +14,7 @@
   let status = $state<Status | null>(null);
   let sync = $state<SyncSnapshot | null>(null);
   let syncing = $state(false);
+  let topTab = $state<'destinations' | 'server'>('destinations');
   let activeTab = $state('');
   let loadError = $state('');
 
@@ -111,8 +111,15 @@
     }
   }
 
+  async function renameDestination(id: string, name: string): Promise<void> {
+    try {
+      dests = await api.updateDestination(id, { name });
+    } catch (e) {
+      loadError = (e as Error).message;
+    }
+  }
+
   async function removeDestination(id: string): Promise<void> {
-    if (!window.confirm('Remove this destination?')) return;
     try {
       dests = await api.removeDestination(id);
       activeTab = destinations.length > 1 ? 'all' : (destinations[0]?.id ?? '');
@@ -146,49 +153,58 @@
     <NoticePanel isLocal={status.isLocal} cli={status.cli} wpCli={status.wpCli} />
   {/if}
 
-  <StatusPanel {status} />
-  <MethodPanel method={status?.method ?? null} />
-
-  {#if dests}
-    <DestinationTabs {destinations} active={activeTab} onSelect={(t) => (activeTab = t)} onAdd={addDestination} />
-
-    {#if activeTab === 'all'}
-      <AllDestinationsPanel
-        {destinations}
-        running={syncing}
-        onSyncAll={(prune) => startSync('all', prune)}
-        onSyncOne={(id, prune) => startSync(id, prune)}
-        onSelect={(id) => (activeTab = id)}
-      />
-    {:else if activeDest}
-      {#key activeDest.id}
-        <DestinationPanel
-          destination={activeDest}
-          capabilities={dests.capabilities}
-          running={syncing}
-          canRemove={destinations.length > 1}
-          onSaved={loadDestinations}
-          onCheck={startCheck}
-          onSync={startSync}
-          onRemove={removeDestination}
-        />
-      {/key}
-    {/if}
-  {/if}
-
-  <ProgressPanel snapshot={sync} />
-
-  <div class="bs-row bs-row--between bs-controls">
-    <span class="bs-controls__hint">Switched destinations or wiped the remote? Reset clears the local push record.</span>
-    <div class="bs-row">
-      {#if syncing}
-        <button type="button" class="bs-link" onclick={cancelSync}>Cancel</button>
-      {/if}
-      <button type="button" class="bs-link" onclick={resetSync}>Reset sync state</button>
-    </div>
+  <div class="bs-toptabs" role="tablist">
+    <button type="button" class="bs-toptab" class:bs-toptab--active={topTab === 'destinations'} onclick={() => (topTab = 'destinations')}>
+      Destinations
+    </button>
+    <button type="button" class="bs-toptab" class:bs-toptab--active={topTab === 'server'} onclick={() => (topTab = 'server')}>
+      Server Configuration
+    </button>
   </div>
 
-  <ServerConfigPanel />
+  {#if topTab === 'destinations'}
+    {#if dests}
+      <DestinationTabs {destinations} active={activeTab} onSelect={(t) => (activeTab = t)} onAdd={addDestination} onRename={renameDestination} />
+
+      {#if activeTab === 'all'}
+        <AllDestinationsPanel
+          {destinations}
+          running={syncing}
+          onSyncAll={(prune) => startSync('all', prune)}
+          onSyncOne={(id, prune) => startSync(id, prune)}
+          onSelect={(id) => (activeTab = id)}
+        />
+      {:else if activeDest}
+        {#key activeDest.id}
+          <DestinationPanel
+            destination={activeDest}
+            capabilities={dests.capabilities}
+            running={syncing}
+            canRemove={destinations.length > 1}
+            onSaved={loadDestinations}
+            onCheck={startCheck}
+            onSync={startSync}
+            onRemove={removeDestination}
+          />
+        {/key}
+      {/if}
+    {/if}
+
+    <ProgressPanel snapshot={sync} />
+
+    <div class="bs-row bs-row--between bs-controls">
+      <span class="bs-controls__hint">Switched destinations or wiped the remote? Reset clears the local push record.</span>
+      <div class="bs-row">
+        {#if syncing}
+          <button type="button" class="bs-link" onclick={cancelSync}>Cancel</button>
+        {/if}
+        <button type="button" class="bs-link" onclick={resetSync}>Reset sync state</button>
+      </div>
+    </div>
+  {:else}
+    <MethodPanel method={status?.method ?? null} />
+    <ServerConfigPanel />
+  {/if}
 </div>
 
 <style>
@@ -208,6 +224,29 @@
     border-radius: var(--bs-radius--md);
     color: var(--bs-color-danger);
     background: color-mix(in srgb, var(--bs-color-danger) 8%, transparent);
+  }
+
+  .bs-toptabs {
+    display: flex;
+    gap: var(--bs-space--xs);
+  }
+
+  .bs-toptab {
+    padding: var(--bs-space--sm) var(--bs-space--lg);
+    border: var(--bs-border--1) solid var(--bs-color-border);
+    border-radius: var(--bs-radius--md);
+    background: var(--bs-color-surface);
+    color: var(--bs-color-text--muted);
+    font: inherit;
+    font-size: var(--bs-text--md);
+    font-weight: var(--bs-weight--semibold);
+    cursor: pointer;
+  }
+
+  .bs-toptab--active {
+    background: var(--bs-color-primary);
+    border-color: transparent;
+    color: var(--bs-color-primary--contrast);
   }
 
   .bs-controls__hint {

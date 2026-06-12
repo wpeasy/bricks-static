@@ -6,14 +6,37 @@
     active,
     onSelect,
     onAdd,
+    onRename,
   }: {
     destinations: DestinationDisplay[];
     active: string;
     onSelect: (tab: string) => void;
     onAdd: () => void;
+    onRename: (id: string, name: string) => void;
   } = $props();
 
   let showAll = $derived(destinations.length > 1);
+
+  let editingId = $state('');
+  let editValue = $state('');
+
+  function startEdit(d: DestinationDisplay): void {
+    editingId = d.id;
+    editValue = d.name;
+  }
+
+  function commit(): void {
+    const name = editValue.trim();
+    if (editingId && name) {
+      onRename(editingId, name);
+    }
+    editingId = '';
+  }
+
+  function onKey(e: KeyboardEvent): void {
+    if (e.key === 'Enter') commit();
+    else if (e.key === 'Escape') editingId = '';
+  }
 </script>
 
 <div class="bs-tabs" role="tablist">
@@ -23,9 +46,26 @@
     </button>
   {/if}
   {#each destinations as d (d.id)}
-    <button type="button" class="bs-tab" class:bs-tab--active={active === d.id} onclick={() => onSelect(d.id)}>
-      {d.name || 'Destination'}{#if !d.enabled}<span class="bs-tab__off">off</span>{/if}
-    </button>
+    {#if editingId === d.id}
+      <input
+        class="bs-tab bs-tab--edit"
+        bind:value={editValue}
+        onblur={commit}
+        onkeydown={onKey}
+        aria-label="Destination name"
+      />
+    {:else}
+      <button
+        type="button"
+        class="bs-tab"
+        class:bs-tab--active={active === d.id}
+        onclick={() => onSelect(d.id)}
+        ondblclick={() => startEdit(d)}
+        title="Double-click to rename"
+      >
+        {d.name || 'Destination'}{#if !d.enabled}<span class="bs-tab__off">off</span>{/if}
+      </button>
+    {/if}
   {/each}
   <button type="button" class="bs-tab bs-tab--add" onclick={onAdd} aria-label="Add destination">+</button>
 </div>
@@ -40,6 +80,8 @@
   }
 
   .bs-tab {
+    flex: 1 1 0;
+    text-align: center;
     padding: var(--bs-space--xs) var(--bs-space--md);
     border: var(--bs-border--1) solid transparent;
     border-radius: var(--bs-radius--md) var(--bs-radius--md) 0 0;
@@ -49,6 +91,9 @@
     font-size: var(--bs-text--sm);
     font-weight: var(--bs-weight--medium);
     cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .bs-tab:hover {
@@ -61,7 +106,14 @@
     color: var(--bs-color-text);
   }
 
+  .bs-tab--edit {
+    background: var(--bs-color-surface);
+    border-color: var(--bs-color-primary);
+    color: var(--bs-color-text);
+  }
+
   .bs-tab--add {
+    flex: 0 0 auto;
     color: var(--bs-color-primary);
     font-size: var(--bs-text--lg);
     line-height: 1;

@@ -13,6 +13,7 @@ namespace WPEasy\BricksStatic\REST;
 use WP_REST_Request;
 use WP_REST_Response;
 use WPEasy\BricksStatic\Settings\Destinations;
+use WPEasy\BricksStatic\Sync\Manifest;
 use WPEasy\BricksStatic\Transport\TransportFactory;
 
 defined('ABSPATH') || exit;
@@ -154,15 +155,43 @@ final class DestinationsController {
             $transport->disconnect();
         }
 
+        update_option(self::conn_state_option((string) $request['id']), ['ok' => $ok, 'time' => time(), 'message' => $message], false);
+
         return new WP_REST_Response(['ok' => $ok, 'message' => $message], 200);
     }
 
     /**
-     * The destinations list payload.
+     * Option holding a destination's last connection-test result.
+     *
+     * @param string $id Destination id.
+     */
+    public static function conn_state_option(string $id): string {
+        return 'bs_conn_' . $id;
+    }
+
+    /**
+     * The destinations list payload, each with its per-destination status.
      */
     private static function list_response(): WP_REST_Response {
+        $render = Manifest::load(Manifest::RENDER_OPTION);
+        $list   = Destinations::for_display();
+
+        foreach ($list as &$dest) {
+            $id     = (string) $dest['id'];
+            $state  = get_option(self::conn_state_option($id), []);
+            $pushed = Manifest::load(Destinations::pushed_option($id));
+            $diff   = Manifest::diff($pushed, $render);
+
+            $dest['status'] = [
+                'connected' => is_array($state) && !empty($state['ok']),
+                'hasPushed' => !empty($pushed),
+                'inSync'    => !empty($pushed) && !empty($render) && empty($diff['changed']) && empty($diff['removed']),
+            ];
+        }
+        unset($dest);
+
         return new WP_REST_Response([
-            'destinations' => Destinations::for_display(),
+            'destinations' => $list,
             'capabilities' => TransportFactory::capabilities(),
         ]);
     }
