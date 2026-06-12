@@ -218,7 +218,7 @@
 
   .bs-panels {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 600px));
+    grid-template-columns: repeat(auto-fit, minmax(400px, 800px));
     gap: var(--bs-space--lg);
     align-items: start;
   }
