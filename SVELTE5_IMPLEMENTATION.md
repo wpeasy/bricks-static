@@ -1,6 +1,9 @@
 # Svelte 5 Implementation Guide
 
-> Implementation patterns and conventions for Svelte 5 in the Keyboard Shortcut Generator plugin
+> **Primary source: the `svelte5` MCP server.** For Svelte 5 runes, APIs, and
+> current patterns, query the svelte5 MCP first — it is more complete and
+> up to date than this file. The content below is an **offline fallback** for
+> contexts where the MCP isn't available (headless/CI/cron runs).
 
 This plugin uses **Svelte 5** for the admin UI. This guide covers key patterns and conventions specific to Svelte 5.
 

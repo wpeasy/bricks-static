@@ -5,7 +5,7 @@
 - **Description:** Generate and serve static HTML versions of Bricks-built pages for performance.
 - **Minimum WordPress:** 6.5 (required for `wp_enqueue_script_module()` ESM support)
 - **Minimum PHP:** 8.0
-- **PHP Namespace:** `Bricks\StaticPlugin` (note: `Static` alone is a reserved PHP keyword, so the segment is `StaticPlugin`)
+- **PHP Namespace:** `WPEasy\BricksStatic` (vendor-prefixed to avoid colliding with the Bricks theme's own `\Bricks\` namespace + autoloader, and to sidestep `Static` being a reserved PHP keyword)
 - **Constants Prefix:** `BS_`
 - **Textdomain:** `bricks-static`
 - **REST API Namespace:** `bs/v1`
@@ -22,7 +22,7 @@
 | **CODE_STANDARDS.md** | Naming conventions, security, PHP/JS/CSS standards |
 | **WORDPRESS.md** | Plugin header template and WordPress configuration |
 | **SVELTE5_IMPLEMENTATION.md** | Svelte 5 runes and patterns (avoid Svelte 4 syntax) |
-| **WPEA_FRAMEWORK.md** | WPEasy Admin Framework components and CSS variables |
+| **assets/css/bs-framework.css** | Base framework: design tokens (fluid spacing/type, borders, admin colors) and base styles. Scope admin UI in a `.bs` container and reference `--bs-*` tokens. |
 
 > These files are **references**, not includes — read the relevant one before working in its area. Do not inline or duplicate their content into this file.
 
@@ -32,7 +32,7 @@
 
 **CRITICAL:** The Bricks Builder preview iframe renders the user's frontend content. Plugin code must NEVER inject styles, CSS variables, or run feature code inside this iframe — doing so breaks user content (e.g. form styling, color schemes).
 
-- The WPEA framework CSS (`light-dark()` + `color-scheme`) breaks native form controls — never load it in the iframe.
+- The base framework CSS (`bs-framework.css`, which sets `color-scheme` + `light-dark()`) breaks native form controls — never load it in the iframe.
 - Never set `color-scheme` on the iframe body or inject `:root` variables meant for our UI.
 
 **PHP guard pattern:**

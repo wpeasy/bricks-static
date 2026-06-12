@@ -28,7 +28,7 @@ Project conventions and required reading live in [`CLAUDE.md`](CLAUDE.md):
 - [`CODE_STANDARDS.md`](CODE_STANDARDS.md) — naming, security, PHP/JS/CSS standards
 - [`WORDPRESS.md`](WORDPRESS.md) — plugin header template and WordPress configuration
 - [`SVELTE5_IMPLEMENTATION.md`](SVELTE5_IMPLEMENTATION.md) — Svelte 5 runes and patterns
-- [`WPEA_FRAMEWORK.md`](WPEA_FRAMEWORK.md) — WPEasy Admin Framework setup
+- [`assets/css/bs-framework.css`](assets/css/bs-framework.css) — base framework: design tokens and base styles
 
 ## License
 

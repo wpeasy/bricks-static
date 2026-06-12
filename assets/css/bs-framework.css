@@ -1,0 +1,257 @@
+/**
+ * Bricks Static — Base Framework
+ *
+ * Design tokens + light base styles for the plugin's admin UI.
+ * Scope all admin UI inside a `.bs` root container so tokens, color-scheme,
+ * and base styles apply without leaking into the rest of wp-admin.
+ *
+ *   <div class="bs"> … plugin UI … </div>
+ *
+ * Token naming follows the project convention: --bs-{purpose}--{variation}
+ * (see CODE_STANDARDS.md → CSS Variable Naming).
+ *
+ * COLOR TOKENS ARE NAMED BY ROLE, NOT BY HUE. Components must reference
+ * semantic tokens (surface / text / border / primary / secondary / tertiary /
+ * success / warning / danger / info) so the palette can be re-skinned by
+ * changing values only — never the names. Never reference the raw neutral
+ * ramp or a literal color from a component.
+ */
+
+/* ==========================================================================
+   1. Tokens
+   ========================================================================== */
+
+.bs {
+  /* Opt into automatic light/dark so light-dark() resolves. The host page can
+     force a mode by setting `color-scheme: light` / `dark` on a .bs ancestor. */
+  color-scheme: light dark;
+
+  /* ----------------------------------------------------------------------
+     Typography
+     ---------------------------------------------------------------------- */
+  --bs-font--sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  --bs-font--mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  /* Fluid type scale — clamp(min, fluid, max). Fluid term is viewport-based so
+     sizes scale smoothly between ~360px and ~1280px without media queries. */
+  --bs-text--xs: clamp(0.6875rem, 0.66rem + 0.12vw, 0.75rem);   /* 11 → 12 */
+  --bs-text--sm: clamp(0.8125rem, 0.78rem + 0.16vw, 0.875rem);  /* 13 → 14 */
+  --bs-text--md: clamp(0.9375rem, 0.90rem + 0.20vw, 1rem);      /* 15 → 16 */
+  --bs-text--lg: clamp(1.0625rem, 1.00rem + 0.30vw, 1.25rem);   /* 17 → 20 */
+  --bs-text--xl: clamp(1.25rem, 1.15rem + 0.50vw, 1.5625rem);   /* 20 → 25 */
+  --bs-text--2xl: clamp(1.5rem, 1.34rem + 0.78vw, 1.953rem);    /* 24 → 31 */
+  --bs-text--3xl: clamp(1.802rem, 1.57rem + 1.16vw, 2.441rem);  /* 29 → 39 */
+
+  --bs-leading--tight: 1.25;
+  --bs-leading--normal: 1.5;
+  --bs-leading--loose: 1.7;
+
+  --bs-weight--normal: 400;
+  --bs-weight--medium: 500;
+  --bs-weight--semibold: 600;
+  --bs-weight--bold: 700;
+
+  /* ----------------------------------------------------------------------
+     Spacing — fluid clamp() scale (≈ 1.5 ratio). Drives gap/padding so the UI
+     breathes a little more on wide screens, tighter on small ones.
+     ---------------------------------------------------------------------- */
+  --bs-space--3xs: clamp(0.125rem, 0.11rem + 0.05vw, 0.1875rem); /* 2 → 3 */
+  --bs-space--2xs: clamp(0.25rem, 0.23rem + 0.10vw, 0.375rem);   /* 4 → 6 */
+  --bs-space--xs: clamp(0.375rem, 0.34rem + 0.16vw, 0.5rem);     /* 6 → 8 */
+  --bs-space--sm: clamp(0.5rem, 0.45rem + 0.24vw, 0.75rem);      /* 8 → 12 */
+  --bs-space--md: clamp(0.75rem, 0.66rem + 0.39vw, 1rem);        /* 12 → 16 */
+  --bs-space--lg: clamp(1rem, 0.84rem + 0.78vw, 1.5rem);         /* 16 → 24 */
+  --bs-space--xl: clamp(1.5rem, 1.27rem + 1.17vw, 2.25rem);      /* 24 → 36 */
+  --bs-space--2xl: clamp(2rem, 1.61rem + 1.95vw, 3.25rem);       /* 32 → 52 */
+  --bs-space--3xl: clamp(3rem, 2.46rem + 2.73vw, 4.75rem);       /* 48 → 76 */
+
+  /* ----------------------------------------------------------------------
+     Borders
+     ---------------------------------------------------------------------- */
+  --bs-border--1: 1px;
+  --bs-border--2: 2px;
+  --bs-border--4: 4px;
+
+  --bs-radius--xs: 2px;
+  --bs-radius--sm: 4px;
+  --bs-radius--md: 6px;
+  --bs-radius--lg: 10px;
+  --bs-radius--xl: 16px;
+  --bs-radius--pill: 999px;
+  --bs-radius--full: 50%;
+
+  /* ----------------------------------------------------------------------
+     Neutral ramp — internal primitive (perceptually even). Named by step, not
+     hue, so it can be retinted (e.g. warm vs cool) without renaming. Do NOT
+     reference these from components; use the semantic tokens below.
+     ---------------------------------------------------------------------- */
+  --bs-neutral--50: #f8fafc;
+  --bs-neutral--100: #f1f5f9;
+  --bs-neutral--200: #e2e8f0;
+  --bs-neutral--300: #cbd5e1;
+  --bs-neutral--400: #94a3b8;
+  --bs-neutral--500: #64748b;
+  --bs-neutral--600: #475569;
+  --bs-neutral--700: #334155;
+  --bs-neutral--800: #1e293b;
+  --bs-neutral--900: #0f172a;
+  --bs-neutral--950: #020617;
+
+  /* ----------------------------------------------------------------------
+     Semantic color — role-based, light-dark(light, dark). THE component API.
+     ---------------------------------------------------------------------- */
+
+  /* Surfaces */
+  --bs-color-surface: light-dark(#ffffff, var(--bs-neutral--900));
+  --bs-color-surface--raised: light-dark(var(--bs-neutral--50), var(--bs-neutral--800));
+  --bs-color-surface--sunken: light-dark(var(--bs-neutral--100), var(--bs-neutral--950));
+
+  /* Text / content (base = primary text; muted/subtle step down emphasis) */
+  --bs-color-text: light-dark(var(--bs-neutral--900), var(--bs-neutral--100));
+  --bs-color-text--muted: light-dark(var(--bs-neutral--600), var(--bs-neutral--400));
+  --bs-color-text--subtle: light-dark(var(--bs-neutral--500), var(--bs-neutral--500));
+  --bs-color-text--on-accent: #ffffff;
+
+  /* Borders */
+  --bs-color-border: light-dark(var(--bs-neutral--200), var(--bs-neutral--700));
+  --bs-color-border--strong: light-dark(var(--bs-neutral--300), var(--bs-neutral--600));
+  --bs-color-border--subtle: light-dark(var(--bs-neutral--100), var(--bs-neutral--800));
+
+  /* Brand accents — primary / secondary / tertiary. Each: base, hover,
+     contrast (text on the filled accent). Values are free to change. */
+  --bs-color-primary: light-dark(#2563eb, #3b82f6);
+  --bs-color-primary--hover: light-dark(#1d4ed8, #2563eb);
+  --bs-color-primary--contrast: #ffffff;
+
+  --bs-color-secondary: light-dark(#7c3aed, #8b5cf6);
+  --bs-color-secondary--hover: light-dark(#6d28d9, #7c3aed);
+  --bs-color-secondary--contrast: #ffffff;
+
+  --bs-color-tertiary: light-dark(#0d9488, #14b8a6);
+  --bs-color-tertiary--hover: light-dark(#0f766e, #0d9488);
+  --bs-color-tertiary--contrast: #ffffff;
+
+  /* Status / feedback — named by meaning, not hue. */
+  --bs-color-success: light-dark(#16a34a, #22c55e);
+  --bs-color-success--hover: light-dark(#15803d, #16a34a);
+  --bs-color-success--contrast: #ffffff;
+
+  --bs-color-warning: light-dark(#d97706, #f59e0b);
+  --bs-color-warning--hover: light-dark(#b45309, #d97706);
+  --bs-color-warning--contrast: #ffffff;
+
+  --bs-color-danger: light-dark(#dc2626, #ef4444);
+  --bs-color-danger--hover: light-dark(#b91c1c, #dc2626);
+  --bs-color-danger--contrast: #ffffff;
+
+  --bs-color-info: light-dark(#0284c7, #0ea5e9);
+  --bs-color-info--hover: light-dark(#0369a1, #0284c7);
+  --bs-color-info--contrast: #ffffff;
+
+  /* Focus ring — derived from primary, used by every interactive element. */
+  --bs-ring--width: var(--bs-border--2);
+  --bs-ring--color: color-mix(in srgb, var(--bs-color-primary) 45%, transparent);
+
+  /* Elevation */
+  --bs-shadow--sm: 0 1px 2px light-dark(rgba(15, 23, 42, 0.08), rgba(0, 0, 0, 0.4));
+  --bs-shadow--md: 0 4px 12px light-dark(rgba(15, 23, 42, 0.10), rgba(0, 0, 0, 0.5));
+  --bs-shadow--lg: 0 12px 32px light-dark(rgba(15, 23, 42, 0.14), rgba(0, 0, 0, 0.6));
+}
+
+/* ==========================================================================
+   2. Base — scoped element styles inside .bs
+   ========================================================================== */
+
+.bs,
+.bs *,
+.bs *::before,
+.bs *::after {
+  box-sizing: border-box;
+}
+
+.bs {
+  font-family: var(--bs-font--sans);
+  font-size: var(--bs-text--md);
+  line-height: var(--bs-leading--normal);
+  color: var(--bs-color-text);
+  background-color: var(--bs-color-surface);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings: weight + size only — spacing comes from the parent stack's gap,
+   never from margins (see CODE_STANDARDS.md → Spacing with Flex and Gap). */
+.bs :where(h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+  line-height: var(--bs-leading--tight);
+  font-weight: var(--bs-weight--semibold);
+  color: var(--bs-color-text);
+}
+
+.bs :where(h1) { font-size: var(--bs-text--3xl); }
+.bs :where(h2) { font-size: var(--bs-text--2xl); }
+.bs :where(h3) { font-size: var(--bs-text--xl); }
+.bs :where(h4) { font-size: var(--bs-text--lg); }
+.bs :where(h5, h6) { font-size: var(--bs-text--md); }
+
+.bs :where(p) { margin: 0; }
+.bs :where(small) { font-size: var(--bs-text--sm); color: var(--bs-color-text--muted); }
+.bs :where(code, kbd, pre, samp) {
+  font-family: var(--bs-font--mono);
+  font-size: 0.9em;
+}
+
+.bs :where(a) {
+  color: var(--bs-color-primary);
+  text-decoration: none;
+}
+.bs :where(a):hover { color: var(--bs-color-primary--hover); text-decoration: underline; }
+
+.bs :where(hr) {
+  border: 0;
+  border-top: var(--bs-border--1) solid var(--bs-color-border);
+  margin: 0;
+}
+
+/* Consistent focus ring for everything keyboard-focusable. */
+.bs :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: var(--bs-ring--width) solid var(--bs-ring--color);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   3. Layout utilities — flex/gap stacks (preferred over margins)
+   ========================================================================== */
+
+.bs-stack { display: flex; flex-direction: column; gap: var(--bs-space--md); }
+.bs-stack--xs { gap: var(--bs-space--xs); }
+.bs-stack--sm { gap: var(--bs-space--sm); }
+.bs-stack--lg { gap: var(--bs-space--lg); }
+.bs-stack--xl { gap: var(--bs-space--xl); }
+
+.bs-row { display: flex; flex-direction: row; align-items: center; gap: var(--bs-space--sm); }
+.bs-row--between { justify-content: space-between; }
+.bs-row--wrap { flex-wrap: wrap; }
+
+/* ==========================================================================
+   4. Density — opt-in compact mode tightens the fluid spacing scale
+   ========================================================================== */
+
+.bs[data-density="compact"] {
+  --bs-space--sm: clamp(0.375rem, 0.34rem + 0.16vw, 0.5rem);
+  --bs-space--md: clamp(0.5rem, 0.45rem + 0.24vw, 0.75rem);
+  --bs-space--lg: clamp(0.75rem, 0.66rem + 0.39vw, 1rem);
+  --bs-space--xl: clamp(1rem, 0.84rem + 0.78vw, 1.5rem);
+}
+
+/* Respect reduced-motion for any transitions added by components later. */
+@media (prefers-reduced-motion: reduce) {
+  .bs *,
+  .bs *::before,
+  .bs *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

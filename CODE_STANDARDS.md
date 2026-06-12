@@ -9,7 +9,7 @@ Project-wide coding standards for consistency and maintainability across all cod
 - **CLAUDE.md** - Project properties, namespaces, prefixes
 - **SVELTE5_IMPLEMENTATION.md** - Svelte 5 patterns and runes (required reading)
 - **WORDPRESS.md** - Plugin header template
-- **lib/wpeasy-admin-framework/CLAUDE.md** - UI framework and components
+- **assets/css/bs-framework.css** - Base framework: design tokens and base styles
 
 ---
 
@@ -48,10 +48,9 @@ plugin-name/
 │   ├── components/              # Reusable components
 │   └── lib/                     # Utilities
 │
-├── lib/                         # Shared libraries
-│   └── wpeasy-admin-framework/  # UI framework
-│
 ├── assets/
+│   ├── css/
+│   │   └── bs-framework.css     # Base framework: design tokens + base styles
 │   └── dist/                    # Vite build output (gitignored)
 │
 ├── templates/                   # PHP templates
@@ -234,7 +233,7 @@ Not required for:
 
 See **SVELTE5_IMPLEMENTATION.md** for detailed patterns. Key rules:
 
-1. **Reuse Components**: Check libraries first (WPEA → project → external)
+1. **Reuse Components**: Check existing code first (base framework → project → external)
 2. **Props Interface**: Define TypeScript interfaces for complex props
 3. **State Exposure**: Expose app state on `window.{ConstantsPrefix}` for debugging
 
@@ -537,33 +536,33 @@ The shared module provides centralized density/compact mode management:
 // Shared module exposes density API
 window.{PREFIX}.density.get();           // Get current compact mode state
 window.{PREFIX}.density.set(compact);    // Set compact mode + emit event + apply to DOM
-window.{PREFIX}.density.apply(compact);  // Apply density to .wpea containers
+window.{PREFIX}.density.apply(compact);  // Apply density to .bs containers
 ```
 
 **Density flow:**
-1. PHP outputs inline `<style>` with `.wpea { --wpea-density: compact; }` if enabled
+1. PHP outputs inline `<style>` setting `data-density="compact"` on `.bs` roots if enabled
 2. PHP passes settings via `{prefix}Data.settings`
 3. Shared module applies density on init
 4. Components use `window.{PREFIX}.density.set()` to change compact mode
-5. WPEA framework responds to `--wpea-density: compact` via container style queries
+5. The base framework (`bs-framework.css`) responds to `.bs[data-density="compact"]` by tightening the fluid spacing scale
 
 **PHP inline styles (prevents flash):**
 ```php
 $compact_mode = $settings['display']['compactMode'] ?? false;
 if ($compact_mode) {
-    echo '<style>.wpea { --wpea-density: compact; }</style>';
+    echo '<style>.bs[data-density="compact"]{}</style>'; // marker; attribute is set on the container
 }
 ```
 
 **JavaScript density management:**
 ```typescript
 function applyDensity(compact: boolean): void {
-  const containers = document.querySelectorAll('.wpea');
+  const containers = document.querySelectorAll('.bs');
   containers.forEach((el) => {
     if (compact) {
-      (el as HTMLElement).style.setProperty('--wpea-density', 'compact');
+      (el as HTMLElement).setAttribute('data-density', 'compact');
     } else {
-      (el as HTMLElement).style.removeProperty('--wpea-density');
+      (el as HTMLElement).removeAttribute('data-density');
     }
   });
 }
@@ -578,21 +577,21 @@ function applyDensity(compact: boolean): void {
 
 ## CSS Standards
 
-### WPEasy Admin Framework
+### Base Framework (`bs-framework.css`)
 
-All admin UI must use the WPEasy Admin Framework:
+All admin UI must use the project's base framework (`assets/css/bs-framework.css`):
 
-1. **Root Container**: Apply `.wpea` class to root elements
-2. **CSS Variables**: Use `--wpea-*` variables exclusively
-3. **Components**: Use framework components before custom CSS
+1. **Root Container**: Apply the `.bs` class to root elements (scopes tokens, `color-scheme`, and base styles)
+2. **CSS Variables**: Use `--bs-*` design tokens exclusively
+3. **Color by role, not hue**: Reference semantic color tokens (`surface`, `text`, `border`, `primary`/`secondary`/`tertiary`, `success`/`warning`/`danger`/`info`) — never the internal `--bs-neutral--*` ramp or a literal color
 
 ```css
-/* Use framework variables */
+/* Use framework tokens */
 .my-component {
-  padding: var(--wpea-space-4);
-  background: var(--wpea-surface-1);
-  border-radius: var(--wpea-radius-m);
-  color: var(--wpea-text-1);
+  padding: var(--bs-space--md);
+  background: var(--bs-color-surface--raised);
+  border-radius: var(--bs-radius--md);
+  color: var(--bs-color-text);
 }
 
 /* Never hardcode colors - breaks dark mode */
@@ -603,18 +602,18 @@ All admin UI must use the WPEasy Admin Framework:
 
 ### Spacing with Flex and Gap (Required)
 
-**NEVER use margins on headings or child elements for spacing.** Instead, use `flex-direction: column` with `gap` on parent containers. This follows the WPEA framework pattern and provides consistent, maintainable spacing.
+**NEVER use margins on headings or child elements for spacing.** Instead, use `flex-direction: column` with `gap` on parent containers. This follows the base framework pattern and provides consistent, maintainable spacing.
 
 ```css
 /* CORRECT: Use flex column with gap */
 .my-section {
   display: flex;
   flex-direction: column;
-  gap: var(--wpea-space--md);
+  gap: var(--bs-space--md);
 }
 
 .my-section h3 {
-  font-size: var(--wpea-text--lg);
+  font-size: var(--bs-text--lg);
   font-weight: 600;
   /* NO margin - spacing comes from parent gap */
 }
@@ -626,11 +625,11 @@ All admin UI must use the WPEasy Admin Framework:
 
 /* WRONG: Using margins for spacing */
 .my-section h3 {
-  margin: 0 0 var(--wpea-space--md) 0;  /* WRONG */
+  margin: 0 0 var(--bs-space--md) 0;  /* WRONG */
 }
 
 .my-section p {
-  margin-bottom: var(--wpea-space--md);  /* WRONG */
+  margin-bottom: var(--bs-space--md);  /* WRONG */
 }
 ```
 
@@ -639,7 +638,7 @@ All admin UI must use the WPEasy Admin Framework:
 - Easier responsive design
 - Automatically scales with density changes
 - Provides consistent visual rhythm
-- Use WPEA utility classes: `.wpea-stack`, `.wpea-stack--sm`, `.wpea-stack--lg`
+- Use the framework stack utilities: `.bs-stack`, `.bs-stack--sm`, `.bs-stack--lg`
 
 ### BEM Naming (Required)
 
@@ -697,15 +696,16 @@ CSS variables follow BEM modifier syntax with `--` separating purpose from varia
 
 ### Theme Support
 
-Use CSS `light-dark()` function or framework variables:
+Prefer the semantic color tokens (they already switch via `light-dark()` inside
+`bs-framework.css`). Use the `light-dark()` function directly only for one-off cases:
 
 ```css
 .element {
-  /* Automatic light/dark switching */
-  background: light-dark(var(--wpea-gray-100), var(--wpea-gray-900));
+  /* Preferred: a semantic token that auto-switches */
+  background: var(--bs-color-surface--raised);
 
-  /* Or use semantic variables that auto-switch */
-  background: var(--wpea-surface-1);
+  /* One-off: explicit light/dark (use the neutral ramp, not a hue) */
+  background: light-dark(var(--bs-neutral--100), var(--bs-neutral--900));
 }
 ```
 

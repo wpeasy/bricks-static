@@ -1,0 +1,24 @@
+{
+    "name": "wpeasy/bricks-static",
+    "description": "Generate and serve static HTML versions of Bricks-built pages for performance.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Alan Blair",
+            "email": "alan@alanblair.co",
+            "homepage": "https://alanblair.co"
+        }
+    ],
+    "require": {
+        "php": ">=8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "WPEasy\\BricksStatic\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}
