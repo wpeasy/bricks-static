@@ -23,6 +23,22 @@ defined('ABSPATH') || exit;
 final class PageRenderer {
 
     /**
+     * User-agent prefix sent on every loopback request, so the site can tell a
+     * static-render request from a real visitor (see is_render_request()).
+     */
+    public const USER_AGENT_PREFIX = 'BricksStatic/';
+
+    /**
+     * Whether the CURRENT request is one of our loopback render requests.
+     * Lets render-time hooks (e.g. stripping the emoji loader) apply only to the
+     * static output, never to the live front end.
+     */
+    public static function is_render_request(): bool {
+        $ua = isset($_SERVER['HTTP_USER_AGENT']) ? (string) $_SERVER['HTTP_USER_AGENT'] : '';
+        return strpos($ua, self::USER_AGENT_PREFIX) === 0;
+    }
+
+    /**
      * Fetch a page URL and return its rendered HTML.
      *
      * @param string $url Absolute URL.
@@ -80,7 +96,7 @@ final class PageRenderer {
             'timeout'     => 60,
             'redirection' => 5,
             'sslverify'   => self::should_verify_ssl(),
-            'user-agent'  => 'BricksStatic/' . BS_VERSION,
+            'user-agent'  => self::USER_AGENT_PREFIX . BS_VERSION,
             'headers'     => [],
         ];
 

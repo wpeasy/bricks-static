@@ -114,10 +114,18 @@ final class AssetExtractor {
     /**
      * url(...) and @import targets in CSS or inline styles.
      *
+     * Inline <script> blocks are removed first: JavaScript routinely contains
+     * `…URL(x)` calls (e.g. `URL.createObjectURL(a)` in WordPress's emoji
+     * detection script), which the case-insensitive `url()` pattern would
+     * otherwise mistake for a CSS asset and try to mirror (creating junk like
+     * a `/a` request). Stripping scripts is harmless for pure-CSS callers.
+     *
      * @param string $content CSS or HTML.
      * @return array<int,string>
      */
     private static function css_refs(string $content): array {
+        $content = preg_replace('#<script\b[^>]*>.*?</script>#is', '', $content) ?? $content;
+
         return array_merge(
             self::match($content, '#url\(\s*("[^"]*"|\'[^\']*\'|[^)\s]+)\s*\)#i'),
             self::match($content, '#@import\s+("[^"]*"|\'[^\']*\')#i')
