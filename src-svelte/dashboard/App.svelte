@@ -19,6 +19,7 @@
   let sync = $state<SyncSnapshot | null>(null);
   let syncing = $state(false);
   let manualRun = $state(false);
+  let runCommand = $state('');
   let topTab = $state<'destinations' | 'server'>('destinations');
   let activeTab = $state('');
   let loadError = $state('');
@@ -115,7 +116,19 @@
     }
   }
 
+  // The exact CLI command for this run, shown if the auto-spawn doesn't start so
+  // the user can run it by hand — targeting the same destination(s) they chose.
+  function buildRunCommand(type: 'check' | 'sync', dest: string, prune: boolean): string {
+    let cmd = status?.cli ?? 'wp bricks-static sync';
+    if (type === 'check') cmd += ' --check';
+    if (dest === 'all') cmd += ' --all';
+    else if (dest) cmd += ` --dest=${dest}`;
+    if (prune) cmd += ' --prune';
+    return cmd;
+  }
+
   async function startCheck(destId: string): Promise<void> {
+    runCommand = buildRunCommand('check', destId, false);
     try {
       sync = await api.syncStart('check', { dest: destId });
       await runActiveJob();
@@ -127,6 +140,7 @@
   async function startSync(dest: string, prune: boolean): Promise<void> {
     const target = dest === 'all' ? 'all enabled destinations' : 'the destination';
     if (!window.confirm(`This will render the site and push to ${target}. Continue?`)) return;
+    runCommand = buildRunCommand('sync', dest, prune);
     try {
       sync = await api.syncStart('sync', { dest, prune });
       await runActiveJob();
@@ -257,7 +271,7 @@
         {/if}
 
         {#if manualRun && status}
-          <ManualRunBanner command={status.cli} onDismiss={dismissManualRun} />
+          <ManualRunBanner command={runCommand || status.cli} onDismiss={dismissManualRun} />
         {/if}
 
         <ProgressPanel snapshot={sync} onRetry={retryUploads} retrying={syncing} />

@@ -39,14 +39,14 @@ final class SyncCommand {
      * : Sync only the destination with this id.
      *
      * [--all]
-     * : Sync all enabled destinations (sequentially).
+     * : Sync all enabled destinations (the default when no --dest is given).
      *
      * ## EXAMPLES
      *
-     *     wp bricks-static sync
+     *     wp bricks-static sync                      # all enabled destinations
      *     wp bricks-static sync --check
      *     wp bricks-static sync --all --prune
-     *     wp bricks-static sync --dest=ab12cd34ef56
+     *     wp bricks-static sync --dest=ab12cd34ef56  # one destination
      *
      * @param array<int,string>    $args       Positional args (unused).
      * @param array<string,string> $assoc_args Flags.
@@ -56,14 +56,21 @@ final class SyncCommand {
         $type  = isset($assoc_args['check']) ? 'check' : 'sync';
         $prune = isset($assoc_args['prune']);
 
-        $options = ['prune' => $prune];
-        if ($type === 'sync') {
-            if (isset($assoc_args['all'])) {
-                $options['targets'] = Destinations::enabled_ids();
-            } elseif (isset($assoc_args['dest'])) {
-                $options['targets'] = [(string) $assoc_args['dest']];
-            }
+        // A specific destination, otherwise every enabled one (incl. --all).
+        $options['targets'] = isset($assoc_args['dest'])
+            ? [(string) $assoc_args['dest']]
+            : Destinations::enabled_ids();
+
+        if (empty($options['targets'])) {
+            \WP_CLI::error('No enabled destinations.');
+            return;
         }
+
+        $names = array_map(static function (string $id): string {
+            $dest = Destinations::get($id);
+            return $dest !== null ? (string) $dest->get('name') : $id;
+        }, $options['targets']);
+        \WP_CLI::log('Destinations: ' . implode(', ', $names));
 
         \WP_CLI::log(sprintf('Starting %s%s…', $type, $prune ? ' (prune)' : ''));
 
