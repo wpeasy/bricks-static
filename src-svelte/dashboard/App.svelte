@@ -167,11 +167,12 @@
   }
 
   async function resetSync(): Promise<void> {
-    if (!window.confirm('Reset the local push record? The next Sync will re-upload everything.')) return;
+    if (!window.confirm('Reset the push record for all destinations? The next Sync will re-upload everything.')) return;
     try {
       await api.syncReset();
-      sync = null;
-      await loadStatus();
+      // Don't wipe the visible progress of the last run — just refresh the
+      // status + per-destination dots to reflect the cleared push records.
+      await Promise.all([loadStatus(), loadDestinations()]);
     } catch (e) {
       loadError = (e as Error).message;
     }
@@ -269,17 +270,19 @@
             <ReplacementsPanel destination={activeDest} running={syncing} onSaved={loadDestinations} />
           {/key}
         {/if}
-
-        {#if manualRun && status}
-          <ManualRunBanner command={runCommand || status.cli} onDismiss={dismissManualRun} />
-        {/if}
-
-        <ProgressPanel snapshot={sync} onRetry={retryUploads} retrying={syncing} />
       </div>
     {/if}
 
+    {#if manualRun && status}
+      <ManualRunBanner command={runCommand || status.cli} onDismiss={dismissManualRun} />
+    {/if}
+
+    <!-- One global progress area for the current/last sync, labelled with its
+         target — not tied to whichever destination tab is open. -->
+    <ProgressPanel snapshot={sync} onRetry={retryUploads} retrying={syncing} />
+
     <div class="bs-row bs-row--between bs-controls">
-      <span class="bs-controls__hint">Switched destinations or wiped the remote? Reset clears the local push record.</span>
+      <span class="bs-controls__hint">Wiped a remote, or want a full re-upload? Reset clears the push record for every destination.</span>
       <div class="bs-row">
         {#if syncing}
           <button type="button" class="bs-link" onclick={cancelSync}>Cancel</button>

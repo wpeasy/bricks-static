@@ -758,7 +758,15 @@ final class Runner {
         $dest     = Destinations::get((string) ($job->data['destId'] ?? ''));
         $base_url = PackageDeployer::base_url($dest);
 
-        $result = PackageDeployer::deploy($transport, $base_url, $files, $deletes, self::package_sslverify($base_url));
+        // Persist each stage so the dashboard's status poll shows live progress
+        // through the single package operation.
+        $progress = function (string $stage) use ($job): void {
+            $job->data['message'] = $stage;
+            self::beat();
+            $job->save();
+        };
+
+        $result = PackageDeployer::deploy($transport, $base_url, $files, $deletes, self::package_sslverify($base_url), $progress);
 
         if (empty($result['ok'])) {
             // Don't retry package here; fall back to per-file uploads (which will

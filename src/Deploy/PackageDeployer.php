@@ -83,6 +83,7 @@ final class PackageDeployer {
      * @param array<string,string>  $files     Map of remote-relative path => local source file.
      * @param array<int,string>     $deletes   Remote-relative paths to remove.
      * @param bool                  $sslverify Whether to verify TLS when calling the helper.
+     * @param callable|null         $progress  Optional fn(string $stage) for UI feedback.
      * @return array{ok:bool,extracted:int,deleted:int,errors:array<int,string>,message:string}
      */
     public static function deploy(
@@ -90,8 +91,14 @@ final class PackageDeployer {
         string $base_url,
         array $files,
         array $deletes,
-        bool $sslverify
+        bool $sslverify,
+        ?callable $progress = null
     ): array {
+        $report = static function (string $stage) use ($progress): void {
+            if ($progress !== null) {
+                $progress($stage);
+            }
+        };
         $fail = static fn(string $msg): array => [
             'ok' => false, 'extracted' => 0, 'deleted' => 0, 'errors' => [], 'message' => $msg,
         ];
@@ -110,6 +117,7 @@ final class PackageDeployer {
         $php_path = Paths::cache_dir() . '/' . $php_name;
 
         // Build the package.
+        $report(sprintf('Building deploy package (%d files)…', count($files)));
         $zip = new \ZipArchive();
         if ($zip->open($zip_path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             return $fail('Could not create the deploy package.');
@@ -126,6 +134,7 @@ final class PackageDeployer {
         file_put_contents($php_path, UnzipScript::generate($token, $zip_name, time() + self::TTL, Compressor::extensions()));
 
         // Upload package + helper, then trigger extraction.
+        $report(sprintf('Uploading package (%s)…', size_format((int) @filesize($zip_path) ?: 0)));
         try {
             $transport->put($zip_path, $zip_name);
             $transport->put($php_path, $php_name);
@@ -136,6 +145,7 @@ final class PackageDeployer {
         }
         self::cleanup_local($zip_path, $php_path);
 
+        $report('Extracting on the destination…');
         $response = wp_remote_post(rtrim($base_url, '/') . '/' . $php_name, [
             'timeout'   => 120,
             'sslverify' => $sslverify,

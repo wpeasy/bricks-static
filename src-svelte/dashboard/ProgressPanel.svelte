@@ -36,7 +36,10 @@
   let assetsTotal = $derived(Math.max(snapshot?.totals?.assets ?? 0, assetsDone));
   let uploaded = $derived(snapshot?.counts?.uploaded ?? 0);
   let uploadsTotal = $derived(Math.max(snapshot?.totals?.uploads ?? 0, uploaded));
-  let showUploads = $derived((snapshot?.type === 'sync') && uploadsTotal > 0);
+  // The package phase is one atomic operation, so a file counter would just sit
+  // at 0 — show an indeterminate bar and the live stage message instead.
+  let isPackaging = $derived(snapshot?.phase === 'package');
+  let showUploads = $derived((snapshot?.type === 'sync') && uploadsTotal > 0 && !isPackaging);
 
   let tone = $derived(
     snapshot?.phase === 'error' || snapshot?.phase === 'cancelled'
@@ -84,7 +87,15 @@
         </div>
         <span class="bs-progress__num">{assetsDone}/{assetsTotal}</span>
       </div>
-      {#if showUploads}
+      {#if isPackaging}
+        <div class="bs-progress__row">
+          <span class="bs-progress__label">Deploy</span>
+          <div class="bs-progress__track">
+            <div class="bs-progress__fill bs-progress__fill--indeterminate"></div>
+          </div>
+          <span class="bs-progress__num">{uploadsTotal} files</span>
+        </div>
+      {:else if showUploads}
         <div class="bs-progress__row">
           <span class="bs-progress__label">Uploads</span>
           <div class="bs-progress__track">
@@ -223,6 +234,17 @@
 
   .bs-progress--ok .bs-progress__fill {
     background: var(--bs-color-success);
+  }
+
+  .bs-progress__fill--indeterminate {
+    width: 35%;
+    border-radius: var(--bs-radius--pill);
+    animation: bs-indeterminate 1.1s ease-in-out infinite;
+  }
+
+  @keyframes bs-indeterminate {
+    0% { margin-left: -35%; }
+    100% { margin-left: 100%; }
   }
 
   .bs-progress__num {
