@@ -154,9 +154,18 @@ final class Runner {
 
     /**
      * Whether cancellation has been requested.
+     *
+     * Read straight from the DB, NOT via get_option(): the WP-CLI background
+     * runner drives the whole job inside one long-lived process, which caches
+     * options in memory. get_option() would keep returning the value cached when
+     * the job started and never see the flag the (separate) cancel request set.
      */
     private static function is_cancelled(): bool {
-        return (bool) get_option(self::CANCEL_FLAG);
+        global $wpdb;
+        $val = $wpdb->get_var(
+            $wpdb->prepare("SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", self::CANCEL_FLAG)
+        );
+        return $val === '1';
     }
 
     /**
