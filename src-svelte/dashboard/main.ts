@@ -4,5 +4,8 @@ import App from './App.svelte';
 const target = document.getElementById('bs-dashboard');
 
 if (target) {
+  // mount() appends rather than replacing, so clear the server-rendered
+  // placeholder (the "Loading…" / noscript fallback) before mounting.
+  target.replaceChildren();
   mount(App, { target });
 }
