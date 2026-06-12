@@ -30,14 +30,16 @@ final class UnzipScript {
     /**
      * Render the deploy helper PHP source.
      *
-     * @param string $token    Random authorisation token (also used in the filename).
-     * @param string $zip_name Basename of the uploaded package (same directory).
-     * @param int    $expires  Unix timestamp after which the script refuses to run.
+     * @param string             $token        Random authorisation token (also used in the filename).
+     * @param string             $zip_name     Basename of the uploaded package (same directory).
+     * @param int                $expires      Unix timestamp after which the script refuses to run.
+     * @param array<int,string>  $compressible Extensions to gzip server-side (no '.'), matching Compressor.
      */
-    public static function generate(string $token, string $zip_name, int $expires): string {
+    public static function generate(string $token, string $zip_name, int $expires, array $compressible = []): string {
         $token_php = var_export($token, true);
         $zip_php   = var_export($zip_name, true);
         $exp_php   = var_export($expires, true);
+        $gz_php    = var_export(array_values(array_map('strval', $compressible)), true);
 
         return <<<PHP
 <?php
@@ -47,6 +49,7 @@ declare(strict_types=1);
 \$TOKEN   = {$token_php};
 \$ZIPNAME = {$zip_php};
 \$EXPIRES = {$exp_php};
+\$GZIP    = {$gz_php};
 
 \$base = __DIR__;
 \$zip_path = \$base . '/' . \$ZIPNAME;
@@ -128,6 +131,18 @@ for (\$i = 0; \$i < \$zip->numFiles; \$i++) {
     fclose(\$dst);
     fclose(\$src);
     \$out['extracted']++;
+
+    // Regenerate the gzip sibling locally (cheaper than transferring it).
+    \$ext = strtolower(pathinfo(\$rel, PATHINFO_EXTENSION));
+    if (in_array(\$ext, \$GZIP, true) && function_exists('gzencode')) {
+        \$data = @file_get_contents(\$dest);
+        if (\$data !== false) {
+            \$gz = @gzencode(\$data, 9);
+            if (\$gz !== false) {
+                @file_put_contents(\$dest . '.gz', \$gz);
+            }
+        }
+    }
 }
 \$zip->close();
 
@@ -141,6 +156,9 @@ if (is_array(\$deletes)) {
         \$path = \$base . '/' . \$rel;
         if (is_file(\$path) && @unlink(\$path)) {
             \$out['deleted']++;
+        }
+        if (is_file(\$path . '.gz')) {
+            @unlink(\$path . '.gz');
         }
     }
 }

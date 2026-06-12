@@ -31,6 +31,15 @@ final class Compressor {
     }
 
     /**
+     * Extensions worth pre-compressing (for the server-side deploy helper).
+     *
+     * @return array<int,string>
+     */
+    public static function extensions(): array {
+        return self::TEXT_EXTENSIONS;
+    }
+
+    /**
      * Whether a relative path looks like a compressible text file.
      *
      * @param string $relative_path Relative file path.
