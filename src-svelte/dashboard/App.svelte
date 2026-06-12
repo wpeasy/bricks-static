@@ -100,15 +100,18 @@
   }
 
   onMount(() => {
-    void loadConnection();
-    void loadStatus();
-    // Resume a run already in progress (e.g. after a page reload).
-    void api.syncStatus().then((snap) => {
-      sync = snap;
-      if (snap.running) {
-        void drive();
+    // Load sequentially to avoid hammering low-worker setups (e.g. Local) on
+    // page load. We intentionally do NOT auto-resume an in-progress run — that
+    // could silently fire loopback renders; the user re-runs Sync if needed.
+    void (async () => {
+      await loadConnection();
+      await loadStatus();
+      try {
+        sync = await api.syncStatus();
+      } catch {
+        /* ignore */
       }
-    });
+    })();
   });
 </script>
 

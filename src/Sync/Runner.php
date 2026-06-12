@@ -144,14 +144,33 @@ final class Runner {
     }
 
     /**
+     * Seconds without progress after which a "running" job is treated as
+     * abandoned (the driving tab was closed, or the process died).
+     */
+    private const STALE_SECONDS = 90;
+
+    /**
      * Current snapshot of the active job without advancing it.
+     *
+     * A running job that hasn't progressed in a while is auto-discarded so it
+     * can never silently resume and hammer the server with loopback renders.
      *
      * @return array<string,mixed>
      */
     public static function status(): array {
         $job = Job::load();
+        if ($job === null) {
+            return ['phase' => 'idle'];
+        }
 
-        return $job === null ? ['phase' => 'idle'] : self::snapshot($job);
+        $running = !in_array($job->data['phase'], ['done', 'error', 'cancelled'], true);
+        if ($running && (time() - (int) $job->data['updatedAt']) > self::STALE_SECONDS) {
+            Job::clear();
+            delete_option(self::CANCEL_FLAG);
+            return ['phase' => 'idle'];
+        }
+
+        return self::snapshot($job);
     }
 
     /**

@@ -10,27 +10,19 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Sync;
 
-use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Settings\Settings;
 
 defined('ABSPATH') || exit;
 
 /**
- * Read-only resolver describing how a sync will run: discovery mode, transport,
+ * Read-only resolver describing how a sync will run: discovery, transport,
  * compression, server target, and link-rewriting style. Surfaced in the
- * dashboard's "Method" panel so the behaviour is never a black box.
+ * dashboard's "Method" panel.
+ *
+ * Deliberately does NO network I/O — it is called when rendering the dashboard,
+ * and a loopback request there can deadlock low-worker setups (e.g. Local).
  */
 final class MethodResolver {
-
-    /**
-     * Transient caching the sitemap probe (avoids loopback on every poll).
-     */
-    private const SITEMAP_TRANSIENT = 'bs_sitemap_probe';
-
-    /**
-     * Candidate sitemap paths, in priority order.
-     */
-    private const SITEMAP_CANDIDATES = ['wp-sitemap.xml', 'sitemap.xml', 'sitemap_index.xml'];
 
     /**
      * Full resolved method description.
@@ -39,54 +31,14 @@ final class MethodResolver {
      */
     public static function resolve(): array {
         return [
-            'discovery'    => self::discovery(),
+            'discovery'    => [
+                'mode'        => 'auto',
+                'description' => 'Published content + internal-link crawl from the homepage (sitemap used if present)',
+            ],
             'transport'    => (string) Settings::get('transport'),
             'compression'  => ['gzip' => function_exists('gzencode')],
             'serverTarget' => ['htaccess' => true, 'nginxSnippet' => true],
             'links'        => 'root-relative',
         ];
-    }
-
-    /**
-     * Discovery mode: sitemap if one is present, otherwise crawl from home.
-     *
-     * @return array<string,mixed>
-     */
-    private static function discovery(): array {
-        $sitemap = self::detect_sitemap();
-
-        return $sitemap !== null
-            ? ['mode' => 'sitemap', 'sitemap' => $sitemap]
-            : ['mode' => 'crawl', 'seed' => home_url('/')];
-    }
-
-    /**
-     * Detect a published sitemap via a cached HEAD probe.
-     *
-     * @return string|null The sitemap URL, or null if none responds 200.
-     */
-    private static function detect_sitemap(): ?string {
-        $cached = get_transient(self::SITEMAP_TRANSIENT);
-        if (is_array($cached)) {
-            return $cached['url'] ?? null;
-        }
-
-        $found = null;
-        foreach (self::SITEMAP_CANDIDATES as $path) {
-            $url            = home_url('/' . $path);
-            $args           = PageRenderer::request_args($url);
-            $args['method'] = 'HEAD';
-            $args['timeout'] = 5;
-            $response       = wp_remote_request($url, $args);
-
-            if (!is_wp_error($response) && (int) wp_remote_retrieve_response_code($response) === 200) {
-                $found = $url;
-                break;
-            }
-        }
-
-        set_transient(self::SITEMAP_TRANSIENT, ['url' => $found], 5 * MINUTE_IN_SECONDS);
-
-        return $found;
     }
 }

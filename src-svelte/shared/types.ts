@@ -35,7 +35,8 @@ export interface ConnectionResponse {
 }
 
 export interface DiscoveryMethod {
-  mode: 'sitemap' | 'crawl';
+  mode: string;
+  description?: string;
   sitemap?: string;
   seed?: string;
 }

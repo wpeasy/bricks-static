@@ -3,14 +3,7 @@
 
   let { method }: { method: Method | null } = $props();
 
-  let discovery = $derived.by(() => {
-    if (!method) {
-      return '…';
-    }
-    return method.discovery.mode === 'sitemap'
-      ? `Sitemap (${method.discovery.sitemap ?? ''})`
-      : `Crawl from homepage (${method.discovery.seed ?? ''})`;
-  });
+  let discovery = $derived(method?.discovery.description ?? '…');
 
   let transportLabel = $derived.by(() => {
     if (!method) {
