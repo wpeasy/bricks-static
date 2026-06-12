@@ -101,8 +101,18 @@ final class SyncController {
             return new WP_REST_Response(['error' => 'Unknown run type.'], 400);
         }
 
+        $options = ['prune' => !empty($params['prune'])];
+        $dest    = (string) ($params['dest'] ?? '');
+        if ($type === 'sync') {
+            if ($dest === 'all') {
+                $options['targets'] = Destinations::enabled_ids();
+            } elseif ($dest !== '') {
+                $options['targets'] = [$dest];
+            }
+        }
+
         try {
-            $snapshot = Runner::start($type, ['prune' => !empty($params['prune'])]);
+            $snapshot = Runner::start($type, $options);
 
             // Prefer WP-CLI where the host can spawn it (no web-worker contention);
             // otherwise the browser drives the run via curl/loopback ticks.

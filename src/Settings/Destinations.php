@@ -64,6 +64,22 @@ final class Destinations {
     }
 
     /**
+     * Ids of all enabled destinations (used by "sync all").
+     *
+     * @return array<int,string>
+     */
+    public static function enabled_ids(): array {
+        $ids = [];
+        foreach (self::objects() as $dest) {
+            if ((bool) $dest->get('enabled')) {
+                $ids[] = $dest->id();
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
      * Find a destination by id.
      *
      * @param string $id Destination id.

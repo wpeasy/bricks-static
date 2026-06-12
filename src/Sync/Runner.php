@@ -70,9 +70,19 @@ final class Runner {
         delete_option(self::CANCEL_FLAG);
 
         $job = Job::create($type);
-        $job->data['prune']  = !empty($options['prune']);
-        // Which destination this run pushes to (defaults to the primary).
-        $job->data['destId'] = (string) ($options['destId'] ?? Destinations::primary()->id());
+        $job->data['prune'] = !empty($options['prune']);
+
+        // Which destination(s) this run pushes to. 'targets' is a list (for
+        // "sync all"); 'destId' is the single-target shorthand; default primary.
+        $targets = [];
+        if (isset($options['targets']) && is_array($options['targets'])) {
+            $targets = array_values(array_filter(array_map('strval', $options['targets'])));
+        }
+        if (empty($targets)) {
+            $targets = [(string) ($options['destId'] ?? Destinations::primary()->id())];
+        }
+        $job->data['targets'] = $targets;
+        $job->data['destId']  = $targets[0];
         foreach (UrlCollector::collect() as $url) {
             $job->enqueue_page($url);
         }
@@ -332,20 +342,62 @@ final class Runner {
             return;
         }
 
-        // Sync: build this destination's deploy manifest (base render + its text
-        // replacements applied to HTML), then delta it against what was pushed.
-        $deploy = self::build_deploy_manifest($manifest, (string) ($job->data['destId'] ?? ''));
+        // Sync: deploy the shared render to each target destination in turn.
+        if (empty($job->data['targets'])) {
+            $job->data['targets'] = [Destinations::primary()->id()];
+        }
+        $job->data['targetIndex'] = 0;
+        self::start_target($job);
+        $job->save();
+    }
+
+    /**
+     * Begin deploying to the current target: build its deploy manifest, compute
+     * the delta, and reset the per-target upload state.
+     *
+     * @param Job $job Active job.
+     */
+    private static function start_target(Job $job): void {
+        $dest_id = (string) ($job->data['targets'][$job->data['targetIndex']] ?? '');
+        $job->data['destId'] = $dest_id;
+
+        $dest = Destinations::get($dest_id);
+        $name = $dest !== null ? (string) $dest->get('name') : $dest_id;
+
+        $deploy = self::build_deploy_manifest(Manifest::load(Manifest::RENDER_OPTION), $dest_id);
         Manifest::save(Manifest::DEPLOY_OPTION, $deploy);
 
         $diff = Manifest::diff(Manifest::load(self::pushed_option($job)), $deploy);
 
-        $job->data['queue']['uploads'] = $diff['changed'];
-        $job->data['totals']['uploads'] = count($diff['changed']);
-        $job->data['removedFiles']      = $diff['removed'];
-        $job->data['removed']           = count($diff['removed']);
-        $job->data['phase']             = 'upload';
-        $job->data['message']           = count($diff['changed']) > 0 ? 'Uploading…' : 'Already up to date — writing server config…';
-        $job->save();
+        $job->data['queue']['uploads']   = $diff['changed'];
+        $job->data['removedFiles']       = $diff['removed'];
+        $job->data['removed']            = count($diff['removed']);
+        $job->data['totals']['uploads']  = count($diff['changed']);
+        $job->data['counts']['uploaded'] = 0;
+        $job->data['counts']['pruned']   = 0;
+        $job->data['failed']             = [];
+        $job->data['htaccessDone']       = false;
+        $job->data['holdingShown']       = false;
+        $job->data['phase']              = 'upload';
+        $job->data['message']            = sprintf('Uploading to %s…', $name);
+    }
+
+    /**
+     * Advance to the next target destination, or finish.
+     *
+     * @param Job $job Active job.
+     */
+    private static function advance_target(Job $job): void {
+        $job->data['targetsDone']++;
+        $job->data['targetIndex']++;
+
+        if ($job->data['targetIndex'] < count($job->data['targets'])) {
+            self::start_target($job);
+            return;
+        }
+
+        $job->data['phase']   = 'done';
+        $job->data['message'] = self::done_message($job);
     }
 
     /**
@@ -527,13 +579,13 @@ final class Runner {
                 }
                 Manifest::save(self::pushed_option($job), $pushed);
 
-                // Prune deleted files next, if requested and there are any.
+                // Prune deleted files next, if requested and there are any;
+                // otherwise move on to the next destination (or finish).
                 if (!empty($job->data['prune']) && !empty($job->data['removedFiles'])) {
                     $job->data['phase']   = 'prune';
                     $job->data['message'] = 'Removing deleted files…';
                 } else {
-                    $job->data['phase']   = 'done';
-                    $job->data['message'] = self::done_message($job);
+                    self::advance_target($job);
                 }
             }
         } finally {
@@ -576,11 +628,24 @@ final class Runner {
         }
 
         if (empty($job->data['removedFiles'])) {
-            $job->data['phase']   = 'done';
-            $job->data['message'] = self::done_message($job);
+            self::advance_target($job);
         }
 
         $job->save();
+    }
+
+    /**
+     * Name of the destination currently being deployed (for the snapshot).
+     *
+     * @param array<string,mixed> $data Job data.
+     */
+    private static function target_name(array $data): string {
+        if (empty($data['targets'])) {
+            return '';
+        }
+        $dest = Destinations::get((string) ($data['destId'] ?? ''));
+
+        return $dest !== null ? (string) $dest->get('name') : (string) ($data['destId'] ?? '');
     }
 
     /**
@@ -605,6 +670,11 @@ final class Runner {
     private static function done_message(Job $job): string {
         if (!empty($job->data['failed'])) {
             return 'Pushed with ' . count($job->data['failed']) . ' failed file(s); re-run Sync to retry them.';
+        }
+
+        $done = (int) $job->data['targetsDone'];
+        if ($done > 1) {
+            return sprintf('Pushed to %d destinations — all in sync.', $done);
         }
 
         $pruned = (int) $job->data['counts']['pruned'];
@@ -887,6 +957,12 @@ HTML;
             ],
             'removed'      => $d['removed'] ?? 0,
             'prune'        => !empty($d['prune']),
+            'targets'      => [
+                'index' => (int) ($d['targetIndex'] ?? 0),
+                'total' => count($d['targets'] ?? []),
+                'done'  => (int) ($d['targetsDone'] ?? 0),
+                'name'  => self::target_name($d),
+            ],
             'errorCount'   => count($d['errors']),
             'skippedCount' => count($d['skipped']),
             'compatCount'  => count($d['compat'] ?? []),

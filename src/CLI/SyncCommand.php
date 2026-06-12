@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\CLI;
 
+use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Sync\Runner;
 
 defined('ABSPATH') || exit;
@@ -34,11 +35,18 @@ final class SyncCommand {
      * [--prune]
      * : Also remove destination files that no longer exist locally (sync only).
      *
+     * [--dest=<id>]
+     * : Sync only the destination with this id.
+     *
+     * [--all]
+     * : Sync all enabled destinations (sequentially).
+     *
      * ## EXAMPLES
      *
      *     wp bricks-static sync
      *     wp bricks-static sync --check
-     *     wp bricks-static sync --prune
+     *     wp bricks-static sync --all --prune
+     *     wp bricks-static sync --dest=ab12cd34ef56
      *
      * @param array<int,string>    $args       Positional args (unused).
      * @param array<string,string> $assoc_args Flags.
@@ -48,10 +56,19 @@ final class SyncCommand {
         $type  = isset($assoc_args['check']) ? 'check' : 'sync';
         $prune = isset($assoc_args['prune']);
 
+        $options = ['prune' => $prune];
+        if ($type === 'sync') {
+            if (isset($assoc_args['all'])) {
+                $options['targets'] = Destinations::enabled_ids();
+            } elseif (isset($assoc_args['dest'])) {
+                $options['targets'] = [(string) $assoc_args['dest']];
+            }
+        }
+
         \WP_CLI::log(sprintf('Starting %s%s…', $type, $prune ? ' (prune)' : ''));
 
         try {
-            $snapshot = Runner::start($type, ['prune' => $prune]);
+            $snapshot = Runner::start($type, $options);
         } catch (\Throwable $e) {
             \WP_CLI::error($e->getMessage());
             return;
