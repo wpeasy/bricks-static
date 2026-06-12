@@ -68,6 +68,7 @@ final class Runner {
         self::reset_output();
         Job::clear();
         delete_option(self::CANCEL_FLAG);
+        delete_option(self::HEARTBEAT);
 
         $job = Job::create($type);
         $job->data['prune'] = !empty($options['prune']);
@@ -122,6 +123,7 @@ final class Runner {
 
         Job::clear();
         delete_option(self::CANCEL_FLAG);
+        delete_option(self::HEARTBEAT);
 
         $job = Job::create('sync');
         $job->data['prune']       = false; // A retry only re-pushes, never deletes.
@@ -154,6 +156,8 @@ final class Runner {
         if ($job === null) {
             return ['phase' => 'idle'];
         }
+
+        self::beat(); // Mark the job as actively driven (see is_driver_alive()).
 
         if (self::is_cancelled()) {
             // If we'd already swapped in the holding page, put the real home back.
@@ -193,6 +197,40 @@ final class Runner {
      * concurrent tick's save() cannot clobber it.
      */
     private const CANCEL_FLAG = 'bs_cancel';
+
+    /**
+     * Option holding the last "a driver is actively working" timestamp.
+     */
+    private const HEARTBEAT = 'bs_driver_heartbeat';
+
+    /**
+     * Seconds since the last heartbeat after which the driver is presumed dead.
+     * Generous so a single slow page render doesn't look like a stalled process.
+     */
+    private const HEARTBEAT_TTL = 25;
+
+    /**
+     * Stamp the heartbeat — called as work progresses so the dashboard can tell
+     * whether SOMETHING (a spawned WP-CLI process, or its own ticks) is driving
+     * the job. Lets the browser take over only when a spawn genuinely failed to
+     * launch, without racing a slow-but-alive CLI process.
+     */
+    private static function beat(): void {
+        update_option(self::HEARTBEAT, time(), false);
+    }
+
+    /**
+     * Whether the job has been touched by a driver within the heartbeat TTL.
+     * Read straight from the DB (cross-process, cache-bypassing) like the cancel
+     * flag, so a polling status request sees the CLI process's latest beat.
+     */
+    private static function is_driver_alive(): bool {
+        global $wpdb;
+        $ts = (int) $wpdb->get_var(
+            $wpdb->prepare("SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", self::HEARTBEAT)
+        );
+        return $ts > 0 && (time() - $ts) <= self::HEARTBEAT_TTL;
+    }
 
     /**
      * Request cancellation of the active job.
@@ -259,6 +297,7 @@ final class Runner {
             if (self::is_cancelled()) {
                 break; // tick() finalizes the cancelled state on the next call.
             }
+            self::beat(); // Keep the heartbeat fresh through a slow batch.
 
             try {
                 $result = PageRenderer::render($url);
@@ -322,6 +361,7 @@ final class Runner {
             if (self::is_cancelled()) {
                 break;
             }
+            self::beat();
 
             try {
                 $relative = Url::to_relative_path($url);
@@ -606,6 +646,7 @@ final class Runner {
                 if (self::is_cancelled()) {
                     break;
                 }
+                self::beat();
 
                 $meta = $manifest[$relative] ?? null;
                 if ($meta === null || !is_file($meta['src'])) {
@@ -1031,6 +1072,7 @@ HTML;
             'startedAt'    => $d['startedAt'],
             'updatedAt'    => $d['updatedAt'],
             'running'      => !in_array($d['phase'], ['done', 'error', 'cancelled', 'idle'], true),
+            'cliAlive'     => self::is_driver_alive(),
         ];
     }
 }

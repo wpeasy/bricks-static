@@ -45,6 +45,10 @@
     }
   }
 
+  // Grace period for a spawned WP-CLI process to show a heartbeat before the
+  // browser concludes the spawn never launched and drives the job itself.
+  const CLI_SPAWN_GRACE_MS = 8000;
+
   async function runActiveJob(): Promise<void> {
     if (syncing) return;
     syncing = true;
@@ -54,13 +58,23 @@
       // holds a php-fpm worker AND fires a loopback render, which saturates the
       // worker pool and deadlocks the whole site. The CLI process renders
       // without that contention, even when a single page is slow.
-      const viaCli = sync?.driver === 'cli';
+      //
+      // But the detached spawn can silently fail to launch from the web-server
+      // process. We watch for the CLI heartbeat: if none appears within a grace
+      // window, the spawn didn't start, so the browser takes over ticking. The
+      // heartbeat (not progress) is the signal, so we never race a slow-but-alive
+      // CLI process — which is what previously caused the deadlock.
+      let driving = sync?.driver !== 'cli';
+      const startedAt = Date.now();
       while (sync && sync.running) {
-        if (viaCli) {
+        if (driving) {
+          sync = await api.syncTick();
+        } else {
           await sleep(1500);
           sync = await api.syncStatus();
-        } else {
-          sync = await api.syncTick();
+          if (!sync?.cliAlive && Date.now() - startedAt > CLI_SPAWN_GRACE_MS) {
+            driving = true; // No CLI heartbeat — drive it from the browser.
+          }
         }
       }
     } catch (e) {

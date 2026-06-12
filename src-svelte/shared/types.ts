@@ -145,6 +145,7 @@ export interface SyncSnapshot {
   startedAt?: number;
   updatedAt?: number;
   running?: boolean;
+  cliAlive?: boolean;
   driver?: 'cli' | 'browser';
 }
 
