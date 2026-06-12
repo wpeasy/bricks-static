@@ -248,11 +248,47 @@ final class Runner {
     private static function tick_finalize(Job $job): void {
         $manifest = Manifest::from_plan($job->data['plan']);
         Manifest::save(Manifest::RENDER_OPTION, $manifest);
+        self::write_manifest_file($job, $manifest);
 
         $job->data['counts']['files'] = count($manifest);
         $job->data['phase']           = 'done';
         $job->data['message']         = 'Done.';
         $job->save();
+    }
+
+    /**
+     * Drop a human-readable manifest.json in the cache root (a convenience copy
+     * of the DB manifest; the database remains the source of truth). It lives
+     * beside the staging guards, outside the uploaded site/ tree.
+     *
+     * @param Job                                                    $job      Active job.
+     * @param array<string,array{size:int,hash:string,src:string}>   $manifest Manifest.
+     */
+    private static function write_manifest_file(Job $job, array $manifest): void {
+        $cache_root = wp_normalize_path(Paths::output_dir());
+        $entries    = [];
+
+        foreach ($manifest as $relative => $meta) {
+            $entries[$relative] = [
+                'size'   => $meta['size'],
+                'hash'   => $meta['hash'],
+                'origin' => strpos($meta['src'], $cache_root) === 0 ? 'cache' : 'source',
+                'src'    => $meta['src'],
+            ];
+        }
+
+        $document = [
+            'generatedAt' => time(),
+            'type'        => $job->data['type'],
+            'files'       => count($manifest),
+            'bytes'       => $job->data['counts']['bytes'],
+            'entries'     => $entries,
+        ];
+
+        $json = wp_json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        if ($json !== false) {
+            file_put_contents(Paths::cache_dir() . '/manifest.json', $json);
+        }
     }
 
     /**
