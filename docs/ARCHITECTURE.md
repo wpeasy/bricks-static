@@ -97,6 +97,55 @@ src/
 - **M3 — Push:** manifest/delta, batched upload, `.htaccess`/nginx, full *Sync* + in-sync status.
 - **M4 (later):** prune unused destination files; per-page "update this page" button in Gutenberg/Bricks editors; destination PHP agent for true remote verification.
 
+## Planned: static-compatibility warnings (interim form handling)
+
+Forms and dynamic endpoints don't work on a static copy (no PHP on the
+destination; nonces freeze at render time). Until proper form support exists,
+the render does a **compatibility scan** and warns: any page containing a
+`<form>`, or a same-origin reference to a dynamic endpoint (`admin-ajax.php`,
+`/wp-json/`, `*.php`, search `?s=`, comments, login), is listed in the
+Check/Sync report as "won't work on the static site."
+
+Proper form support (later): keep dynamic endpoints pointing at the live origin
+(rewrite-exclusion allowlist) + CORS on the origin + non-nonce anti-spam
+(Turnstile/reCAPTCHA/honeypot), or a destination agent that proxies submissions.
+
+## Planned: multiple destinations (one source → many destinations)
+
+**Decisions:** literal Search/Replace; replacements scoped to visible text nodes
+and `<img>` src/srcset only; "All Destinations" syncs **sequentially**.
+
+**Data model**
+- `bs_common` — shared settings + master enable (shown above the tabs).
+- `bs_destinations` — list; each `{ id, name, enabled, connection (transport/
+  host/port/user/password(enc)/remotePath/basePath/destinationUrl),
+  replacements: [{search, replace}] }`.
+- `bs_pushed_{id}` — per-destination pushed manifest (independent sync state).
+- Migration: existing single `bs_settings` → `destinations[0]`; `bs_pushed_manifest`
+  → `bs_pushed_{id0}`.
+
+**Render once, deploy many**
+- Render the base static site **once** (source-derived → cache + render manifest).
+- Per destination: apply that destination's **literal** text replacements (text
+  nodes + `<img>` src/srcset, via an HTML-aware pass), recompute hashes, delta vs
+  that destination's pushed manifest, upload, write `.htaccess`. Replacements
+  change content, so each destination has its own hashes/manifest.
+- A destination with no replacements deploys the base render verbatim.
+
+**Jobs**: per-destination job state; "Sync all" queues destinations sequentially.
+
+**REST/CLI**: destinations CRUD; check/sync per destination + sync-all;
+`wp bricks-static sync [--dest=<id> | --all]`.
+
+**UI**: tabs with `+` to add; common settings + shared status message above; each
+tab = connection + a Search/Replace repeater (optional, with a "be specific"
+warning) + its own Check/Sync; with >1 destination, a first "All Destinations"
+tab to sync all or pick one.
+
+**Risk — text replacement**: a too-broad literal search can still alter intended
+text. Scoping to text + `<img>` src (never href/class/script/style) limits the
+blast radius; the UI warns to be specific.
+
 ## Known roadblocks / risks (mitigations baked into the design)
 
 - **Loopback may fail** (host blocks self-requests, Cloudflare/page-cache/HTTP-auth/staging password) → internal base URL + auth-header override + preflight check.
