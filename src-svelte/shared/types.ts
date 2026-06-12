@@ -61,6 +61,14 @@ export interface Status {
   inSync: boolean;
   lastTest: LastTest | null;
   method: Method;
+  isLocal: boolean;
+  cli: string;
+}
+
+export interface Preflight {
+  ok: boolean;
+  ms: number;
+  message: string;
 }
 
 export interface TestResult {

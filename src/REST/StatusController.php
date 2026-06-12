@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace WPEasy\BricksStatic\REST;
 
 use WP_REST_Response;
+use WPEasy\BricksStatic\Support\Environment;
 use WPEasy\BricksStatic\Sync\Manifest;
 use WPEasy\BricksStatic\Sync\MethodResolver;
 
@@ -71,6 +72,8 @@ final class StatusController {
                 'message' => isset($state['message']) ? (string) $state['message'] : '',
             ] : null,
             'method'    => MethodResolver::resolve(),
+            'isLocal'   => Environment::is_local(),
+            'cli'       => Environment::cli_command(),
         ]);
     }
 }

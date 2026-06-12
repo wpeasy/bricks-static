@@ -1,6 +1,7 @@
 import type {
   ConnectionInput,
   ConnectionResponse,
+  Preflight,
   ServerConfig,
   Status,
   SyncSnapshot,
@@ -64,5 +65,6 @@ export const api = {
   syncStatus: () => request<SyncSnapshot>('/sync'),
   syncCancel: () => request<SyncSnapshot>('/sync/cancel', 'POST', {}),
   syncReset: () => request<{ ok: boolean }>('/sync/reset', 'POST', {}),
+  preflight: () => request<Preflight>('/sync/preflight', 'POST', {}),
   serverConfig: () => request<ServerConfig>('/sync/server-config'),
 };

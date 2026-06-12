@@ -12,6 +12,7 @@ namespace WPEasy\BricksStatic\REST;
 
 use WP_REST_Request;
 use WP_REST_Response;
+use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Sync\HtaccessBuilder;
 use WPEasy\BricksStatic\Sync\Job;
 use WPEasy\BricksStatic\Sync\Manifest;
@@ -68,6 +69,12 @@ final class SyncController {
         register_rest_route(self::NS, '/sync/reset', [
             'methods'             => 'POST',
             'callback'            => [self::class, 'reset'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
+
+        register_rest_route(self::NS, '/sync/preflight', [
+            'methods'             => 'POST',
+            'callback'            => [self::class, 'preflight'],
             'permission_callback' => [self::class, 'can_manage'],
         ]);
     }
@@ -136,6 +143,33 @@ final class SyncController {
         delete_option(Manifest::RENDER_OPTION);
 
         return new WP_REST_Response(['ok' => true]);
+    }
+
+    /**
+     * POST /sync/preflight — a one-shot loopback render of the homepage from
+     * within this request. If it can't get a worker (serialized hosts like
+     * Local) it times out, telling us browser-driven sync won't work here.
+     */
+    public static function preflight(): WP_REST_Response {
+        $url            = home_url('/');
+        $args           = PageRenderer::request_args($url);
+        $args['timeout'] = 8;
+
+        $start    = microtime(true);
+        $response = wp_remote_get($url, $args);
+        $ms       = (int) round((microtime(true) - $start) * 1000);
+
+        if (is_wp_error($response)) {
+            return new WP_REST_Response(['ok' => false, 'ms' => $ms, 'message' => $response->get_error_message()]);
+        }
+
+        $code = (int) wp_remote_retrieve_response_code($response);
+
+        return new WP_REST_Response([
+            'ok'      => $code === 200,
+            'ms'      => $ms,
+            'message' => $code === 200 ? "Rendered the homepage in {$ms}ms." : "Unexpected response (HTTP {$code}).",
+        ]);
     }
 
     /**

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { api } from '../shared/api';
   import type { ConnectionResponse, Status, SyncSnapshot } from '../shared/types';
+  import NoticePanel from './NoticePanel.svelte';
   import StatusPanel from './StatusPanel.svelte';
   import MethodPanel from './MethodPanel.svelte';
   import ActionsPanel from './ActionsPanel.svelte';
@@ -125,6 +126,10 @@
 
   {#if loadError}
     <div class="bs-dash__error">{loadError}</div>
+  {/if}
+
+  {#if status}
+    <NoticePanel isLocal={status.isLocal} cli={status.cli} />
   {/if}
 
   <StatusPanel {status} />
