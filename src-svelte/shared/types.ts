@@ -67,9 +67,9 @@ export interface Status {
 }
 
 export interface WpCliInfo {
-  execAvailable: boolean;
   detected: boolean;
   version: string;
+  runtime: string;
 }
 
 export interface Preflight {

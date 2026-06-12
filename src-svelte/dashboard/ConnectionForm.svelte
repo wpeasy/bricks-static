@@ -138,9 +138,13 @@
   </div>
 
   <div class="bs-field">
-    <label for="bs-remote">Remote path (destination web root)</label>
-    <input id="bs-remote" type="text" bind:value={remotePath} placeholder="public_html/" disabled={s.remotePath.fromConstant || busy} />
-    {#if s.remotePath.fromConstant}<small>Set in wp-config.php</small>{/if}
+    <label for="bs-remote">Remote path (the site's web root)</label>
+    <input id="bs-remote" type="text" bind:value={remotePath} placeholder="(empty = where FTP logs in)" disabled={s.remotePath.fromConstant || busy} />
+    {#if s.remotePath.fromConstant}
+      <small>Set in wp-config.php</small>
+    {:else}
+      <small>Leave empty if your FTP user lands in the web root. Use <code>public_html/</code> for a standard cPanel account.</small>
+    {/if}
   </div>
 
   <div class="bs-field-row">

@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Support;
 
+use WPEasy\BricksStatic\System\WpCli;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -59,48 +61,19 @@ final class Environment {
     }
 
     /**
-     * Whether PHP can spawn processes (needed for any future auto-run of WP-CLI).
-     */
-    public static function exec_available(): bool {
-        if (!function_exists('exec')) {
-            return false;
-        }
-
-        $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
-
-        return !in_array('exec', $disabled, true);
-    }
-
-    /**
-     * Best-effort WP-CLI detection (cached). Detection is positive-only: a true
-     * result is reliable, but false just means `wp` isn't on the web server's
-     * PATH — the user may still have it in their own shell (common on Local).
+     * WP-CLI availability for the dashboard, via full cross-environment
+     * detection (system PATH or Local's bundled runtime).
      *
-     * @return array{execAvailable:bool,detected:bool,version:string}
+     * @return array{detected:bool,version:string,runtime:string}
      */
     public static function wp_cli(): array {
-        $cached = get_transient('bs_wpcli');
-        if (is_array($cached)) {
-            return $cached;
-        }
+        $status = WpCli::status();
 
-        $info = ['execAvailable' => self::exec_available(), 'detected' => false, 'version' => ''];
-
-        if ($info['execAvailable']) {
-            $output = [];
-            $code   = 1;
-            @exec('wp --version 2>&1', $output, $code);
-            $line = trim(implode(' ', $output));
-
-            if ($code === 0 && stripos($line, 'WP-CLI') !== false) {
-                $info['detected'] = true;
-                $info['version']  = $line;
-            }
-        }
-
-        set_transient('bs_wpcli', $info, 6 * HOUR_IN_SECONDS);
-
-        return $info;
+        return [
+            'detected' => $status['available'] === true,
+            'version'  => (string) ($status['version'] ?? ''),
+            'runtime'  => is_array($status['runtime'] ?? null) ? (string) ($status['runtime']['type'] ?? '') : '',
+        ];
     }
 }
 

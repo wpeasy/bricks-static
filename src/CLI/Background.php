@@ -10,45 +10,36 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\CLI;
 
-use WPEasy\BricksStatic\Support\Environment;
+use WPEasy\BricksStatic\Support\Paths;
+use WPEasy\BricksStatic\System\WpCli;
 
 defined('ABSPATH') || exit;
 
 /**
- * Lets the dashboard run a sync via WP-CLI (no web-worker contention) when the
- * host supports it: a separate process renders the pages while the browser just
- * polls status. Falls back to browser-driven curl when unavailable.
+ * Lets the dashboard run a sync via WP-CLI (no web-worker contention) whenever
+ * WP-CLI is reachable — including Local by Flywheel, whose bundled php.exe +
+ * wp-cli.phar are resolved by WpCli. A separate process renders the pages while
+ * the browser polls status. Falls back to browser-driven curl when WP-CLI is
+ * genuinely unavailable.
  */
 final class Background {
 
     /**
-     * Whether we can spawn a detached WP-CLI process on this host.
-     *
-     * Requires a POSIX shell (not Windows/Local — there we steer users to run
-     * the command manually), exec(), and a `wp` binary on the web PATH.
+     * Whether we can spawn a WP-CLI process on this host.
      */
     public static function can_spawn(): bool {
-        if (DIRECTORY_SEPARATOR === '\\') {
-            return false;
-        }
-
-        if (!Environment::exec_available()) {
-            return false;
-        }
-
-        $info = Environment::wp_cli();
+        $available = WpCli::status()['available'] === true;
 
         /**
-         * Filters whether the dashboard may auto-run sync via a spawned WP-CLI
-         * process. Return false to always use the browser-driven path.
+         * Filters whether the dashboard may auto-run sync via WP-CLI.
          *
          * @param bool $can Whether spawning is allowed.
          */
-        return (bool) apply_filters('bs_can_spawn_cli', !empty($info['detected']));
+        return (bool) apply_filters('bs_can_spawn_cli', $available);
     }
 
     /**
-     * Spawn `wp bricks-static run` to drive the existing job to completion.
+     * Spawn `wp bricks-static run` (detached) to drive the existing job.
      *
      * @return bool True if the spawn was attempted.
      */
@@ -57,11 +48,42 @@ final class Background {
             return false;
         }
 
-        $command = 'wp bricks-static run --path=' . escapeshellarg(rtrim((string) ABSPATH, '/\\'));
+        $command = WpCli::build_command('bricks-static run --path=' . escapeshellarg(rtrim((string) ABSPATH, '/\\')));
+        if ($command === null) {
+            return false;
+        }
 
-        // Detached + non-blocking so the web request returns immediately.
-        @exec('nohup ' . $command . ' > /dev/null 2>&1 &');
+        return self::spawn_detached($command);
+    }
 
-        return true;
+    /**
+     * Launch a command detached so the web request returns immediately.
+     *
+     * @param string $command Fully-formed shell command.
+     */
+    private static function spawn_detached(string $command): bool {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            // Windows: wrap the (heavily-quoted) command in a .bat so START gets
+            // a single clean argument — nested quotes break START otherwise.
+            $bat = Paths::cache_dir() . '/.bs-run.bat';
+            if (!Paths::ensure() || file_put_contents($bat, "@echo off\r\n" . $command . " > NUL 2>&1\r\n") === false) {
+                return false;
+            }
+            $bat_win = str_replace('/', '\\', $bat);
+
+            $handle = @popen('start "bricks-static" /B "' . $bat_win . '"', 'r');
+            if (is_resource($handle)) {
+                pclose($handle);
+                return true;
+            }
+            return false;
+        }
+
+        if (function_exists('exec')) {
+            @exec('nohup ' . $command . ' > /dev/null 2>&1 &');
+            return true;
+        }
+
+        return false;
     }
 }

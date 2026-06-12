@@ -8,8 +8,17 @@
   let result = $state<Preflight | null>(null);
   let copied = $state(false);
 
-  // Show the notice on detected local hosts, or once a render test has failed.
-  let visible = $derived(isLocal || (result !== null && !result.ok));
+  // Positive: WP-CLI will be used (no web-server pressure).
+  // Warning: only on a constrained host where WP-CLI isn't usable.
+  let mode = $derived.by<'cli' | 'warn' | 'none'>(() => {
+    if (wpCli.detected) {
+      return 'cli';
+    }
+    if (isLocal || (result !== null && !result.ok)) {
+      return 'warn';
+    }
+    return 'none';
+  });
 
   async function test(): Promise<void> {
     testing = true;
@@ -33,27 +42,26 @@
   }
 </script>
 
-{#if visible}
-  <section class="bs-notice bs-stack bs-stack--sm">
-    <div class="bs-row bs-row--between">
-      <strong>Heads up — run Sync from the command line on this host</strong>
-    </div>
+{#if mode === 'cli'}
+  <section class="bs-notice bs-notice--ok bs-row">
+    <span class="bs-notice__dot"></span>
     <p>
-      This looks like a local/dev environment that serves PHP requests one at a time.
-      Browser-driven Sync renders each page with a loopback request, which can't get a
-      second worker here and will time out. Run it from a terminal instead — same result,
-      no contention:
+      <strong>WP-CLI detected{wpCli.version ? ` (${wpCli.version})` : ''}</strong> — pages are rendered
+      by a WP-CLI process, taking the load off your web server.
+    </p>
+  </section>
+{:else if mode === 'warn'}
+  <section class="bs-notice bs-notice--warn bs-stack bs-stack--sm">
+    <strong>Run Sync from the command line on this host</strong>
+    <p>
+      This environment serves PHP requests one at a time, so browser-driven Sync can
+      time out. Run it from a terminal instead:
     </p>
     <div class="bs-notice__cmd">
       <code>{cli}</code>
       <button type="button" class="bs-link" onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
     </div>
     <p class="bs-notice__hint">Add <code>--check</code> for a dry run, or <code>--prune</code> to remove deleted files.</p>
-    {#if wpCli.detected}
-      <p class="bs-notice__hint">✓ WP-CLI detected on this server: <code>{wpCli.version}</code></p>
-    {:else}
-      <p class="bs-notice__hint">Local includes WP-CLI — run the command in Local's “Open site shell”, or your terminal.</p>
-    {/if}
     <div class="bs-row">
       <button type="button" class="bs-btn bs-btn--secondary" onclick={test} disabled={testing}>
         {testing ? 'Testing…' : 'Test browser rendering'}
@@ -69,11 +77,31 @@
 
 <style>
   .bs-notice {
-    padding: var(--bs-space--lg);
-    border: var(--bs-border--1) solid var(--bs-color-warning);
-    border-left-width: var(--bs-border--4);
+    padding: var(--bs-space--md) var(--bs-space--lg);
+    border: var(--bs-border--1) solid var(--bs-color-border);
     border-radius: var(--bs-radius--lg);
+    background: var(--bs-color-surface--raised);
+  }
+
+  .bs-notice--ok {
+    border-color: var(--bs-color-success);
+    border-left-width: var(--bs-border--4);
+    align-items: center;
+    gap: var(--bs-space--sm);
+  }
+
+  .bs-notice--warn {
+    border-color: var(--bs-color-warning);
+    border-left-width: var(--bs-border--4);
     background: color-mix(in srgb, var(--bs-color-warning) 8%, var(--bs-color-surface--raised));
+  }
+
+  .bs-notice__dot {
+    flex: 0 0 auto;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: var(--bs-radius--full);
+    background: var(--bs-color-success);
   }
 
   .bs-notice p {

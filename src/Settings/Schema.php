@@ -38,7 +38,7 @@ final class Schema {
             'port'           => ['type' => 'int',    'default' => 0,               'constant' => 'BS_PORT'],
             'username'       => ['type' => 'string', 'default' => '',              'constant' => 'BS_USERNAME'],
             'password'       => ['type' => 'string', 'default' => '',              'constant' => 'BS_PASSWORD', 'secret' => true],
-            'remotePath'     => ['type' => 'path',   'default' => 'public_html/',  'constant' => 'BS_REMOTE_PATH'],
+            'remotePath'     => ['type' => 'path',   'default' => '',              'constant' => 'BS_REMOTE_PATH'],
             'basePath'       => ['type' => 'path',   'default' => '/',             'constant' => 'BS_BASE_PATH'],
             'destinationUrl' => ['type' => 'url',    'default' => '',              'constant' => 'BS_DESTINATION_URL'],
         ];
