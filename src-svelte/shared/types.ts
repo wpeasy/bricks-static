@@ -128,7 +128,7 @@ export interface SyncTotals {
 }
 
 export interface SyncSnapshot {
-  phase: 'idle' | 'collect' | 'render' | 'assets' | 'finalize' | 'upload' | 'done' | 'error' | 'cancelled';
+  phase: 'idle' | 'collect' | 'render' | 'assets' | 'finalize' | 'package' | 'upload' | 'done' | 'error' | 'cancelled';
   type?: 'check' | 'sync';
   message?: string;
   counts?: SyncCounts;

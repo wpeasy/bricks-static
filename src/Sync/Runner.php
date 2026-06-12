@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Sync;
 
+use WPEasy\BricksStatic\Deploy\PackageDeployer;
 use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Render\AssetExtractor;
@@ -240,6 +241,9 @@ final class Runner {
                 break;
             case 'finalize':
                 self::tick_finalize($job);
+                break;
+            case 'package':
+                self::tick_package($job);
                 break;
             case 'upload':
                 self::tick_upload($job);
@@ -574,9 +578,55 @@ final class Runner {
         $job->data['failed']             = [];
         $job->data['htaccessDone']       = false;
         $job->data['holdingShown']       = false;
-        $job->data['phase']              = 'upload';
-        $job->data['message']            = sprintf('Uploading to %s…', $name);
+
+        // Prefer the package strategy (one zip + server-side extract) when the
+        // host can run it; otherwise fall back to per-file uploads.
+        if (self::should_package($dest_id)) {
+            $job->data['phase']   = 'package';
+            $job->data['message'] = sprintf('Packaging deploy for %s…', $name);
+        } else {
+            $job->data['phase']   = 'upload';
+            $job->data['message'] = sprintf('Uploading to %s…', $name);
+        }
     }
+
+    /**
+     * Whether to deploy to a destination as a single package: the host must be
+     * able to build a zip locally, the destination must have a public URL to call
+     * the helper, and package deploy must not have already failed there.
+     */
+    private static function should_package(string $dest_id): bool {
+        if (!PackageDeployer::can_build() || get_option(self::PACKAGE_OFF . $dest_id)) {
+            return false;
+        }
+
+        return self::package_base_url(Destinations::get($dest_id)) !== '';
+    }
+
+    /**
+     * Public URL the destination is served from (to call the deploy helper):
+     * the configured Destination URL, else a best-effort guess from the host.
+     *
+     * @param \WPEasy\BricksStatic\Settings\Destination|null $dest Destination.
+     */
+    private static function package_base_url($dest): string {
+        if ($dest === null) {
+            return '';
+        }
+        $url = trim((string) $dest->get('destinationUrl'));
+        if ($url === '') {
+            $host = (string) ($dest->connection_config()['host'] ?? '');
+            $url  = $host !== '' ? 'https://' . $host : '';
+        }
+
+        return $url;
+    }
+
+    /**
+     * Option-name prefix flagging a destination where package deploy failed, so
+     * we stop retrying it (cleared when the connection changes or on reset).
+     */
+    private const PACKAGE_OFF = 'bs_pkg_off_';
 
     /**
      * Advance to the next target destination, or finish.
@@ -697,6 +747,87 @@ final class Runner {
         if ($json !== false) {
             file_put_contents(Paths::cache_dir() . '/manifest.json', $json);
         }
+    }
+
+    /**
+     * Deploy the whole target as a single package: upload one zip + a one-shot
+     * helper, then extract server-side. Falls back to per-file uploads if the
+     * host can't run the helper.
+     *
+     * @param Job $job Active job.
+     */
+    private static function tick_package(Job $job): void {
+        try {
+            $transport = self::target_transport($job);
+        } catch (\Throwable $e) {
+            self::close_connection();
+            $job->data['phase']   = 'error';
+            $job->data['message'] = 'Upload connection failed: ' . $e->getMessage();
+            $job->save();
+            return;
+        }
+
+        $manifest = Manifest::load(Manifest::DEPLOY_OPTION);
+
+        self::beat();
+
+        // Server config first (merge-safe), same as the per-file path.
+        self::upload_htaccess($transport);
+        update_option('bs_nginx_snippet', HtaccessBuilder::nginx(), false);
+        self::beat();
+
+        $files = [];
+        foreach ($job->data['queue']['uploads'] as $relative) {
+            $meta = $manifest[$relative] ?? null;
+            if ($meta !== null && is_file($meta['src'])) {
+                $files[$relative] = $meta['src'];
+            }
+        }
+
+        $deletes  = !empty($job->data['prune']) ? array_values($job->data['removedFiles']) : [];
+        $dest     = Destinations::get((string) ($job->data['destId'] ?? ''));
+        $base_url = self::package_base_url($dest);
+
+        $result = PackageDeployer::deploy($transport, $base_url, $files, $deletes, self::package_sslverify($base_url));
+
+        if (empty($result['ok'])) {
+            // Don't retry package here; fall back to per-file uploads (which will
+            // re-run their own setup, including .htaccess — harmless).
+            update_option(self::PACKAGE_OFF . (string) ($job->data['destId'] ?? ''), 1, false);
+            $job->data['phase']        = 'upload';
+            $job->data['htaccessDone'] = false;
+            $job->data['holdingShown'] = false;
+            $job->data['message']      = 'Package deploy unavailable here — uploading file by file…';
+            $job->save();
+            return;
+        }
+
+        // The remote now holds the full deploy manifest.
+        Manifest::save(self::pushed_option($job), Manifest::pushed_from($manifest));
+        $job->data['counts']['uploaded'] += (int) $result['extracted'];
+        $job->data['counts']['pruned']   += (int) $result['deleted'];
+        $job->data['queue']['uploads']    = [];
+        $job->data['removedFiles']        = [];
+
+        self::advance_target($job);
+        if (in_array($job->data['phase'], ['done', 'error', 'cancelled'], true)) {
+            self::close_connection();
+        }
+        $job->save();
+    }
+
+    /**
+     * Whether to verify TLS when calling a destination's deploy helper (relaxed
+     * for local/dev hosts, like the renderer).
+     */
+    private static function package_sslverify(string $url): bool {
+        $host  = (string) wp_parse_url($url, PHP_URL_HOST);
+        $local = $host === 'localhost'
+            || strpos($host, '127.0.0.1') === 0
+            || (bool) preg_match('/\.(local|test)$/i', $host);
+
+        /** Filters TLS verification for the package-deploy helper call. */
+        return (bool) apply_filters('bs_package_sslverify', !$local, $url);
     }
 
     /**

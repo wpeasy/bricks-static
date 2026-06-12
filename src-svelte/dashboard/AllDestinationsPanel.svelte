@@ -56,6 +56,8 @@
 
 <style>
   .bs-card {
+    /* Span two columns of the auto-fit panels grid (falls back to 1 when narrow). */
+    grid-column: span 2;
     padding: var(--bs-space--lg);
     background: var(--bs-color-surface--raised);
     border: var(--bs-border--1) solid var(--bs-color-border);

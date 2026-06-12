@@ -196,8 +196,11 @@ final class SyncController {
 
         // Clear EVERY destination's push record, not just the primary's — a reset
         // means "forget what's on the remotes" so the next sync uploads in full.
+        // Also re-probe package-deploy capability.
         foreach (Destinations::all() as $dest) {
-            delete_option(Destinations::pushed_option((string) ($dest['id'] ?? '')));
+            $id = (string) ($dest['id'] ?? '');
+            delete_option(Destinations::pushed_option($id));
+            delete_option('bs_pkg_off_' . $id);
         }
 
         delete_option(Manifest::RENDER_OPTION);

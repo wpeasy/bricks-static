@@ -139,9 +139,11 @@ final class Destinations {
 
                 // If the destination now points at a different server/location,
                 // its push record described the OLD target and is no longer valid
-                // — drop it so the next sync uploads everything afresh.
+                // — drop it so the next sync uploads everything afresh, and
+                // re-probe whether package deploy works on the new host.
                 if (self::target_signature($after) !== $before) {
                     delete_option(self::pushed_option($id));
+                    delete_option('bs_pkg_off_' . $id);
                 }
 
                 return $after;

@@ -19,6 +19,7 @@
     render: 'Rendering pages',
     assets: 'Processing assets',
     finalize: 'Finalising',
+    package: 'Packaging & deploying',
     upload: 'Uploading',
     prune: 'Removing old files',
     done: 'Done',
