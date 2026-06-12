@@ -45,6 +45,12 @@ export interface DestinationStatus {
   inSync: boolean;
 }
 
+export interface DestinationDeploy {
+  strategy: 'package' | 'perfile';
+  canBuild: boolean;
+  hasUrl: boolean;
+}
+
 export interface DestinationDisplay extends SettingsDisplay {
   id: string;
   name: string;
@@ -53,6 +59,7 @@ export interface DestinationDisplay extends SettingsDisplay {
   isPrimary: boolean;
   replacements: Replacement[];
   status: DestinationStatus;
+  deploy: DestinationDeploy;
 }
 
 export interface DestinationsResponse {

@@ -12,6 +12,7 @@ namespace WPEasy\BricksStatic\REST;
 
 use WP_REST_Request;
 use WP_REST_Response;
+use WPEasy\BricksStatic\Deploy\PackageDeployer;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Sync\Manifest;
 use WPEasy\BricksStatic\Transport\TransportFactory;
@@ -186,6 +187,15 @@ final class DestinationsController {
                 'connected' => is_array($state) && !empty($state['ok']),
                 'hasPushed' => !empty($pushed),
                 'inSync'    => !empty($pushed) && !empty($render) && empty($diff['changed']) && empty($diff['removed']),
+            ];
+
+            // How this destination will be deployed (fast package vs per-file),
+            // and whether an explicit Destination URL is set (we guess otherwise).
+            $obj = Destinations::get($id);
+            $dest['deploy'] = [
+                'strategy' => PackageDeployer::available_for($id, $obj) ? 'package' : 'perfile',
+                'canBuild' => PackageDeployer::can_build(),
+                'hasUrl'   => $obj !== null && trim((string) $obj->get('destinationUrl')) !== '',
             ];
         }
         unset($dest);

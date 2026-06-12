@@ -40,6 +40,27 @@
   let confirmRemove = $state(false);
   let busy = $derived(saving || testing || running);
 
+  // How this destination deploys (live from /destinations).
+  let deployNote = $derived.by<{ tone: 'ok' | 'muted'; text: string } | null>(() => {
+    const dp = destination.deploy;
+    if (!dp) return null;
+    if (dp.strategy === 'package') {
+      return {
+        tone: 'ok',
+        text: dp.hasUrl
+          ? 'Fast deploy: one package, extracted on the destination.'
+          : 'Fast deploy enabled — the URL was guessed from the host. Set a Destination URL above to be sure it keeps working.',
+      };
+    }
+    if (!dp.canBuild) {
+      return { tone: 'muted', text: 'Per-file upload — ZipArchive isn’t available on this server.' };
+    }
+    return {
+      tone: 'muted',
+      text: 'Per-file upload (slower). Set a Destination URL above to enable fast package deploy (needs PHP on the host).',
+    };
+  });
+
   function handleTransportChange(): void {
     if (!d.port.fromConstant && KNOWN_DEFAULT_PORTS.includes(port)) {
       port = DEFAULT_PORTS[transport];
@@ -135,6 +156,10 @@
     </div>
   </div>
 
+  {#if deployNote}
+    <p class="bs-deploy bs-deploy--{deployNote.tone}">{#if deployNote.tone === 'ok'}⚡ {/if}{deployNote.text}</p>
+  {/if}
+
   {#if message}
     <p class="bs-msg bs-msg--{messageOk ? 'ok' : 'err'}">{message}</p>
   {/if}
@@ -221,6 +246,19 @@
   .bs-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  .bs-deploy {
+    margin: 0;
+    font-size: var(--bs-text--sm);
+  }
+
+  .bs-deploy--ok {
+    color: var(--bs-color-success);
+  }
+
+  .bs-deploy--muted {
+    color: var(--bs-color-text--muted);
   }
 
   .bs-msg {

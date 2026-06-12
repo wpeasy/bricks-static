@@ -30,10 +30,49 @@ final class PackageDeployer {
     private const TTL = 600;
 
     /**
+     * Option-name prefix flagging a destination where package deploy failed, so
+     * we stop retrying it (cleared when the connection changes or on reset).
+     */
+    public const OFF_PREFIX = 'bs_pkg_off_';
+
+    /**
      * Whether this server can build a package locally.
      */
     public static function can_build(): bool {
         return class_exists('ZipArchive');
+    }
+
+    /**
+     * Public URL a destination is served from (used to call the helper): its
+     * configured Destination URL, else a best-effort guess from the host.
+     *
+     * @param \WPEasy\BricksStatic\Settings\Destination|null $dest Destination.
+     */
+    public static function base_url($dest): string {
+        if ($dest === null) {
+            return '';
+        }
+        $url = trim((string) $dest->get('destinationUrl'));
+        if ($url === '') {
+            $host = (string) ($dest->connection_config()['host'] ?? '');
+            $url  = $host !== '' ? 'https://' . $host : '';
+        }
+
+        return $url;
+    }
+
+    /**
+     * Whether a destination can be deployed as a package: this host can build a
+     * zip, the destination has a callable URL, and package deploy hasn't already
+     * failed there.
+     *
+     * @param string                                          $dest_id Destination id.
+     * @param \WPEasy\BricksStatic\Settings\Destination|null  $dest    Destination.
+     */
+    public static function available_for(string $dest_id, $dest): bool {
+        return self::can_build()
+            && self::base_url($dest) !== ''
+            && !get_option(self::OFF_PREFIX . $dest_id);
     }
 
     /**

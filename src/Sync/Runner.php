@@ -591,42 +591,12 @@ final class Runner {
     }
 
     /**
-     * Whether to deploy to a destination as a single package: the host must be
-     * able to build a zip locally, the destination must have a public URL to call
-     * the helper, and package deploy must not have already failed there.
+     * Whether to deploy to a destination as a single package (see
+     * PackageDeployer::available_for).
      */
     private static function should_package(string $dest_id): bool {
-        if (!PackageDeployer::can_build() || get_option(self::PACKAGE_OFF . $dest_id)) {
-            return false;
-        }
-
-        return self::package_base_url(Destinations::get($dest_id)) !== '';
+        return PackageDeployer::available_for($dest_id, Destinations::get($dest_id));
     }
-
-    /**
-     * Public URL the destination is served from (to call the deploy helper):
-     * the configured Destination URL, else a best-effort guess from the host.
-     *
-     * @param \WPEasy\BricksStatic\Settings\Destination|null $dest Destination.
-     */
-    private static function package_base_url($dest): string {
-        if ($dest === null) {
-            return '';
-        }
-        $url = trim((string) $dest->get('destinationUrl'));
-        if ($url === '') {
-            $host = (string) ($dest->connection_config()['host'] ?? '');
-            $url  = $host !== '' ? 'https://' . $host : '';
-        }
-
-        return $url;
-    }
-
-    /**
-     * Option-name prefix flagging a destination where package deploy failed, so
-     * we stop retrying it (cleared when the connection changes or on reset).
-     */
-    private const PACKAGE_OFF = 'bs_pkg_off_';
 
     /**
      * Advance to the next target destination, or finish.
@@ -786,14 +756,14 @@ final class Runner {
 
         $deletes  = !empty($job->data['prune']) ? array_values($job->data['removedFiles']) : [];
         $dest     = Destinations::get((string) ($job->data['destId'] ?? ''));
-        $base_url = self::package_base_url($dest);
+        $base_url = PackageDeployer::base_url($dest);
 
         $result = PackageDeployer::deploy($transport, $base_url, $files, $deletes, self::package_sslverify($base_url));
 
         if (empty($result['ok'])) {
             // Don't retry package here; fall back to per-file uploads (which will
             // re-run their own setup, including .htaccess — harmless).
-            update_option(self::PACKAGE_OFF . (string) ($job->data['destId'] ?? ''), 1, false);
+            update_option(PackageDeployer::OFF_PREFIX . (string) ($job->data['destId'] ?? ''), 1, false);
             $job->data['phase']        = 'upload';
             $job->data['htaccessDone'] = false;
             $job->data['holdingShown'] = false;
