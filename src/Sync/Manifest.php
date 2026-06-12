@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Sync;
 
+use WPEasy\BricksStatic\Render\StableHash;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -70,7 +72,7 @@ final class Manifest {
 
             $manifest[$relative] = [
                 'size' => (int) $file->getSize(),
-                'hash' => (string) md5_file($path),
+                'hash' => StableHash::of_file($path),
             ];
         }
 
@@ -99,7 +101,7 @@ final class Manifest {
 
             $manifest[$relative] = [
                 'size' => (int) filesize($source),
-                'hash' => (string) md5_file($source),
+                'hash' => StableHash::of_file($source),
                 'src'  => wp_normalize_path($source),
             ];
         }

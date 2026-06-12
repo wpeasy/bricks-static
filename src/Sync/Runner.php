@@ -16,6 +16,7 @@ use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Render\AssetExtractor;
 use WPEasy\BricksStatic\Render\CompatibilityScanner;
 use WPEasy\BricksStatic\Render\PageRenderer;
+use WPEasy\BricksStatic\Render\StableHash;
 use WPEasy\BricksStatic\Render\TextReplacer;
 use WPEasy\BricksStatic\Render\UrlRewriter;
 use WPEasy\BricksStatic\Support\Paths;
@@ -658,7 +659,7 @@ final class Runner {
                 Compressor::write_sibling($path);
             }
 
-            $out[$relative] = ['size' => strlen($transformed), 'hash' => md5($transformed), 'src' => wp_normalize_path($path)];
+            $out[$relative] = ['size' => strlen($transformed), 'hash' => StableHash::of_html($transformed), 'src' => wp_normalize_path($path)];
         }
 
         return $out;
