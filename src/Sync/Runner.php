@@ -109,6 +109,17 @@ final class Runner {
     }
 
     /**
+     * Current snapshot of the active job without advancing it.
+     *
+     * @return array<string,mixed>
+     */
+    public static function status(): array {
+        $job = Job::load();
+
+        return $job === null ? ['phase' => 'idle'] : self::snapshot($job);
+    }
+
+    /**
      * Render a batch of queued pages.
      *
      * @param Job $job Active job.

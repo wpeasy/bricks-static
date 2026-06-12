@@ -13,6 +13,7 @@ namespace WPEasy\BricksStatic;
 use WPEasy\BricksStatic\Admin\Menu;
 use WPEasy\BricksStatic\REST\ConnectionController;
 use WPEasy\BricksStatic\REST\StatusController;
+use WPEasy\BricksStatic\REST\SyncController;
 
 defined('ABSPATH') || exit;
 
@@ -38,5 +39,6 @@ final class Plugin {
     public static function register_rest_routes(): void {
         ConnectionController::register();
         StatusController::register();
+        SyncController::register();
     }
 }

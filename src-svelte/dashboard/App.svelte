@@ -1,13 +1,17 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../shared/api';
-  import type { ConnectionResponse, Status } from '../shared/types';
+  import type { ConnectionResponse, Status, SyncSnapshot } from '../shared/types';
   import StatusPanel from './StatusPanel.svelte';
   import MethodPanel from './MethodPanel.svelte';
+  import ActionsPanel from './ActionsPanel.svelte';
+  import ProgressPanel from './ProgressPanel.svelte';
   import ConnectionForm from './ConnectionForm.svelte';
 
   let connection = $state<ConnectionResponse | null>(null);
   let status = $state<Status | null>(null);
+  let sync = $state<SyncSnapshot | null>(null);
+  let syncing = $state(false);
   let loadError = $state('');
 
   async function loadStatus(): Promise<void> {
@@ -31,9 +35,51 @@
     void loadStatus();
   }
 
+  // Drive the batched run: tick until the job is no longer running.
+  async function drive(): Promise<void> {
+    if (syncing) {
+      return;
+    }
+    syncing = true;
+    try {
+      while (sync && sync.running) {
+        sync = await api.syncTick();
+      }
+    } catch (e) {
+      loadError = (e as Error).message;
+    } finally {
+      syncing = false;
+      void loadStatus();
+    }
+  }
+
+  async function startCheck(): Promise<void> {
+    try {
+      sync = await api.syncStart('check');
+      await drive();
+    } catch (e) {
+      loadError = (e as Error).message;
+    }
+  }
+
+  async function cancelSync(): Promise<void> {
+    try {
+      sync = await api.syncCancel();
+    } catch (e) {
+      loadError = (e as Error).message;
+    }
+  }
+
   onMount(() => {
     void loadConnection();
     void loadStatus();
+    // Resume a run already in progress (e.g. after a page reload).
+    void api.syncStatus().then((snap) => {
+      sync = snap;
+      if (snap.running) {
+        void drive();
+      }
+    });
   });
 </script>
 
@@ -51,6 +97,8 @@
 
   <StatusPanel {status} />
   <MethodPanel method={status?.method ?? null} />
+  <ActionsPanel running={syncing} onCheck={startCheck} onCancel={cancelSync} />
+  <ProgressPanel snapshot={sync} />
 
   {#if connection}
     <ConnectionForm {connection} onsaved={handleSaved} onrefresh={loadStatus} />

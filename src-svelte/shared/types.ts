@@ -67,6 +67,34 @@ export interface TestResult {
   message: string;
 }
 
+export interface SyncCounts {
+  pagesDone: number;
+  assetsDone: number;
+  bytes: number;
+  files: number;
+}
+
+export interface SyncTotals {
+  pages: number;
+  assets: number;
+}
+
+export interface SyncSnapshot {
+  phase: 'idle' | 'collect' | 'render' | 'assets' | 'finalize' | 'done' | 'error' | 'cancelled';
+  type?: 'check' | 'sync';
+  message?: string;
+  counts?: SyncCounts;
+  totals?: SyncTotals;
+  queued?: { pages: number; assets: number };
+  errorCount?: number;
+  skippedCount?: number;
+  errors?: Array<{ url: string; error: string }>;
+  skipped?: Array<{ url: string; reason: string }>;
+  startedAt?: number;
+  updatedAt?: number;
+  running?: boolean;
+}
+
 /** Payload sent to POST /connection and /connection/test. */
 export interface ConnectionInput {
   transport?: Transport;

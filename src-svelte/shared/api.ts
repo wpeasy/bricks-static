@@ -2,6 +2,7 @@ import type {
   ConnectionInput,
   ConnectionResponse,
   Status,
+  SyncSnapshot,
   TestResult,
 } from './types';
 
@@ -56,4 +57,8 @@ export const api = {
   saveConnection: (data: ConnectionInput) => request<ConnectionResponse>('/connection', 'POST', data),
   testConnection: (data: ConnectionInput) => request<TestResult>('/connection/test', 'POST', data),
   getStatus: () => request<Status>('/status'),
+  syncStart: (type: 'check' | 'sync') => request<SyncSnapshot>('/sync/start', 'POST', { type }),
+  syncTick: () => request<SyncSnapshot>('/sync/tick', 'POST', {}),
+  syncStatus: () => request<SyncSnapshot>('/sync'),
+  syncCancel: () => request<SyncSnapshot>('/sync/cancel', 'POST', {}),
 };
