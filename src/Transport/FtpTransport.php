@@ -47,6 +47,15 @@ final class FtpTransport implements TransportInterface {
     private $conn = null;
 
     /**
+     * Remote directories already created/verified this session, so we don't spend
+     * an ftp_chdir round trip per file (the connection is reused across the whole
+     * sync). Keyed by absolute remote dir.
+     *
+     * @var array<string,true>
+     */
+    private array $ensured_dirs = [];
+
+    /**
      * @param array<string,mixed> $config Connection config.
      * @param bool                $secure Use explicit FTPS (TLS) instead of plain FTP.
      */
@@ -113,6 +122,7 @@ final class FtpTransport implements TransportInterface {
             @ftp_close($this->conn);
             $this->conn = null;
         }
+        $this->ensured_dirs = [];
     }
 
     /**
@@ -186,7 +196,13 @@ final class FtpTransport implements TransportInterface {
     private function ensure_dir(string $dir): void {
         $conn = $this->require_connection();
         $dir  = rtrim($dir, '/');
-        if ($dir === '' || @ftp_chdir($conn, $dir)) {
+        if ($dir === '' || isset($this->ensured_dirs[$dir])) {
+            return;
+        }
+
+        // Fast path: the directory already exists (one round trip, then cached).
+        if (@ftp_chdir($conn, $dir)) {
+            $this->ensured_dirs[$dir] = true;
             return;
         }
 
@@ -197,9 +213,13 @@ final class FtpTransport implements TransportInterface {
                 continue;
             }
             $path .= '/' . $part;
+            if (isset($this->ensured_dirs[$path])) {
+                continue;
+            }
             if (!@ftp_chdir($conn, $path)) {
                 @ftp_mkdir($conn, $path);
             }
+            $this->ensured_dirs[$path] = true;
         }
     }
 
