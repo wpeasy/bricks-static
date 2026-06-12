@@ -21,9 +21,15 @@ defined('ABSPATH') || exit;
 final class Manifest {
 
     /**
-     * Option holding the manifest of the most recent local render.
+     * Option holding the manifest of the most recent local render (base).
      */
     public const RENDER_OPTION = 'bs_render_manifest';
+
+    /**
+     * Option holding the manifest for the destination currently being deployed
+     * (base render with that destination's text replacements applied to HTML).
+     */
+    public const DEPLOY_OPTION = 'bs_deploy_manifest';
 
     /**
      * Option holding the manifest of the last successful push.

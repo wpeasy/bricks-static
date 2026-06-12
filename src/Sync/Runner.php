@@ -15,6 +15,7 @@ use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Render\AssetExtractor;
 use WPEasy\BricksStatic\Render\CompatibilityScanner;
 use WPEasy\BricksStatic\Render\PageRenderer;
+use WPEasy\BricksStatic\Render\TextReplacer;
 use WPEasy\BricksStatic\Render\UrlRewriter;
 use WPEasy\BricksStatic\Support\Paths;
 use WPEasy\BricksStatic\Support\Url;
@@ -331,8 +332,12 @@ final class Runner {
             return;
         }
 
-        // Sync: compute the delta against what was last pushed and upload it.
-        $diff = Manifest::diff(Manifest::load(self::pushed_option($job)), $manifest);
+        // Sync: build this destination's deploy manifest (base render + its text
+        // replacements applied to HTML), then delta it against what was pushed.
+        $deploy = self::build_deploy_manifest($manifest, (string) ($job->data['destId'] ?? ''));
+        Manifest::save(Manifest::DEPLOY_OPTION, $deploy);
+
+        $diff = Manifest::diff(Manifest::load(self::pushed_option($job)), $deploy);
 
         $job->data['queue']['uploads'] = $diff['changed'];
         $job->data['totals']['uploads'] = count($diff['changed']);
@@ -341,6 +346,74 @@ final class Runner {
         $job->data['phase']             = 'upload';
         $job->data['message']           = count($diff['changed']) > 0 ? 'Uploading…' : 'Already up to date — writing server config…';
         $job->save();
+    }
+
+    /**
+     * Build the deploy manifest for a destination: the base render with that
+     * destination's literal text replacements applied to HTML (written to a
+     * per-destination deploy dir). Files without changes reference the base.
+     *
+     * @param array<string,array{size:int,hash:string,src:string}> $base    Base render manifest.
+     * @param string                                                $dest_id Target destination id.
+     * @return array<string,array{size:int,hash:string,src:string}>
+     */
+    private static function build_deploy_manifest(array $base, string $dest_id): array {
+        $dest         = $dest_id !== '' ? Destinations::get($dest_id) : Destinations::primary();
+        $replacements = $dest !== null ? $dest->replacements() : [];
+
+        if (empty($replacements)) {
+            return $base; // No transform — deploy the base render verbatim.
+        }
+
+        $searches = array_column($replacements, 'search');
+        $replaces = array_column($replacements, 'replace');
+
+        $deploy_dir = Paths::cache_dir() . '/deploy/' . ($dest !== null ? $dest->id() : 'default');
+        self::reset_dir($deploy_dir);
+
+        $out = [];
+        foreach ($base as $relative => $meta) {
+            if (substr(strtolower($relative), -5) !== '.html' || !is_file($meta['src'])) {
+                $out[$relative] = $meta;
+                continue;
+            }
+
+            $transformed = TextReplacer::apply((string) file_get_contents($meta['src']), $searches, $replaces);
+            $path        = $deploy_dir . '/' . $relative;
+            $dir         = dirname($path);
+
+            if ((!is_dir($dir) && !wp_mkdir_p($dir)) || file_put_contents($path, $transformed) === false) {
+                $out[$relative] = $meta; // fall back to base on write failure
+                continue;
+            }
+            if (Compressor::is_compressible($relative)) {
+                Compressor::write_sibling($path);
+            }
+
+            $out[$relative] = ['size' => strlen($transformed), 'hash' => md5($transformed), 'src' => wp_normalize_path($path)];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Recursively empty (and create) a directory.
+     *
+     * @param string $dir Directory.
+     */
+    private static function reset_dir(string $dir): void {
+        if (!is_dir($dir)) {
+            wp_mkdir_p($dir);
+            return;
+        }
+
+        $items = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($items as $item) {
+            $item->isDir() ? @rmdir($item->getPathname()) : @unlink($item->getPathname());
+        }
     }
 
     /**
@@ -385,7 +458,7 @@ final class Runner {
      * @param Job $job Active job.
      */
     private static function tick_upload(Job $job): void {
-        $manifest = Manifest::load(Manifest::RENDER_OPTION);
+        $manifest = Manifest::load(Manifest::DEPLOY_OPTION);
 
         try {
             $transport = TransportFactory::make();
