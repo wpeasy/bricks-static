@@ -69,11 +69,13 @@ final class Job {
             // Cached files (pages, rewritten CSS) point into the cache; binary
             // assets point straight at the source filesystem (never copied).
             'plan'         => [],
-            'counts'       => ['pagesDone' => 0, 'assetsDone' => 0, 'uploaded' => 0, 'bytes' => 0, 'files' => 0],
+            'counts'       => ['pagesDone' => 0, 'assetsDone' => 0, 'uploaded' => 0, 'pruned' => 0, 'bytes' => 0, 'files' => 0],
             'totals'       => ['pages' => 0, 'assets' => 0, 'uploads' => 0],
+            'prune'        => false,
             'htaccessDone' => false,
             'holdingShown' => false,
             'failed'       => [],
+            'removedFiles' => [],
             'removed'      => 0,
             'errors'    => [],
             'skipped'   => [],

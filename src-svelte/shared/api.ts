@@ -58,9 +58,11 @@ export const api = {
   saveConnection: (data: ConnectionInput) => request<ConnectionResponse>('/connection', 'POST', data),
   testConnection: (data: ConnectionInput) => request<TestResult>('/connection/test', 'POST', data),
   getStatus: () => request<Status>('/status'),
-  syncStart: (type: 'check' | 'sync') => request<SyncSnapshot>('/sync/start', 'POST', { type }),
+  syncStart: (type: 'check' | 'sync', opts: { prune?: boolean } = {}) =>
+    request<SyncSnapshot>('/sync/start', 'POST', { type, ...opts }),
   syncTick: () => request<SyncSnapshot>('/sync/tick', 'POST', {}),
   syncStatus: () => request<SyncSnapshot>('/sync'),
   syncCancel: () => request<SyncSnapshot>('/sync/cancel', 'POST', {}),
+  syncReset: () => request<{ ok: boolean }>('/sync/reset', 'POST', {}),
   serverConfig: () => request<ServerConfig>('/sync/server-config'),
 };

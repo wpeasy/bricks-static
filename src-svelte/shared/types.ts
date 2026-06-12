@@ -71,6 +71,7 @@ export interface SyncCounts {
   pagesDone: number;
   assetsDone: number;
   uploaded: number;
+  pruned: number;
   bytes: number;
   files: number;
 }

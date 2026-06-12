@@ -13,6 +13,8 @@ namespace WPEasy\BricksStatic\REST;
 use WP_REST_Request;
 use WP_REST_Response;
 use WPEasy\BricksStatic\Sync\HtaccessBuilder;
+use WPEasy\BricksStatic\Sync\Job;
+use WPEasy\BricksStatic\Sync\Manifest;
 use WPEasy\BricksStatic\Sync\Runner;
 
 defined('ABSPATH') || exit;
@@ -62,6 +64,12 @@ final class SyncController {
             'callback'            => [self::class, 'server_config'],
             'permission_callback' => [self::class, 'can_manage'],
         ]);
+
+        register_rest_route(self::NS, '/sync/reset', [
+            'methods'             => 'POST',
+            'callback'            => [self::class, 'reset'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
     }
 
     /**
@@ -77,14 +85,15 @@ final class SyncController {
      * @param WP_REST_Request $request Request.
      */
     public static function start(WP_REST_Request $request): WP_REST_Response {
-        $type = (string) ($request->get_json_params()['type'] ?? 'check');
+        $params = (array) $request->get_json_params();
+        $type   = (string) ($params['type'] ?? 'check');
 
         if (!in_array($type, ['check', 'sync'], true)) {
             return new WP_REST_Response(['error' => 'Unknown run type.'], 400);
         }
 
         try {
-            return new WP_REST_Response(Runner::start($type));
+            return new WP_REST_Response(Runner::start($type, ['prune' => !empty($params['prune'])]));
         } catch (\Throwable $e) {
             return new WP_REST_Response(['phase' => 'error', 'message' => $e->getMessage()], 200);
         }
@@ -115,6 +124,18 @@ final class SyncController {
         Runner::cancel();
 
         return new WP_REST_Response(Runner::status());
+    }
+
+    /**
+     * POST /sync/reset — clear local sync state so the next sync re-uploads
+     * everything (e.g. after switching destinations or a remote wipe).
+     */
+    public static function reset(): WP_REST_Response {
+        Job::clear();
+        delete_option(Manifest::PUSHED_OPTION);
+        delete_option(Manifest::RENDER_OPTION);
+
+        return new WP_REST_Response(['ok' => true]);
     }
 
     /**

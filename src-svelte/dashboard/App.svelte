@@ -63,16 +63,29 @@
     }
   }
 
-  async function startSync(): Promise<void> {
-    const confirmed = window.confirm(
-      'This will render the site and push the changed files to the destination. Continue?',
-    );
-    if (!confirmed) {
+  async function startSync(prune: boolean): Promise<void> {
+    const note = prune
+      ? ' Files removed locally will also be deleted from the destination.'
+      : '';
+    if (!window.confirm(`This will render the site and push the changed files to the destination.${note} Continue?`)) {
       return;
     }
     try {
-      sync = await api.syncStart('sync');
+      sync = await api.syncStart('sync', { prune });
       await drive();
+    } catch (e) {
+      loadError = (e as Error).message;
+    }
+  }
+
+  async function resetSync(): Promise<void> {
+    if (!window.confirm('Reset the local push record? The next Sync will re-upload everything.')) {
+      return;
+    }
+    try {
+      await api.syncReset();
+      sync = null;
+      await loadStatus();
     } catch (e) {
       loadError = (e as Error).message;
     }
@@ -113,7 +126,7 @@
 
   <StatusPanel {status} />
   <MethodPanel method={status?.method ?? null} />
-  <ActionsPanel running={syncing} onCheck={startCheck} onSync={startSync} onCancel={cancelSync} />
+  <ActionsPanel running={syncing} onCheck={startCheck} onSync={startSync} onCancel={cancelSync} onReset={resetSync} />
   <ProgressPanel snapshot={sync} />
   <ServerConfigPanel />
 

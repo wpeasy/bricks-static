@@ -9,6 +9,7 @@
     assets: 'Copying assets',
     finalize: 'Finalising',
     upload: 'Uploading',
+    prune: 'Removing old files',
     done: 'Done',
     error: 'Error',
     cancelled: 'Cancelled',
@@ -85,6 +86,7 @@
     <div class="bs-progress__stats">
       <span>{snapshot.counts?.files ?? 0} files</span>
       <span>{humanBytes(snapshot.counts?.bytes ?? 0)}</span>
+      {#if (snapshot.counts?.pruned ?? 0) > 0}<span>{snapshot.counts?.pruned} removed</span>{/if}
       {#if (snapshot.skippedCount ?? 0) > 0}<span>{snapshot.skippedCount} skipped</span>{/if}
       {#if (snapshot.errorCount ?? 0) > 0}<span class="bs-progress__err">{snapshot.errorCount} errors</span>{/if}
     </div>

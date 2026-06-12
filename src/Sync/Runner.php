@@ -51,19 +51,22 @@ final class Runner {
     /**
      * Start a fresh run: prepare the cache, seed the queue, enter render phase.
      *
-     * @param string $type Run type ('check' or 'sync').
+     * @param string              $type    Run type ('check' or 'sync').
+     * @param array<string,mixed> $options Run options (e.g. ['prune' => true]).
      * @return array<string,mixed> Snapshot.
      * @throws \RuntimeException If the cache directory is not writable.
      */
-    public static function start(string $type = 'check'): array {
+    public static function start(string $type = 'check', array $options = []): array {
         if (!Paths::ensure()) {
             throw new \RuntimeException('The staging cache directory is not writable: ' . Paths::cache_dir());
         }
 
         self::reset_output();
         Job::clear();
+        delete_option(self::CANCEL_FLAG);
 
         $job = Job::create($type);
+        $job->data['prune'] = !empty($options['prune']);
         foreach (UrlCollector::collect() as $url) {
             $job->enqueue_page($url);
         }
@@ -87,11 +90,12 @@ final class Runner {
             return ['phase' => 'idle'];
         }
 
-        if (!empty($job->data['cancel'])) {
+        if (self::is_cancelled()) {
             // If we'd already swapped in the holding page, put the real home back.
             if (!empty($job->data['holdingShown'])) {
                 self::restore_home();
             }
+            delete_option(self::CANCEL_FLAG);
             $job->data['phase']   = 'cancelled';
             $job->data['message'] = 'Cancelled.';
             $job->save();
@@ -111,20 +115,32 @@ final class Runner {
             case 'upload':
                 self::tick_upload($job);
                 break;
+            case 'prune':
+                self::tick_prune($job);
+                break;
         }
 
         return self::snapshot($job);
     }
 
     /**
+     * Option holding the cancel flag, kept separate from the job blob so a
+     * concurrent tick's save() cannot clobber it.
+     */
+    private const CANCEL_FLAG = 'bs_cancel';
+
+    /**
      * Request cancellation of the active job.
      */
     public static function cancel(): void {
-        $job = Job::load();
-        if ($job !== null) {
-            $job->data['cancel'] = true;
-            $job->save();
-        }
+        update_option(self::CANCEL_FLAG, '1', false);
+    }
+
+    /**
+     * Whether cancellation has been requested.
+     */
+    private static function is_cancelled(): bool {
+        return (bool) get_option(self::CANCEL_FLAG);
     }
 
     /**
@@ -147,6 +163,10 @@ final class Runner {
         $batch = array_splice($job->data['queue']['pages'], 0, self::PAGE_BATCH);
 
         foreach ($batch as $url) {
+            if (self::is_cancelled()) {
+                break; // tick() finalizes the cancelled state on the next call.
+            }
+
             try {
                 $result = PageRenderer::render($url);
 
@@ -201,6 +221,10 @@ final class Runner {
         $batch = array_splice($job->data['queue']['assets'], 0, self::ASSET_BATCH);
 
         foreach ($batch as $url) {
+            if (self::is_cancelled()) {
+                break;
+            }
+
             try {
                 $relative = Url::to_relative_path($url);
                 if ($relative === null) {
@@ -283,6 +307,7 @@ final class Runner {
 
         $job->data['queue']['uploads'] = $diff['changed'];
         $job->data['totals']['uploads'] = count($diff['changed']);
+        $job->data['removedFiles']      = $diff['removed'];
         $job->data['removed']           = count($diff['removed']);
         $job->data['phase']             = 'upload';
         $job->data['message']           = count($diff['changed']) > 0 ? 'Uploading…' : 'Already up to date — writing server config…';
@@ -366,6 +391,10 @@ final class Runner {
 
             $batch = array_splice($job->data['queue']['uploads'], 0, self::UPLOAD_BATCH);
             foreach ($batch as $relative) {
+                if (self::is_cancelled()) {
+                    break;
+                }
+
                 $meta = $manifest[$relative] ?? null;
                 if ($meta === null || !is_file($meta['src'])) {
                     $job->skip($relative, 'missing source');
@@ -384,7 +413,7 @@ final class Runner {
 
             // Everything else is up: swap the holding page for the real home,
             // then record the push as complete.
-            if (empty($job->data['queue']['uploads'])) {
+            if (empty($job->data['queue']['uploads']) && !self::is_cancelled()) {
                 self::upload_home($transport, $manifest);
                 $job->data['counts']['uploaded']++;
 
@@ -396,16 +425,77 @@ final class Runner {
                 }
                 Manifest::save(Manifest::PUSHED_OPTION, $pushed);
 
-                $job->data['phase']   = 'done';
-                $job->data['message'] = empty($job->data['failed'])
-                    ? 'Pushed — destination is in sync.'
-                    : 'Pushed with ' . count($job->data['failed']) . ' failed file(s); re-run Sync to retry them.';
+                // Prune deleted files next, if requested and there are any.
+                if (!empty($job->data['prune']) && !empty($job->data['removedFiles'])) {
+                    $job->data['phase']   = 'prune';
+                    $job->data['message'] = 'Removing deleted files…';
+                } else {
+                    $job->data['phase']   = 'done';
+                    $job->data['message'] = self::done_message($job);
+                }
             }
         } finally {
             $transport->disconnect();
         }
 
         $job->save();
+    }
+
+    /**
+     * Delete a batch of files that no longer exist locally from the destination.
+     *
+     * @param Job $job Active job.
+     */
+    private static function tick_prune(Job $job): void {
+        try {
+            $transport = TransportFactory::make();
+            $transport->connect();
+        } catch (\Throwable $e) {
+            // Uploads already succeeded; leave leftovers for the next run.
+            $job->data['phase']   = 'done';
+            $job->data['message'] = 'Pushed. Could not connect to remove old files: ' . $e->getMessage();
+            $job->save();
+            return;
+        }
+
+        try {
+            $batch = array_splice($job->data['removedFiles'], 0, self::UPLOAD_BATCH);
+            foreach ($batch as $relative) {
+                if (self::is_cancelled()) {
+                    break;
+                }
+
+                $transport->delete($relative);
+                $transport->delete($relative . '.gz');
+                $job->data['counts']['pruned']++;
+            }
+        } finally {
+            $transport->disconnect();
+        }
+
+        if (empty($job->data['removedFiles'])) {
+            $job->data['phase']   = 'done';
+            $job->data['message'] = self::done_message($job);
+        }
+
+        $job->save();
+    }
+
+    /**
+     * Final status message reflecting failures and pruning.
+     *
+     * @param Job $job Active job.
+     */
+    private static function done_message(Job $job): string {
+        if (!empty($job->data['failed'])) {
+            return 'Pushed with ' . count($job->data['failed']) . ' failed file(s); re-run Sync to retry them.';
+        }
+
+        $pruned = (int) $job->data['counts']['pruned'];
+
+        return $pruned > 0
+            ? 'Pushed — destination is in sync (' . $pruned . ' old file(s) removed).'
+            : 'Pushed — destination is in sync.';
     }
 
     /**
@@ -677,8 +767,10 @@ HTML;
                 'pages'   => count($d['queue']['pages']),
                 'assets'  => count($d['queue']['assets']),
                 'uploads' => count($d['queue']['uploads'] ?? []),
+                'prune'   => count($d['removedFiles'] ?? []),
             ],
             'removed'      => $d['removed'] ?? 0,
+            'prune'        => !empty($d['prune']),
             'errorCount'   => count($d['errors']),
             'skippedCount' => count($d['skipped']),
             'errors'       => array_slice($d['errors'], -25),

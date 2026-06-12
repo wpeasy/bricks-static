@@ -4,12 +4,16 @@
     onCheck,
     onSync,
     onCancel,
+    onReset,
   }: {
     running: boolean;
     onCheck: () => void;
-    onSync: () => void;
+    onSync: (prune: boolean) => void;
     onCancel: () => void;
+    onReset: () => void;
   } = $props();
+
+  let prune = $state(false);
 </script>
 
 <section class="bs-card bs-stack bs-stack--sm">
@@ -22,12 +26,20 @@
     <button type="button" class="bs-btn bs-btn--secondary" onclick={onCheck} disabled={running}>
       {running ? 'Working…' : 'Check sync'}
     </button>
-    <button type="button" class="bs-btn bs-btn--primary" onclick={onSync} disabled={running}>
+    <button type="button" class="bs-btn bs-btn--primary" onclick={() => onSync(prune)} disabled={running}>
       {running ? 'Working…' : 'Sync to destination'}
     </button>
     {#if running}
       <button type="button" class="bs-btn bs-btn--secondary" onclick={onCancel}>Cancel</button>
     {/if}
+  </div>
+  <label class="bs-actions__opt">
+    <input type="checkbox" bind:checked={prune} disabled={running} />
+    Remove files from the destination that no longer exist locally (prune)
+  </label>
+  <div class="bs-row bs-row--between bs-actions__foot">
+    <span class="bs-actions__hint">Switched destinations or wiped the remote? Reset clears the local push record so the next Sync re-uploads everything.</span>
+    <button type="button" class="bs-link" onclick={onReset} disabled={running}>Reset sync state</button>
   </div>
 </section>
 

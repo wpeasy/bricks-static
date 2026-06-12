@@ -138,6 +138,13 @@ final class SftpTransport implements TransportInterface {
     }
 
     /**
+     * @inheritDoc
+     */
+    public function delete(string $remote_path): bool {
+        return $this->require_connection()->delete($this->absolute($remote_path), false);
+    }
+
+    /**
      * Resolve a path relative to the configured remote root.
      *
      * @param string $remote_path Relative remote path.

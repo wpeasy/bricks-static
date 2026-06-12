@@ -172,6 +172,13 @@ final class FtpTransport implements TransportInterface {
     }
 
     /**
+     * @inheritDoc
+     */
+    public function delete(string $remote_path): bool {
+        return @ftp_delete($this->require_connection(), $this->absolute($remote_path));
+    }
+
+    /**
      * Recursively create a remote directory tree.
      *
      * @param string $dir Absolute remote directory.

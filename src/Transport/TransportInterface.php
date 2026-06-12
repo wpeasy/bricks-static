@@ -73,4 +73,12 @@ interface TransportInterface {
      * @return string Contents, or '' if missing/unreadable.
      */
     public function get(string $remote_path): string;
+
+    /**
+     * Delete a remote file (relative to the remote root).
+     *
+     * @param string $remote_path Remote path relative to the remote root.
+     * @return bool True on success.
+     */
+    public function delete(string $remote_path): bool;
 }
