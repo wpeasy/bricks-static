@@ -1,35 +1,32 @@
 <script lang="ts">
   import type { DestinationDisplay } from '../shared/types';
 
-  let { destination }: { destination: DestinationDisplay | null } = $props();
+  let { destination }: { destination: DestinationDisplay } = $props();
 
   let url = $derived.by(() => {
-    const explicit = destination?.destinationUrl.value ?? '';
+    const explicit = destination.destinationUrl.value;
     if (explicit) return explicit;
-    const host = destination?.host.value ?? '';
+    const host = destination.host.value;
     return host ? `https://${host}` : '';
   });
 </script>
 
 <div class="bs-dtoolbar">
-  {#if destination}
-    <div class="bs-dstatus">
-      <span class="bs-dstatus__item bs-dstatus__item--{destination.status.connected ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>Connected</span>
-      <span class="bs-dstatus__item bs-dstatus__item--{destination.status.hasPushed ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>Pushed</span>
-      <span class="bs-dstatus__item bs-dstatus__item--{destination.status.inSync ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>In sync</span>
-    </div>
-    {#if url}
-      <a class="bs-dtoolbar__link" href={url} target="_blank" rel="noopener noreferrer">
-        Visit site ↗
-      </a>
-    {/if}
-  {:else}
-    <span class="bs-dtoolbar__hint">Per-destination status appears here.</span>
+  <div class="bs-dstatus">
+    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.connected ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>Connected</span>
+    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.hasPushed ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>Pushed</span>
+    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.inSync ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>In sync</span>
+  </div>
+  {#if url}
+    <a class="bs-dtoolbar__link" href={url} target="_blank" rel="noopener noreferrer">
+      Visit site ↗
+    </a>
   {/if}
 </div>
 
 <style>
   .bs-dtoolbar {
+    grid-column: 1 / -1;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -80,10 +77,5 @@
 
   .bs-dtoolbar__link:hover {
     text-decoration: underline;
-  }
-
-  .bs-dtoolbar__hint {
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-text--muted);
   }
 </style>

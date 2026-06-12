@@ -166,7 +166,6 @@
 
   {#if topTab === 'destinations'}
     {#if dests}
-      <DestinationToolbar destination={activeTab === 'all' ? null : activeDest} />
       <DestinationTabs {destinations} active={activeTab} onSelect={(t) => (activeTab = t)} onAdd={addDestination} onRename={renameDestination} />
 
       <div class="bs-panels">
@@ -180,6 +179,7 @@
           />
         {:else if activeDest}
           {#key activeDest.id}
+            <DestinationToolbar destination={activeDest} />
             <DestinationPanel
               destination={activeDest}
               capabilities={dests.capabilities}
