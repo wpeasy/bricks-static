@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace WPEasy\BricksStatic\Sync;
 
 use WPEasy\BricksStatic\Discovery\UrlCollector;
+use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Render\AssetExtractor;
 use WPEasy\BricksStatic\Render\CompatibilityScanner;
 use WPEasy\BricksStatic\Render\PageRenderer;
@@ -68,7 +69,9 @@ final class Runner {
         delete_option(self::CANCEL_FLAG);
 
         $job = Job::create($type);
-        $job->data['prune'] = !empty($options['prune']);
+        $job->data['prune']  = !empty($options['prune']);
+        // Which destination this run pushes to (defaults to the primary).
+        $job->data['destId'] = (string) ($options['destId'] ?? Destinations::primary()->id());
         foreach (UrlCollector::collect() as $url) {
             $job->enqueue_page($url);
         }
@@ -329,7 +332,7 @@ final class Runner {
         }
 
         // Sync: compute the delta against what was last pushed and upload it.
-        $diff = Manifest::diff(Manifest::load(Manifest::PUSHED_OPTION), $manifest);
+        $diff = Manifest::diff(Manifest::load(self::pushed_option($job)), $manifest);
 
         $job->data['queue']['uploads'] = $diff['changed'];
         $job->data['totals']['uploads'] = count($diff['changed']);
@@ -449,7 +452,7 @@ final class Runner {
                 foreach ($job->data['failed'] as $failed_rel) {
                     unset($pushed[$failed_rel]);
                 }
-                Manifest::save(Manifest::PUSHED_OPTION, $pushed);
+                Manifest::save(self::pushed_option($job), $pushed);
 
                 // Prune deleted files next, if requested and there are any.
                 if (!empty($job->data['prune']) && !empty($job->data['removedFiles'])) {
@@ -505,6 +508,20 @@ final class Runner {
         }
 
         $job->save();
+    }
+
+    /**
+     * The pushed-manifest option for the job's target destination.
+     *
+     * @param Job $job Active job.
+     */
+    private static function pushed_option(Job $job): string {
+        $id = (string) ($job->data['destId'] ?? '');
+        if ($id === '') {
+            $id = Destinations::primary()->id();
+        }
+
+        return Destinations::pushed_option($id);
     }
 
     /**

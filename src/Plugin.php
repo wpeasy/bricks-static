@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace WPEasy\BricksStatic;
 
 use WPEasy\BricksStatic\Admin\Menu;
+use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\REST\ConnectionController;
 use WPEasy\BricksStatic\REST\StatusController;
 use WPEasy\BricksStatic\REST\SyncController;
@@ -26,6 +27,9 @@ final class Plugin {
      * Initialise the plugin.
      */
     public static function init(): void {
+        // Migrate the legacy single destination into the destinations list once.
+        Destinations::ensure_migrated();
+
         if (is_admin()) {
             Menu::init();
         }

@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace WPEasy\BricksStatic\REST;
 
 use WP_REST_Response;
+use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Support\Environment;
 use WPEasy\BricksStatic\Sync\Manifest;
 use WPEasy\BricksStatic\Sync\MethodResolver;
@@ -51,7 +52,7 @@ final class StatusController {
      */
     public static function get(): WP_REST_Response {
         $state  = get_option('bs_connection_state', []);
-        $pushed = Manifest::load(Manifest::PUSHED_OPTION);
+        $pushed = Manifest::load(Destinations::pushed_option(Destinations::primary()->id()));
         $render = Manifest::load(Manifest::RENDER_OPTION);
 
         $connected  = is_array($state) && !empty($state['ok']);

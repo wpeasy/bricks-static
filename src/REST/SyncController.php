@@ -14,6 +14,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WPEasy\BricksStatic\CLI\Background;
 use WPEasy\BricksStatic\Render\PageRenderer;
+use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Sync\HtaccessBuilder;
 use WPEasy\BricksStatic\Sync\Job;
 use WPEasy\BricksStatic\Sync\Manifest;
@@ -146,7 +147,7 @@ final class SyncController {
      */
     public static function reset(): WP_REST_Response {
         Job::clear();
-        delete_option(Manifest::PUSHED_OPTION);
+        delete_option(Destinations::pushed_option(Destinations::primary()->id()));
         delete_option(Manifest::RENDER_OPTION);
 
         return new WP_REST_Response(['ok' => true]);
