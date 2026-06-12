@@ -136,14 +136,71 @@ final class Runner {
     }
 
     /**
-     * Build a transport for the job's current target destination (falls back to
-     * the primary/saved config when the destination can't be resolved).
+     * Open transport for the current target, cached for the lifetime of the
+     * process so consecutive upload/prune ticks reuse ONE connection instead of
+     * re-handshaking every batch (a real saving for FTPS, where each connect is a
+     * TLS handshake + login). The CLI runner drives the whole job in one process,
+     * so it keeps the connection open across all batches; a browser tick is its
+     * own process, so it simply reconnects per request as before.
+     */
+    private static ?TransportInterface $connection = null;
+
+    /**
+     * Destination id the cached connection belongs to.
+     */
+    private static string $connection_dest = '';
+
+    /**
+     * Whether the process-end close handler has been registered.
+     */
+    private static bool $shutdown_registered = false;
+
+    /**
+     * Get (or open) the persistent transport for the job's current target.
+     * Reconnects when the target changes or no connection is open yet.
      *
      * @param Job $job Active job.
+     * @throws \Throwable On connection failure.
      */
     private static function target_transport(Job $job): TransportInterface {
-        $dest = Destinations::get((string) ($job->data['destId'] ?? ''));
-        return TransportFactory::make($dest !== null ? $dest->connection_config() : null);
+        $dest_id = (string) ($job->data['destId'] ?? '');
+
+        if (self::$connection !== null && self::$connection_dest === $dest_id) {
+            return self::$connection;
+        }
+
+        self::close_connection(); // Different target (or stale) — drop it.
+
+        $dest      = Destinations::get($dest_id);
+        $transport = TransportFactory::make($dest !== null ? $dest->connection_config() : null);
+        $transport->connect();
+
+        self::$connection      = $transport;
+        self::$connection_dest = $dest_id;
+
+        // Close the socket cleanly when the process ends (covers a browser tick's
+        // single request as well as the CLI runner finishing the job).
+        if (!self::$shutdown_registered) {
+            register_shutdown_function([self::class, 'close_connection']);
+            self::$shutdown_registered = true;
+        }
+
+        return $transport;
+    }
+
+    /**
+     * Close and forget the persistent transport, if any.
+     */
+    public static function close_connection(): void {
+        if (self::$connection !== null) {
+            try {
+                self::$connection->disconnect();
+            } catch (\Throwable $e) {
+                // Already gone — nothing to do.
+            }
+            self::$connection      = null;
+            self::$connection_dest = '';
+        }
     }
 
     /**
@@ -160,6 +217,7 @@ final class Runner {
         self::beat(); // Mark the job as actively driven (see is_driver_alive()).
 
         if (self::is_cancelled()) {
+            self::close_connection();
             // If we'd already swapped in the holding page, put the real home back.
             if (!empty($job->data['holdingShown'])) {
                 self::restore_home();
@@ -603,7 +661,8 @@ final class Runner {
 
     /**
      * Upload a batch of changed files (plus a one-time .htaccess) to the
-     * destination. Opens and closes the connection within the tick.
+     * destination, over a connection kept open across batches (see
+     * target_transport()).
      *
      * @param Job $job Active job.
      */
@@ -612,8 +671,8 @@ final class Runner {
 
         try {
             $transport = self::target_transport($job);
-            $transport->connect();
         } catch (\Throwable $e) {
+            self::close_connection();
             $job->data['phase']   = 'error';
             $job->data['message'] = 'Upload connection failed: ' . $e->getMessage();
             $job->save();
@@ -688,7 +747,13 @@ final class Runner {
                 }
             }
         } finally {
-            $transport->disconnect();
+            // Keep the connection open across upload batches (and into the prune
+            // phase, same destination); close only once the run has finished.
+            // The process-end shutdown handler is the backstop for a browser
+            // tick, whose single request ends after this one batch.
+            if (in_array($job->data['phase'], ['done', 'error', 'cancelled'], true)) {
+                self::close_connection();
+            }
         }
 
         $job->save();
@@ -702,32 +767,35 @@ final class Runner {
     private static function tick_prune(Job $job): void {
         try {
             $transport = self::target_transport($job);
-            $transport->connect();
         } catch (\Throwable $e) {
             // Uploads already succeeded; leave leftovers for the next run.
+            self::close_connection();
             $job->data['phase']   = 'done';
             $job->data['message'] = 'Pushed. Could not connect to remove old files: ' . $e->getMessage();
             $job->save();
             return;
         }
 
-        try {
-            $batch = array_splice($job->data['removedFiles'], 0, self::UPLOAD_BATCH);
-            foreach ($batch as $relative) {
-                if (self::is_cancelled()) {
-                    break;
-                }
-
-                $transport->delete($relative);
-                $transport->delete($relative . '.gz');
-                $job->data['counts']['pruned']++;
+        $batch = array_splice($job->data['removedFiles'], 0, self::UPLOAD_BATCH);
+        foreach ($batch as $relative) {
+            if (self::is_cancelled()) {
+                break;
             }
-        } finally {
-            $transport->disconnect();
+            self::beat();
+
+            $transport->delete($relative);
+            $transport->delete($relative . '.gz');
+            $job->data['counts']['pruned']++;
         }
 
         if (empty($job->data['removedFiles'])) {
             self::advance_target($job);
+        }
+
+        // Reuses the same connection the upload phase opened; close it once the
+        // run is finished (shutdown handler is the backstop for a browser tick).
+        if (in_array($job->data['phase'], ['done', 'error', 'cancelled'], true)) {
+            self::close_connection();
         }
 
         $job->save();
