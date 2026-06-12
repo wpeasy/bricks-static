@@ -234,6 +234,10 @@
     </div>
   {/if}
 
+  <!-- Global progress for the current/last sync, above the tabs and labelled
+       with its target — visible whichever tab is open. -->
+  <ProgressPanel snapshot={sync} onRetry={retryUploads} retrying={syncing} />
+
   <div class="bs-toptabs" role="tablist">
     <button type="button" class="bs-toptab" class:bs-toptab--active={topTab === 'destinations'} onclick={() => (topTab = 'destinations')}>
       Destinations
@@ -276,10 +280,6 @@
     {#if manualRun && status}
       <ManualRunBanner command={runCommand || status.cli} onDismiss={dismissManualRun} />
     {/if}
-
-    <!-- One global progress area for the current/last sync, labelled with its
-         target — not tied to whichever destination tab is open. -->
-    <ProgressPanel snapshot={sync} onRetry={retryUploads} retrying={syncing} />
 
     <div class="bs-row bs-row--between bs-controls">
       <span class="bs-controls__hint">Wiped a remote, or want a full re-upload? Reset clears the push record for every destination.</span>
