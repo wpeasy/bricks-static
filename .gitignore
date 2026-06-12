@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build artifacts
+dist/
+build/
+*.log
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Scratch
+CLAUDE copy.md
+
+# Plugin ZIP output
+*.zip
