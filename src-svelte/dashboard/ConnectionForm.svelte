@@ -17,9 +17,13 @@
   const s = untrack(() => connection.settings);
   const caps = untrack(() => connection.capabilities);
 
+  const DEFAULT_PORTS: Record<Transport, number> = { sftp: 22, ftps: 21, ftp: 21 };
+  // Ports we consider "still a default" — safe to auto-update when the protocol changes.
+  const KNOWN_DEFAULT_PORTS = [0, 21, 22];
+
   let transport = $state<Transport>(s.transport.value);
   let host = $state(s.host.value);
-  let port = $state<number>(s.port.value);
+  let port = $state<number>(s.port.value || DEFAULT_PORTS[s.transport.value]);
   let username = $state(s.username.value);
   let password = $state('');
   let remotePath = $state(s.remotePath.value);
@@ -36,6 +40,14 @@
   function setMessage(text: string, ok: boolean): void {
     message = text;
     messageOk = ok;
+  }
+
+  // When the protocol changes, set the port to that protocol's default — unless
+  // the user has typed a custom (non-default) port, which we preserve.
+  function handleTransportChange(): void {
+    if (!s.port.fromConstant && KNOWN_DEFAULT_PORTS.includes(port)) {
+      port = DEFAULT_PORTS[transport];
+    }
   }
 
   function payload(includeBase: boolean): ConnectionInput {
@@ -85,7 +97,7 @@
 
   <div class="bs-field">
     <label for="bs-transport">Transport</label>
-    <select id="bs-transport" bind:value={transport} disabled={s.transport.fromConstant || busy}>
+    <select id="bs-transport" bind:value={transport} onchange={handleTransportChange} disabled={s.transport.fromConstant || busy}>
       <option value="sftp" disabled={!caps.sftp}>SFTP{caps.sftp ? '' : ' (unavailable)'}</option>
       <option value="ftps" disabled={!caps.ftps}>FTPS (FTP over TLS){caps.ftps ? '' : ' (unavailable)'}</option>
       <option value="ftp" disabled={!caps.ftp}>FTP (insecure){caps.ftp ? '' : ' (unavailable)'}</option>
