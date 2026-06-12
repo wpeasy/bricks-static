@@ -134,6 +134,14 @@ final class SyncCommand {
             return;
         }
 
+        // Only one driver may advance a job (see Runner::claim_driver). If the
+        // browser already took over (because this spawn was slow to launch), stand
+        // down instead of double-driving and starving the worker pool.
+        if (Runner::claim_driver('cli') !== 'cli') {
+            \WP_CLI::warning('Another driver is already running this job; nothing to do.');
+            return;
+        }
+
         while (!empty($snapshot['running'])) {
             $snapshot = Runner::tick();
         }

@@ -69,6 +69,7 @@ final class Runner {
         Job::clear();
         delete_option(self::CANCEL_FLAG);
         delete_option(self::HEARTBEAT);
+        self::release_driver();
 
         $job = Job::create($type);
         $job->data['prune'] = !empty($options['prune']);
@@ -124,6 +125,7 @@ final class Runner {
         Job::clear();
         delete_option(self::CANCEL_FLAG);
         delete_option(self::HEARTBEAT);
+        self::release_driver();
 
         $job = Job::create('sync');
         $job->data['prune']       = false; // A retry only re-pushes, never deletes.
@@ -275,6 +277,44 @@ final class Runner {
      */
     private static function beat(): void {
         update_option(self::HEARTBEAT, time(), false);
+    }
+
+    /**
+     * Option naming the single process allowed to drive the job ('cli' | 'browser').
+     */
+    private const DRIVER_OPTION = 'bs_driver';
+
+    /**
+     * Atomically claim the right to drive the active job. Only ONE driver may
+     * advance a job at a time: on Local's tiny php-fpm pool, a browser tick AND a
+     * spawned WP-CLI process both running loopback renders starves the workers and
+     * deadlocks. The first caller to insert the row wins (option_name is unique);
+     * everyone else reads back the existing owner and must stand down.
+     *
+     * @param string $who 'cli' or 'browser'.
+     * @return string The winning owner (=== $who if this caller claimed it).
+     */
+    public static function claim_driver(string $who): string {
+        global $wpdb;
+        $wpdb->query($wpdb->prepare(
+            "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
+            self::DRIVER_OPTION,
+            $who
+        ));
+
+        return (string) $wpdb->get_var($wpdb->prepare(
+            "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s",
+            self::DRIVER_OPTION
+        ));
+    }
+
+    /**
+     * Release the driver claim (direct delete so a long-lived process can't serve
+     * a stale cached value to the next run).
+     */
+    private static function release_driver(): void {
+        global $wpdb;
+        $wpdb->delete($wpdb->options, ['option_name' => self::DRIVER_OPTION]);
     }
 
     /**

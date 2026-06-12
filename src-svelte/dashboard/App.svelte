@@ -61,10 +61,14 @@
       //
       // But the detached spawn can silently fail to launch from the web-server
       // process. We watch for the CLI heartbeat: if none appears within a grace
-      // window, the spawn didn't start, so the browser takes over ticking. The
-      // heartbeat (not progress) is the signal, so we never race a slow-but-alive
-      // CLI process — which is what previously caused the deadlock.
-      let driving = sync?.driver !== 'cli';
+      // window, the browser tries to CLAIM the driver lock and take over ticking.
+      // The atomic claim guarantees only one driver ever advances the job, so a
+      // browser tick and a (late) CLI process can't both run loopback renders and
+      // starve Local's tiny worker pool — the deadlock that broke this before.
+      let driving = false;
+      if (sync?.driver !== 'cli') {
+        driving = (await api.syncClaim()).owner === 'browser';
+      }
       const startedAt = Date.now();
       while (sync && sync.running) {
         if (driving) {
@@ -73,7 +77,9 @@
           await sleep(1500);
           sync = await api.syncStatus();
           if (!sync?.cliAlive && Date.now() - startedAt > CLI_SPAWN_GRACE_MS) {
-            driving = true; // No CLI heartbeat — drive it from the browser.
+            // No CLI heartbeat — try to take over. We only drive if we win the
+            // claim; if the CLI just grabbed it, keep polling.
+            driving = (await api.syncClaim()).owner === 'browser';
           }
         }
       }

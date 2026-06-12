@@ -68,6 +68,12 @@ final class SyncController {
             'permission_callback' => [self::class, 'can_manage'],
         ]);
 
+        register_rest_route(self::NS, '/sync/claim', [
+            'methods'             => 'POST',
+            'callback'            => [self::class, 'claim'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
+
         register_rest_route(self::NS, '/sync/server-config', [
             'methods'             => 'GET',
             'callback'            => [self::class, 'server_config'],
@@ -143,6 +149,15 @@ final class SyncController {
         } catch (\Throwable $e) {
             return new WP_REST_Response(['phase' => 'error', 'message' => $e->getMessage()], 200);
         }
+    }
+
+    /**
+     * POST /sync/claim — attempt to claim the browser as the job's driver.
+     * Returns the winning owner ('cli' | 'browser'); the browser only ticks if it
+     * gets 'browser', so it never double-drives a live CLI process.
+     */
+    public static function claim(): WP_REST_Response {
+        return new WP_REST_Response(['owner' => Runner::claim_driver('browser')]);
     }
 
     /**
