@@ -723,6 +723,10 @@ final class Runner {
             // One-time setup: defer the home page, show a holding page while the
             // rest uploads, then write server config + store the nginx snippet.
             if (empty($job->data['htaccessDone'])) {
+                // Home is uploaded last (after any holding page). Note whether it
+                // actually changed so we can skip re-uploading an unchanged one.
+                $job->data['homeChanged'] = in_array(self::HOME_FILE, $job->data['queue']['uploads'], true);
+
                 $job->data['queue']['uploads'] = array_values(array_filter(
                     $job->data['queue']['uploads'],
                     static fn(string $rel): bool => $rel !== self::HOME_FILE
@@ -736,8 +740,10 @@ final class Runner {
                 self::upload_htaccess($transport);
                 update_option('bs_nginx_snippet', HtaccessBuilder::nginx(), false);
                 $job->data['htaccessDone'] = true;
-                // +1 for the deferred home page, uploaded last.
-                $job->data['totals']['uploads'] = count($job->data['queue']['uploads']) + 1;
+                // +1 for the home page only when we'll actually (re)upload it:
+                // because it changed, or to replace a holding page we put up.
+                $will_upload_home = !empty($job->data['homeChanged']) || !empty($job->data['holdingShown']);
+                $job->data['totals']['uploads'] = count($job->data['queue']['uploads']) + ($will_upload_home ? 1 : 0);
             }
 
             $batch = array_splice($job->data['queue']['uploads'], 0, self::UPLOAD_BATCH);
@@ -770,8 +776,13 @@ final class Runner {
             // Everything else is up: swap the holding page for the real home,
             // then record the push as complete.
             if (empty($job->data['queue']['uploads']) && !self::is_cancelled()) {
-                self::upload_home($transport, $manifest);
-                $job->data['counts']['uploaded']++;
+                // (Re)upload the real home only if it changed or we replaced it
+                // with a holding page — otherwise it's already correct on the
+                // remote and re-uploading it every sync is wasted work.
+                if (!empty($job->data['homeChanged']) || !empty($job->data['holdingShown'])) {
+                    self::upload_home($transport, $manifest);
+                    $job->data['counts']['uploaded']++;
+                }
 
                 // Mark only successfully-uploaded files as pushed, so any that
                 // failed are re-uploaded on the next sync (delta detects them).
