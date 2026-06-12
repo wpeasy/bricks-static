@@ -10,7 +10,9 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\REST;
 
+use WP_REST_Request;
 use WP_REST_Response;
+use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Support\Environment;
 use WPEasy\BricksStatic\Sync\Manifest;
@@ -36,6 +38,12 @@ final class StatusController {
         register_rest_route(self::NS, '/status', [
             'methods'             => 'GET',
             'callback'            => [self::class, 'get'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
+
+        register_rest_route(self::NS, '/settings', [
+            'methods'             => 'POST',
+            'callback'            => [self::class, 'save_settings'],
             'permission_callback' => [self::class, 'can_manage'],
         ]);
     }
@@ -76,6 +84,22 @@ final class StatusController {
             'isLocal'   => Environment::is_local(),
             'cli'       => Environment::cli_command(),
             'wpCli'     => Environment::wp_cli(),
+            'discoveryMode' => UrlCollector::mode(),
         ]);
+    }
+
+    /**
+     * POST /settings — save global plugin settings.
+     *
+     * @param WP_REST_Request $request Request.
+     */
+    public static function save_settings(WP_REST_Request $request): WP_REST_Response {
+        $params = (array) $request->get_json_params();
+
+        if (isset($params['discoveryMode'])) {
+            UrlCollector::set_mode((string) $params['discoveryMode']);
+        }
+
+        return new WP_REST_Response(['discoveryMode' => UrlCollector::mode()]);
     }
 }

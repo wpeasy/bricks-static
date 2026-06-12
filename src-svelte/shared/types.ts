@@ -81,6 +81,8 @@ export interface LastTest {
   message: string;
 }
 
+export type DiscoveryMode = 'linked' | 'all';
+
 export interface Status {
   connected: boolean;
   hasPushed: boolean;
@@ -90,6 +92,7 @@ export interface Status {
   isLocal: boolean;
   cli: string;
   wpCli: WpCliInfo;
+  discoveryMode: DiscoveryMode;
 }
 
 export interface WpCliInfo {

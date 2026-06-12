@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../shared/api';
-  import type { DestinationsResponse, Status, SyncSnapshot } from '../shared/types';
+  import type { DestinationsResponse, DiscoveryMode, Status, SyncSnapshot } from '../shared/types';
   import NoticePanel from './NoticePanel.svelte';
+  import DiscoveryToggle from './DiscoveryToggle.svelte';
   import MethodPanel from './MethodPanel.svelte';
   import DestinationTabs from './DestinationTabs.svelte';
   import DestinationPanel from './DestinationPanel.svelte';
@@ -67,6 +68,19 @@
     } finally {
       syncing = false;
       void loadStatus();
+    }
+  }
+
+  async function setDiscoveryMode(mode: DiscoveryMode): Promise<void> {
+    if (!status) return;
+    const previous = status.discoveryMode;
+    status.discoveryMode = mode; // optimistic
+    try {
+      const r = await api.setDiscoveryMode(mode);
+      status.discoveryMode = r.discoveryMode;
+    } catch (e) {
+      status.discoveryMode = previous;
+      loadError = (e as Error).message;
     }
   }
 
@@ -157,7 +171,12 @@
   {#if loadError}<div class="bs-dash__error">{loadError}</div>{/if}
 
   {#if status}
-    <NoticePanel isLocal={status.isLocal} cli={status.cli} wpCli={status.wpCli} />
+    <div class="bs-globalbar">
+      <DiscoveryToggle mode={status.discoveryMode} disabled={syncing} onChange={setDiscoveryMode} />
+      <div class="bs-globalbar__notice">
+        <NoticePanel isLocal={status.isLocal} cli={status.cli} wpCli={status.wpCli} />
+      </div>
+    </div>
   {/if}
 
   <div class="bs-toptabs" role="tablist">
@@ -184,15 +203,13 @@
           />
         {:else if activeDest}
           {#key activeDest.id}
-            <DestinationToolbar destination={activeDest} />
+            <DestinationToolbar destination={activeDest} running={syncing} onSaved={loadDestinations} onCheck={startCheck} onSync={startSync} />
             <DestinationPanel
               destination={activeDest}
               capabilities={dests.capabilities}
               running={syncing}
               canRemove={destinations.length > 1}
               onSaved={loadDestinations}
-              onCheck={startCheck}
-              onSync={startSync}
               onRemove={removeDestination}
             />
             <ReplacementsPanel destination={activeDest} running={syncing} onSaved={loadDestinations} />
@@ -243,6 +260,19 @@
     border-radius: var(--bs-radius--md);
     color: var(--bs-color-danger);
     background: color-mix(in srgb, var(--bs-color-danger) 8%, transparent);
+  }
+
+  .bs-globalbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: var(--bs-space--md);
+  }
+
+  .bs-globalbar__notice {
+    flex: 0 1 auto;
+    min-width: 0;
   }
 
   .bs-toptabs {

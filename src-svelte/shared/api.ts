@@ -2,6 +2,7 @@ import type {
   ConnectionInput,
   ConnectionResponse,
   DestinationsResponse,
+  DiscoveryMode,
   Preflight,
   ServerConfig,
   Status,
@@ -60,6 +61,8 @@ export const api = {
   saveConnection: (data: ConnectionInput) => request<ConnectionResponse>('/connection', 'POST', data),
   testConnection: (data: ConnectionInput) => request<TestResult>('/connection/test', 'POST', data),
   getStatus: () => request<Status>('/status'),
+  setDiscoveryMode: (mode: DiscoveryMode) =>
+    request<{ discoveryMode: DiscoveryMode }>('/settings', 'POST', { discoveryMode: mode }),
   getDestinations: () => request<DestinationsResponse>('/destinations'),
   addDestination: (data: ConnectionInput) => request<DestinationsResponse>('/destinations', 'POST', data),
   updateDestination: (id: string, data: ConnectionInput) => request<DestinationsResponse>(`/destinations/${id}`, 'POST', data),

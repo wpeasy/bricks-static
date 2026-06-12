@@ -9,8 +9,6 @@
     running,
     canRemove,
     onSaved,
-    onCheck,
-    onSync,
     onRemove,
   }: {
     destination: DestinationDisplay;
@@ -18,8 +16,6 @@
     running: boolean;
     canRemove: boolean;
     onSaved: () => void;
-    onCheck: (id: string) => void;
-    onSync: (id: string, prune: boolean) => void;
     onRemove: (id: string) => void;
   } = $props();
 
@@ -36,8 +32,6 @@
   let remotePath = $state(d.remotePath.value);
   let basePath = $state(d.basePath.value);
   let destinationUrl = $state(d.destinationUrl.value);
-  let enabled = $state(d.enabled);
-  let singlePage = $state(d.includeInSinglePageSync);
 
   let saving = $state(false);
   let testing = $state(false);
@@ -58,8 +52,6 @@
     if (includeMeta) {
       data.basePath = basePath;
       data.destinationUrl = destinationUrl;
-      data.enabled = enabled;
-      data.includeInSinglePageSync = singlePage;
     }
     return data;
   }
@@ -101,11 +93,6 @@
 </script>
 
 <section class="bs-card bs-stack bs-stack--md">
-  <div class="bs-grid">
-    <label class="bs-switch"><input type="checkbox" bind:checked={enabled} disabled={busy} /> Enabled</label>
-    <label class="bs-switch"><input type="checkbox" bind:checked={singlePage} disabled={busy} /> Include in single-page sync</label>
-  </div>
-
   <div class="bs-grid">
     <div class="bs-field">
       <label for="bs-transport-{d.id}">Transport</label>
@@ -155,9 +142,7 @@
   <div class="bs-row bs-row--between">
     <div class="bs-row bs-row--wrap">
       <button type="button" class="bs-btn bs-btn--secondary" onclick={test} disabled={busy || !host}>{testing ? 'Testing…' : 'Test'}</button>
-      <button type="button" class="bs-btn bs-btn--secondary" onclick={save} disabled={busy}>{saving ? 'Saving…' : 'Save'}</button>
-      <button type="button" class="bs-btn bs-btn--secondary" onclick={() => onCheck(d.id)} disabled={busy}>Check</button>
-      <button type="button" class="bs-btn bs-btn--primary" onclick={() => onSync(d.id, false)} disabled={busy}>Sync</button>
+      <button type="button" class="bs-btn bs-btn--primary" onclick={save} disabled={busy}>{saving ? 'Saving…' : 'Save'}</button>
     </div>
     {#if canRemove}
       {#if confirmRemove}
@@ -214,13 +199,6 @@
   .bs-field input:disabled,
   .bs-field select:disabled {
     opacity: 0.6;
-  }
-
-  .bs-switch {
-    display: flex;
-    align-items: center;
-    gap: var(--bs-space--xs);
-    font-size: var(--bs-text--sm);
   }
 
   .bs-btn {
