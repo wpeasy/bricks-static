@@ -141,6 +141,7 @@ export interface SyncSnapshot {
   counts?: SyncCounts;
   totals?: SyncTotals;
   queued?: { pages: number; assets: number; uploads: number };
+  targets?: { index: number; total: number; done: number; name: string };
   removed?: number;
   errorCount?: number;
   skippedCount?: number;

@@ -30,6 +30,15 @@
   let visible = $derived(snapshot !== null && snapshot.phase !== 'idle');
   let phaseLabel = $derived(snapshot ? (PHASE_LABELS[snapshot.phase] ?? snapshot.phase) : '');
 
+  // Which destination(s) this run is for (a 'check' run has no real target).
+  let destLabel = $derived.by<string>(() => {
+    const t = snapshot?.targets;
+    if (!t || !t.total || snapshot?.type === 'check') return '';
+    if (t.total === 1) return t.name;
+    const pos = snapshot?.phase === 'done' ? t.total : Math.min(t.done + 1, t.total);
+    return `${t.name} · ${pos} of ${t.total}`;
+  });
+
   let pagesDone = $derived(snapshot?.counts?.pagesDone ?? 0);
   let pagesTotal = $derived(Math.max(snapshot?.totals?.pages ?? 0, pagesDone));
   let assetsDone = $derived(snapshot?.counts?.assetsDone ?? 0);
@@ -64,7 +73,7 @@
 {#if visible && snapshot}
   <section class="bs-card bs-stack bs-stack--sm bs-progress--{tone}">
     <div class="bs-row bs-row--between">
-      <h2>Progress</h2>
+      <h2>Progress{#if destLabel}<span class="bs-progress__dest"> · {destLabel}</span>{/if}</h2>
       <span class="bs-progress__phase">{phaseLabel}</span>
     </div>
 
@@ -245,6 +254,11 @@
   @keyframes bs-indeterminate {
     0% { margin-left: -35%; }
     100% { margin-left: 100%; }
+  }
+
+  .bs-progress__dest {
+    font-weight: var(--bs-weight--normal);
+    color: var(--bs-color-text--muted);
   }
 
   .bs-progress__num {
