@@ -3,6 +3,7 @@ import type {
   ConnectionResponse,
   DestinationsResponse,
   DiscoveryMode,
+  MediaItem,
   Preflight,
   ServerConfig,
   Status,
@@ -79,4 +80,5 @@ export const api = {
   syncReset: () => request<{ ok: boolean }>('/sync/reset', 'POST', {}),
   preflight: () => request<Preflight>('/sync/preflight', 'POST', {}),
   serverConfig: () => request<ServerConfig>('/sync/server-config'),
+  getMedia: () => request<{ media: MediaItem[] }>('/media'),
 };

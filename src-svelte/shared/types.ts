@@ -40,6 +40,14 @@ export interface Replacement {
   rich?: boolean;
 }
 
+export interface MediaItem {
+  url: string;
+  thumb: string;
+  alt: string;
+  type: 'image' | 'video';
+  pages: string[];
+}
+
 export interface DestinationStatus {
   connected: boolean;
   hasPushed: boolean;

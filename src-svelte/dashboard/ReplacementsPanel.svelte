@@ -3,6 +3,7 @@
   import { api } from '../shared/api';
   import type { DestinationDisplay, Replacement } from '../shared/types';
   import ReplacementsRepeater from './ReplacementsRepeater.svelte';
+  import MediaReplacer from './MediaReplacer.svelte';
 
   let {
     destination,
@@ -53,6 +54,10 @@
       {saving ? 'Saving…' : 'Save replacements'}
     </button>
   </div>
+
+  <hr class="bs-rp__divider" />
+
+  <MediaReplacer />
 </section>
 
 <style>
@@ -74,6 +79,13 @@
   .bs-rp__title small {
     font-weight: var(--bs-weight--normal);
     color: var(--bs-color-text--muted);
+  }
+
+  .bs-rp__divider {
+    width: 100%;
+    border: 0;
+    border-top: var(--bs-border--1) solid var(--bs-color-border);
+    margin: 0;
   }
 
   .bs-btn {
