@@ -15,6 +15,7 @@ use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Render\AssetExtractor;
 use WPEasy\BricksStatic\Render\CompatibilityScanner;
+use WPEasy\BricksStatic\Render\FaviconGenerator;
 use WPEasy\BricksStatic\Render\MediaReplacer;
 use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Render\StableHash;
@@ -605,12 +606,18 @@ final class Runner {
 
         // Otherwise derive /favicon.ico from the Site Icon (Customizer), if any.
         $icon_url = function_exists('get_site_icon_url') ? (string) get_site_icon_url() : '';
-        if ($icon_url === '') {
-            return;
+        if ($icon_url !== '') {
+            $icon_src = Paths::source_file($icon_url);
+            if ($icon_src !== null && is_file($icon_src)) {
+                self::plan_source($job, 'favicon.ico', $icon_src);
+                return;
+            }
         }
-        $icon_src = Paths::source_file($icon_url);
-        if ($icon_src !== null && is_file($icon_src)) {
-            self::plan_source($job, 'favicon.ico', $icon_src);
+
+        // Last resort: generate a plain default so the export always has a favicon.
+        $ico = FaviconGenerator::ico();
+        if ($ico !== '') {
+            self::cache_file($job, 'favicon.ico', $ico);
         }
     }
 
