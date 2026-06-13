@@ -619,23 +619,43 @@ final class Runner {
 
     /**
      * Build the deploy manifest for a destination: the base render with that
-     * destination's literal text replacements applied to HTML (written to a
-     * per-destination deploy dir). Files without changes reference the base.
+     * destination's text replacements applied to HTML text and its media swaps
+     * applied to media URLs (written to a per-destination deploy dir). The
+     * replacement media files are added to the manifest so they get uploaded.
+     * Files without changes reference the base.
      *
      * @param array<string,array{size:int,hash:string,src:string}> $base    Base render manifest.
      * @param string                                                $dest_id Target destination id.
      * @return array<string,array{size:int,hash:string,src:string}>
      */
     private static function build_deploy_manifest(array $base, string $dest_id): array {
-        $dest         = $dest_id !== '' ? Destinations::get($dest_id) : Destinations::primary();
-        $replacements = $dest !== null ? $dest->replacements() : [];
+        $dest  = $dest_id !== '' ? Destinations::get($dest_id) : Destinations::primary();
+        $text  = $dest !== null ? $dest->replacements() : [];
+        $media = $dest !== null ? $dest->media_replacements() : [];
 
-        if (empty($replacements)) {
+        if (empty($text) && empty($media)) {
             return $base; // No transform — deploy the base render verbatim.
         }
 
-        $searches = array_column($replacements, 'search');
-        $replaces = array_column($replacements, 'replace');
+        $searches = array_column($text, 'search');
+        $replaces = array_column($text, 'replace');
+
+        // Media swaps: original URL (as it appears in the rewritten HTML) →
+        // replacement URL (relativised the same way), plus the replacement files
+        // to add as uploadable assets.
+        $media_from = [];
+        $media_to   = [];
+        $extra      = []; // manifest key => local source file
+        foreach ($media as $m) {
+            $media_from[] = $m['from'];
+            $media_to[]   = UrlRewriter::rewrite($m['to']);
+
+            $src = Paths::source_file($m['to']);
+            $key = Url::to_relative_path($m['to']);
+            if ($src !== null && is_file($src) && $key !== null) {
+                $extra[$key] = $src;
+            }
+        }
 
         $deploy_dir = Paths::cache_dir() . '/deploy/' . ($dest !== null ? $dest->id() : 'default');
         self::reset_dir($deploy_dir);
@@ -647,9 +667,16 @@ final class Runner {
                 continue;
             }
 
-            $transformed = TextReplacer::apply((string) file_get_contents($meta['src']), $searches, $replaces);
-            $path        = $deploy_dir . '/' . $relative;
-            $dir         = dirname($path);
+            $transformed = (string) file_get_contents($meta['src']);
+            if (!empty($searches)) {
+                $transformed = TextReplacer::apply($transformed, $searches, $replaces);
+            }
+            if (!empty($media_from)) {
+                $transformed = str_replace($media_from, $media_to, $transformed);
+            }
+
+            $path = $deploy_dir . '/' . $relative;
+            $dir  = dirname($path);
 
             if ((!is_dir($dir) && !wp_mkdir_p($dir)) || file_put_contents($path, $transformed) === false) {
                 $out[$relative] = $meta; // fall back to base on write failure
@@ -660,6 +687,13 @@ final class Runner {
             }
 
             $out[$relative] = ['size' => strlen($transformed), 'hash' => StableHash::of_html($transformed), 'src' => wp_normalize_path($path)];
+        }
+
+        // Add the replacement media files (if not already in the render).
+        foreach ($extra as $key => $src) {
+            if (!isset($out[$key])) {
+                $out[$key] = ['size' => (int) filesize($src), 'hash' => StableHash::of_file($src), 'src' => wp_normalize_path($src)];
+            }
         }
 
         return $out;
