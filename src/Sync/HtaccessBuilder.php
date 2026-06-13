@@ -75,10 +75,56 @@ final class HtaccessBuilder {
     }
 
     /**
+     * Content types for the pre-compressed extensions, by extension. Any
+     * compressible extension WITHOUT a type here would be served as an
+     * undecodable .gz blob, so every Compressor extension must be covered.
+     *
+     * @return array<string,string>
+     */
+    private static function content_types(): array {
+        return [
+            'html' => 'text/html; charset=UTF-8',
+            'htm'  => 'text/html; charset=UTF-8',
+            'css'  => 'text/css',
+            'js'   => 'application/javascript',
+            'mjs'  => 'application/javascript',
+            'svg'  => 'image/svg+xml',
+            'json' => 'application/json',
+            'map'  => 'application/json',
+            'xml'  => 'application/xml',
+            'txt'  => 'text/plain; charset=UTF-8',
+        ];
+    }
+
+    /**
+     * FilesMatch blocks that give every pre-compressed sibling the right
+     * Content-Encoding + Content-Type. Built from the same extension list
+     * Compressor gzips, so the two can't drift (a gzipped type with no header
+     * here would serve as a broken binary blob — the sitemap/robots case).
+     */
+    private static function precompressed_headers(): string {
+        $types  = self::content_types();
+        $blocks = [];
+        foreach (Compressor::extensions() as $ext) {
+            if (!isset($types[$ext])) {
+                continue;
+            }
+            $blocks[] = "    <FilesMatch \"\\.{$ext}\\.gz\$\">\n"
+                . "        Header set Content-Encoding gzip\n"
+                . "        Header set Content-Type \"{$types[$ext]}\"\n"
+                . "        Header append Vary Accept-Encoding\n"
+                . '    </FilesMatch>';
+        }
+
+        return implode("\n", $blocks);
+    }
+
+    /**
      * The rule body (without markers).
      */
     private static function rules(): string {
-        $assets = self::ASSET_EXT;
+        $assets      = self::ASSET_EXT;
+        $precompressed = self::precompressed_headers();
 
         return <<<HTACCESS
 DirectoryIndex index.html
@@ -98,22 +144,10 @@ DirectoryIndex index.html
 </IfModule>
 
 <IfModule mod_headers.c>
-    # Pre-compressed responses: set encoding + correct content type, vary on encoding.
-    <FilesMatch "\.html\.gz\$">
-        Header set Content-Encoding gzip
-        Header set Content-Type "text/html; charset=UTF-8"
-        Header append Vary Accept-Encoding
-    </FilesMatch>
-    <FilesMatch "\.css\.gz\$">
-        Header set Content-Encoding gzip
-        Header set Content-Type "text/css"
-        Header append Vary Accept-Encoding
-    </FilesMatch>
-    <FilesMatch "\.js\.gz\$">
-        Header set Content-Encoding gzip
-        Header set Content-Type "application/javascript"
-        Header append Vary Accept-Encoding
-    </FilesMatch>
+    # Pre-compressed responses: set encoding + correct content type, vary on
+    # encoding. Covers every type we gzip — without these, a .gz sibling is
+    # served as an undecodable binary blob.
+$precompressed
 
     # Cache policy: assets immutable for a year, HTML always revalidated.
     <FilesMatch "\.($assets)\$">

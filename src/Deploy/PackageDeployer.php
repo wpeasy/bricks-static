@@ -150,7 +150,7 @@ final class PackageDeployer {
         }
         $zip->close();
 
-        file_put_contents($php_path, UnzipScript::generate($token, $zip_name, time() + self::TTL, Compressor::extensions()));
+        file_put_contents($php_path, UnzipScript::generate($token, $zip_name, time() + self::TTL, Compressor::extensions(), Compressor::min_bytes()));
 
         // Upload package + helper, then trigger extraction.
         $report(sprintf('Uploading package (%s)…', size_format((int) @filesize($zip_path) ?: 0)));

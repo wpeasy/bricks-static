@@ -24,10 +24,24 @@ final class Compressor {
     private const TEXT_EXTENSIONS = ['html', 'htm', 'css', 'js', 'mjs', 'svg', 'json', 'xml', 'txt', 'map'];
 
     /**
+     * Files smaller than this aren't worth gzipping — the ~20-byte gzip overhead
+     * can make the sibling LARGER (e.g. a 76-byte robots.txt), and the per-request
+     * round trip to swap in a .gz isn't worth it. Filter `bs_gzip_min_bytes`.
+     */
+    private const MIN_BYTES = 1024;
+
+    /**
      * Whether gzip is available.
      */
     public static function available(): bool {
         return function_exists('gzencode');
+    }
+
+    /**
+     * Minimum file size (bytes) before a .gz sibling is worth writing.
+     */
+    public static function min_bytes(): int {
+        return (int) apply_filters('bs_gzip_min_bytes', self::MIN_BYTES);
     }
 
     /**
@@ -66,8 +80,19 @@ final class Compressor {
             return false;
         }
 
+        // Too small to bother — drop any stale sibling so it can't be served.
+        if (strlen($data) < self::min_bytes()) {
+            if (is_file($absolute_path . '.gz')) {
+                @unlink($absolute_path . '.gz');
+            }
+            return false;
+        }
+
         $gz = gzencode($data, 9);
-        if ($gz === false) {
+        if ($gz === false || strlen($gz) >= strlen($data)) {
+            if (is_file($absolute_path . '.gz')) {
+                @unlink($absolute_path . '.gz');
+            }
             return false;
         }
 
@@ -87,12 +112,12 @@ final class Compressor {
         }
 
         $data = file_get_contents($source);
-        if ($data === false) {
+        if ($data === false || strlen($data) < self::min_bytes()) {
             return false;
         }
 
         $gz = gzencode($data, 9);
-        if ($gz === false) {
+        if ($gz === false || strlen($gz) >= strlen($data)) {
             return false;
         }
 

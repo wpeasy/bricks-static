@@ -34,12 +34,14 @@ final class UnzipScript {
      * @param string             $zip_name     Basename of the uploaded package (same directory).
      * @param int                $expires      Unix timestamp after which the script refuses to run.
      * @param array<int,string>  $compressible Extensions to gzip server-side (no '.'), matching Compressor.
+     * @param int                $min_bytes    Don't gzip files smaller than this (matches Compressor).
      */
-    public static function generate(string $token, string $zip_name, int $expires, array $compressible = []): string {
+    public static function generate(string $token, string $zip_name, int $expires, array $compressible = [], int $min_bytes = 0): string {
         $token_php = var_export($token, true);
         $zip_php   = var_export($zip_name, true);
         $exp_php   = var_export($expires, true);
         $gz_php    = var_export(array_values(array_map('strval', $compressible)), true);
+        $gzmin_php = var_export($min_bytes, true);
 
         return <<<PHP
 <?php
@@ -50,6 +52,7 @@ declare(strict_types=1);
 \$ZIPNAME = {$zip_php};
 \$EXPIRES = {$exp_php};
 \$GZIP    = {$gz_php};
+\$GZMIN   = {$gzmin_php};
 
 \$base = __DIR__;
 \$zip_path = \$base . '/' . \$ZIPNAME;
@@ -136,11 +139,17 @@ for (\$i = 0; \$i < \$zip->numFiles; \$i++) {
     \$ext = strtolower(pathinfo(\$rel, PATHINFO_EXTENSION));
     if (in_array(\$ext, \$GZIP, true) && function_exists('gzencode')) {
         \$data = @file_get_contents(\$dest);
-        if (\$data !== false) {
+        // Skip tiny files (gzip overhead can exceed the saving) and any case
+        // where the .gz isn't actually smaller; drop a stale sibling if present.
+        if (\$data !== false && strlen(\$data) >= \$GZMIN) {
             \$gz = @gzencode(\$data, 9);
-            if (\$gz !== false) {
+            if (\$gz !== false && strlen(\$gz) < strlen(\$data)) {
                 @file_put_contents(\$dest . '.gz', \$gz);
+            } elseif (is_file(\$dest . '.gz')) {
+                @unlink(\$dest . '.gz');
             }
+        } elseif (is_file(\$dest . '.gz')) {
+            @unlink(\$dest . '.gz');
         }
     }
 }
