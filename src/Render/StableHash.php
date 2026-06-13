@@ -30,10 +30,18 @@ final class StableHash {
      * @return array<string,string>
      */
     private static function patterns(): array {
+        // Bricks generates these as Helpers::generate_random_id() — a fresh
+        // 6-char lowercase-hex hash on EVERY render. They appear as the element
+        // id (brxe-…), form field ids, and a fixed set of data-* attributes.
+        //
+        // NB: data-id is deliberately NOT here — Bricks reuses it for real
+        // attachment IDs on gallery images (a meaningful number), so normalising
+        // it would hide genuine image changes. (A rare video wrapper's random
+        // data-id is the only false negative, and it's worth it for safety.)
         $map = [
             '/\bbrxe-[0-9a-f]{6,}\b/i'       => 'brxe-X',
             '/\bform-field-[a-z0-9]{5,}\b/i' => 'form-field-X',
-            '/(data-(?:script-id|element-id|brx-loop-start|query-element-id)=")[0-9a-f]{4,}"/i' => '$1X"',
+            '/(data-(?:script-id|element-id|brx-loop-start|query-element-id|interaction-id|pagination-id)=")[0-9a-f]{4,}"/i' => '$1X"',
         ];
 
         /**
