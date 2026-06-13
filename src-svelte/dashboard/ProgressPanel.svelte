@@ -27,8 +27,18 @@
     cancelled: 'Cancelled',
   };
 
-  let visible = $derived(snapshot !== null && snapshot.phase !== 'idle');
+  // Dismissal: once a run has finished it can be closed. Keyed to the run's
+  // startedAt so a NEW run re-shows the card (the next run has a fresh id).
+  let dismissedRun = $state<number | null>(null);
+  let finished = $derived(!snapshot?.running && ['done', 'error', 'cancelled'].includes(snapshot?.phase ?? ''));
+  let dismissed = $derived(snapshot?.startedAt != null && dismissedRun === snapshot.startedAt);
+
+  let visible = $derived(snapshot !== null && snapshot.phase !== 'idle' && !dismissed);
   let phaseLabel = $derived(snapshot ? (PHASE_LABELS[snapshot.phase] ?? snapshot.phase) : '');
+
+  function dismiss(): void {
+    if (snapshot?.startedAt != null) dismissedRun = snapshot.startedAt;
+  }
 
   // Which destination(s) this run is for (a 'check' run has no real target).
   let destLabel = $derived.by<string>(() => {
@@ -74,7 +84,12 @@
   <section class="bs-card bs-stack bs-stack--sm bs-progress--{tone}">
     <div class="bs-row bs-row--between">
       <h2>Progress{#if destLabel}<span class="bs-progress__dest"> · {destLabel}</span>{/if}</h2>
-      <span class="bs-progress__phase">{phaseLabel}</span>
+      <div class="bs-progress__head-right">
+        <span class="bs-progress__phase">{phaseLabel}</span>
+        {#if finished}
+          <button type="button" class="bs-progress__close" onclick={dismiss} aria-label="Dismiss" data-balloon="Dismiss" data-balloon-pos="down-left">×</button>
+        {/if}
+      </div>
     </div>
 
     {#if snapshot.message}
@@ -186,12 +201,38 @@
     box-shadow: var(--bs-shadow--sm);
   }
 
+  .bs-progress__head-right {
+    display: flex;
+    align-items: center;
+    gap: var(--bs-space--xs);
+  }
+
   .bs-progress__phase {
     font-size: var(--bs-text--sm);
     font-weight: var(--bs-weight--semibold);
     padding: var(--bs-space--3xs) var(--bs-space--sm);
     border-radius: var(--bs-radius--pill);
     background: var(--bs-color-surface--sunken);
+  }
+
+  .bs-progress__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border: 0;
+    border-radius: var(--bs-radius--sm);
+    background: none;
+    color: var(--bs-color-text--muted);
+    font-size: var(--bs-text--lg);
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .bs-progress__close:hover {
+    background: var(--bs-color-surface--sunken);
+    color: var(--bs-color-text);
   }
 
   .bs-progress--ok .bs-progress__phase {
