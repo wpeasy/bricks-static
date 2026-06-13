@@ -1,13 +1,20 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { api } from '../shared/api';
-  import type { MediaItem } from '../shared/types';
+  import type { MediaItem, MediaReplacement, DestinationDisplay } from '../shared/types';
+
+  let { destination, onSaved }: { destination: DestinationDisplay; onSaved: () => void } = $props();
 
   let media = $state<MediaItem[]>([]);
   let loading = $state(true);
   let error = $state('');
   let pageFilter = $state('');
   let search = $state('');
+
+  // Local swap map (original url → replacement url), seeded from the destination.
+  let swaps = $state<Record<string, string>>(
+    untrack(() => Object.fromEntries((destination.mediaReplacements ?? []).map((r) => [r.from, r.to]))),
+  );
 
   onMount(async () => {
     try {
@@ -24,7 +31,45 @@
     return path.substring(path.lastIndexOf('/') + 1) || url;
   }
 
-  // Pages present across all media, for the filter dropdown.
+  async function persist(): Promise<void> {
+    try {
+      const mediaReplacements: MediaReplacement[] = Object.entries(swaps).map(([from, to]) => ({ from, to }));
+      await api.updateDestination(destination.id, { mediaReplacements });
+      onSaved();
+    } catch (e) {
+      error = (e as Error).message;
+    }
+  }
+
+  function pick(item: MediaItem): void {
+    const wp = window.wp;
+    if (!wp?.media) {
+      error = 'The WordPress media library is unavailable on this page.';
+      return;
+    }
+    const frame = wp.media({
+      title: 'Choose a replacement',
+      button: { text: 'Use this media' },
+      multiple: false,
+      library: { type: item.type },
+    });
+    frame.on('select', () => {
+      const att = frame.state().get('selection').first().toJSON();
+      if (att?.url) {
+        swaps = { ...swaps, [item.url]: att.url };
+        void persist();
+      }
+    });
+    frame.open();
+  }
+
+  function clearSwap(url: string): void {
+    const next = { ...swaps };
+    delete next[url];
+    swaps = next;
+    void persist();
+  }
+
   let pages = $derived.by(() => {
     const set = new Set<string>();
     for (const m of media) for (const p of m.pages) set.add(p);
@@ -39,11 +84,15 @@
       return true;
     });
   });
+
+  let swapCount = $derived(Object.keys(swaps).length);
 </script>
 
 <div class="bs-media">
   <div class="bs-media__head">
-    <span>Media replacer <small>({media.length} item{media.length === 1 ? '' : 's'})</small></span>
+    <span>
+      Media replacer <small>({media.length} item{media.length === 1 ? '' : 's'}{swapCount > 0 ? `, ${swapCount} swapped` : ''})</small>
+    </span>
     <div class="bs-media__filters">
       <input type="search" placeholder="Search name or alt…" bind:value={search} />
       <select bind:value={pageFilter} aria-label="Filter by page">
@@ -62,19 +111,37 @@
   {:else}
     <div class="bs-media__list">
       {#each filtered as item (item.url)}
-        <div class="bs-media__row">
-          <div class="bs-media__main">
-            {#if item.type === 'video'}
-              <div class="bs-media__thumb bs-media__thumb--video">▶</div>
-            {:else}
-              <img class="bs-media__thumb" src={item.thumb} alt={item.alt} loading="lazy" />
-            {/if}
+        <div class="bs-media__row" class:is-swapped={swaps[item.url]}>
+          <div class="bs-media__line">
+            <button type="button" class="bs-media__thumbbtn" onclick={() => pick(item)} title="Click to replace">
+              {#if item.type === 'video'}
+                <span class="bs-media__thumb bs-media__thumb--video">▶</span>
+              {:else}
+                <img class="bs-media__thumb" src={item.thumb} alt={item.alt} loading="lazy" />
+              {/if}
+            </button>
             <div class="bs-media__meta">
               <span class="bs-media__name" title={item.url}>{basename(item.url)}</span>
               <span class="bs-media__alt">{item.alt || '— no alt —'}</span>
               <span class="bs-media__pages">{item.pages.length} page{item.pages.length === 1 ? '' : 's'}: {item.pages.join(', ')}</span>
             </div>
+            <button type="button" class="bs-media__replace" onclick={() => pick(item)}>Replace…</button>
           </div>
+
+          {#if swaps[item.url]}
+            <div class="bs-media__line bs-media__line--swap">
+              {#if item.type === 'video'}
+                <span class="bs-media__thumb bs-media__thumb--video">▶</span>
+              {:else}
+                <img class="bs-media__thumb" src={swaps[item.url]} alt="" loading="lazy" />
+              {/if}
+              <div class="bs-media__meta">
+                <span class="bs-media__swaplabel">↳ replaced with</span>
+                <span class="bs-media__name" title={swaps[item.url]}>{basename(swaps[item.url])}</span>
+              </div>
+              <button type="button" class="bs-link bs-link--danger" onclick={() => clearSwap(item.url)}>Remove</button>
+            </div>
+          {/if}
         </div>
       {/each}
       {#if filtered.length === 0}
@@ -122,7 +189,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--bs-space--xs);
-    max-height: 28rem;
+    max-height: 32rem;
     overflow: auto;
   }
 
@@ -132,11 +199,28 @@
     background: var(--bs-color-surface);
   }
 
-  .bs-media__main {
+  .bs-media__row.is-swapped {
+    border-color: var(--bs-color-primary);
+  }
+
+  .bs-media__line {
     display: flex;
     gap: var(--bs-space--sm);
     align-items: center;
     padding: var(--bs-space--xs);
+  }
+
+  .bs-media__line--swap {
+    border-top: var(--bs-border--1) dashed var(--bs-color-border);
+    background: color-mix(in srgb, var(--bs-color-primary) 6%, transparent);
+  }
+
+  .bs-media__thumbbtn {
+    border: 0;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+    line-height: 0;
   }
 
   .bs-media__thumb {
@@ -160,6 +244,7 @@
     flex-direction: column;
     gap: var(--bs-space--3xs);
     min-width: 0;
+    flex: 1;
   }
 
   .bs-media__name {
@@ -180,6 +265,39 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .bs-media__swaplabel {
+    font-size: var(--bs-text--xs);
+    color: var(--bs-color-primary);
+    font-weight: var(--bs-weight--medium);
+  }
+
+  .bs-media__replace {
+    flex: 0 0 auto;
+    padding: var(--bs-space--2xs) var(--bs-space--sm);
+    border: var(--bs-border--1) solid var(--bs-color-border--strong);
+    border-radius: var(--bs-radius--md);
+    background: var(--bs-color-surface);
+    color: var(--bs-color-text);
+    font: inherit;
+    font-size: var(--bs-text--xs);
+    cursor: pointer;
+  }
+
+  .bs-link {
+    flex: 0 0 auto;
+    background: none;
+    border: 0;
+    padding: 0;
+    color: var(--bs-color-primary);
+    font: inherit;
+    font-size: var(--bs-text--sm);
+    cursor: pointer;
+  }
+
+  .bs-link--danger {
+    color: var(--bs-color-danger);
   }
 
   .bs-media__note {

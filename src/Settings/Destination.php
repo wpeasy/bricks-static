@@ -133,6 +133,23 @@ final class Destination {
     }
 
     /**
+     * Per-destination media swaps [{from, to}, …] — original media URL → its
+     * replacement (a WordPress media-library URL).
+     *
+     * @return array<int,array{from:string,to:string}>
+     */
+    public function media_replacements(): array {
+        $out = [];
+        foreach ((array) ($this->data['mediaReplacements'] ?? []) as $row) {
+            if (is_array($row) && !empty($row['from']) && !empty($row['to'])) {
+                $out[] = ['from' => (string) $row['from'], 'to' => (string) $row['to']];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * Display payload (no secrets) for the dashboard.
      *
      * @return array<string,mixed>
@@ -145,6 +162,7 @@ final class Destination {
             'includeInSinglePageSync' => (bool) ($this->data['includeInSinglePageSync'] ?? true),
             'isPrimary'               => $this->is_primary,
             'replacements'            => $this->replacements(),
+            'mediaReplacements'       => $this->media_replacements(),
         ];
 
         foreach (Schema::fields() as $key => $field) {
@@ -177,6 +195,9 @@ final class Destination {
         }
         if (array_key_exists('replacements', $input) && is_array($input['replacements'])) {
             $this->data['replacements'] = self::sanitize_replacements($input['replacements']);
+        }
+        if (array_key_exists('mediaReplacements', $input) && is_array($input['mediaReplacements'])) {
+            $this->data['mediaReplacements'] = self::sanitize_media_replacements($input['mediaReplacements']);
         }
 
         // Connection fields.
@@ -223,6 +244,29 @@ final class Destination {
             $replace = (string) ($row['replace'] ?? '');
             $replace = $rich ? wp_kses_post($replace) : sanitize_text_field($replace);
             $clean[] = ['search' => $search, 'replace' => $replace, 'rich' => $rich];
+        }
+
+        return $clean;
+    }
+
+    /**
+     * Sanitise a media-replacement list (both sides are URLs; empties dropped).
+     *
+     * @param array<int,mixed> $rows Raw rows.
+     * @return array<int,array{from:string,to:string}>
+     */
+    private static function sanitize_media_replacements(array $rows): array {
+        $clean = [];
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $from = esc_url_raw((string) ($row['from'] ?? ''));
+            $to   = esc_url_raw((string) ($row['to'] ?? ''));
+            if ($from === '' || $to === '') {
+                continue;
+            }
+            $clean[] = ['from' => $from, 'to' => $to];
         }
 
         return $clean;

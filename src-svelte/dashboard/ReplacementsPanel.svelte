@@ -57,17 +57,24 @@
 
   <hr class="bs-rp__divider" />
 
-  <MediaReplacer />
+  <MediaReplacer {destination} {onSaved} />
 </section>
 
 <style>
   .bs-card {
-    grid-column: 1 / -1;
+    grid-column: 1 / -1; /* full width when the grid is a single column */
     padding: var(--bs-space--lg);
     background: var(--bs-color-surface--raised);
     border: var(--bs-border--1) solid var(--bs-color-border);
     border-radius: var(--bs-radius--lg);
     box-shadow: var(--bs-shadow--sm);
+  }
+
+  /* Wide enough for ≥2 columns: sit after the Transport card and span to the end. */
+  @media (min-width: 700px) {
+    .bs-card {
+      grid-column: 2 / -1;
+    }
   }
 
   .bs-rp__title {

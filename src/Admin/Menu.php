@@ -79,6 +79,9 @@ final class Menu {
         // the render on low-worker hosts (e.g. Local). It isn't needed here.
         wp_deregister_script('heartbeat');
 
+        // The media replacer opens the WordPress media library (wp.media).
+        wp_enqueue_media();
+
         wp_enqueue_style(
             'bs-framework',
             BS_PLUGIN_URL . 'assets/css/bs-framework.css',

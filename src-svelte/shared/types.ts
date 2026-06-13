@@ -48,6 +48,38 @@ export interface MediaItem {
   pages: string[];
 }
 
+export interface MediaReplacement {
+  from: string;
+  to: string;
+}
+
+// Minimal typing for the WordPress media library (wp.media), enqueued by the plugin.
+export interface WpMediaAttachment {
+  id: number;
+  url: string;
+  alt: string;
+  mime: string;
+}
+
+export interface WpMediaFrame {
+  on(event: string, cb: () => void): WpMediaFrame;
+  open(): void;
+  state(): { get(key: string): { first(): { toJSON(): WpMediaAttachment } } };
+}
+
+export interface WpMediaOptions {
+  title?: string;
+  button?: { text?: string };
+  multiple?: boolean;
+  library?: { type?: string | string[] };
+}
+
+declare global {
+  interface Window {
+    wp?: { media: (opts: WpMediaOptions) => WpMediaFrame };
+  }
+}
+
 export interface DestinationStatus {
   connected: boolean;
   hasPushed: boolean;
@@ -68,6 +100,7 @@ export interface DestinationDisplay extends SettingsDisplay {
   includeInSinglePageSync: boolean;
   isPrimary: boolean;
   replacements: Replacement[];
+  mediaReplacements: MediaReplacement[];
   status: DestinationStatus;
   deploy: DestinationDeploy;
 }
@@ -187,4 +220,5 @@ export interface ConnectionInput {
   enabled?: boolean;
   includeInSinglePageSync?: boolean;
   replacements?: Replacement[];
+  mediaReplacements?: MediaReplacement[];
 }
