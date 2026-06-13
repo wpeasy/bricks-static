@@ -14,6 +14,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WPEasy\BricksStatic\Deploy\PackageDeployer;
 use WPEasy\BricksStatic\Settings\Destinations;
+use WPEasy\BricksStatic\Sync\Runner;
 use WPEasy\BricksStatic\Sync\Manifest;
 use WPEasy\BricksStatic\Transport\TransportFactory;
 
@@ -233,24 +234,24 @@ final class DestinationsController {
      * The destinations list payload, each with its per-destination status.
      */
     private static function list_response(): WP_REST_Response {
-        $render = Manifest::load(Manifest::RENDER_OPTION);
-        $list   = Destinations::for_display();
+        $list = Destinations::for_display();
 
         foreach ($list as &$dest) {
             $id     = (string) $dest['id'];
             $state  = get_option(self::conn_state_option($id), []);
             $pushed = Manifest::load(Destinations::pushed_option($id));
-            $diff   = Manifest::diff($pushed, $render);
+            $obj    = Destinations::get($id);
 
             $dest['status'] = [
                 'connected' => is_array($state) && !empty($state['ok']),
                 'hasPushed' => !empty($pushed),
-                'inSync'    => !empty($pushed) && !empty($render) && empty($diff['changed']) && empty($diff['removed']),
+                // Signature-based: matches the render + this destination's
+                // replacements, so a replacement destination isn't false-flagged.
+                'inSync'    => !empty($pushed) && Runner::in_sync($id, $obj),
             ];
 
             // How this destination will be deployed (fast package vs per-file),
             // and whether an explicit Destination URL is set (we guess otherwise).
-            $obj = Destinations::get($id);
             $dest['deploy'] = [
                 'strategy' => PackageDeployer::available_for($id, $obj) ? 'package' : 'perfile',
                 'canBuild' => PackageDeployer::can_build(),

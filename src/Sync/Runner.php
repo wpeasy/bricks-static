@@ -876,6 +876,7 @@ final class Runner {
 
         // The remote now holds the full deploy manifest.
         Manifest::save(self::pushed_option($job), Manifest::pushed_from($manifest));
+        self::mark_synced((string) ($job->data['destId'] ?? ''));
         $job->data['counts']['uploaded'] += (int) $result['extracted'];
         $job->data['counts']['pruned']   += (int) $result['deleted'];
         $job->data['queue']['uploads']    = [];
@@ -980,6 +981,7 @@ final class Runner {
                     unset($pushed[$failed_rel]);
                 }
                 Manifest::save(self::pushed_option($job), $pushed);
+                self::mark_synced((string) ($job->data['destId'] ?? ''));
 
                 // Prune deleted files next, if requested and there are any;
                 // otherwise move on to the next destination (or finish).
@@ -1071,6 +1073,61 @@ final class Runner {
         }
 
         return Destinations::pushed_option($id);
+    }
+
+    /**
+     * Option-name prefix for a destination's last-synced signature.
+     */
+    public const SYNC_SIG = 'bs_sync_sig_';
+
+    /**
+     * A fingerprint of what a destination's deploy depends on: the current
+     * render plus that destination's text + media replacements. Stored when a
+     * sync completes and compared for the "in sync" indicator — so a destination
+     * with replacements (whose deployed bytes differ from the base render) isn't
+     * wrongly flagged out of date, while a real source or replacement change is.
+     *
+     * @param \WPEasy\BricksStatic\Settings\Destination|null $dest Destination.
+     */
+    public static function sync_signature($dest): string {
+        $render = Manifest::load(Manifest::RENDER_OPTION);
+        if (empty($render)) {
+            return ''; // Nothing rendered — can't be "in sync".
+        }
+
+        $parts = [];
+        foreach ($render as $rel => $meta) {
+            $parts[] = $rel . ':' . ($meta['hash'] ?? '');
+        }
+        sort($parts);
+
+        $replacements = $dest !== null
+            ? (string) wp_json_encode([$dest->replacements(), $dest->media_replacements()])
+            : '[]';
+
+        return md5(md5(implode('|', $parts)) . '|' . md5($replacements));
+    }
+
+    /**
+     * Record that a destination is now in sync (its signature at deploy time).
+     *
+     * @param string $dest_id Destination id.
+     */
+    private static function mark_synced(string $dest_id): void {
+        update_option(self::SYNC_SIG . $dest_id, self::sync_signature(Destinations::get($dest_id)), false);
+    }
+
+    /**
+     * Whether a destination's last-synced signature still matches the current
+     * render + replacements (used for the dashboard's "in sync" dot).
+     *
+     * @param string                                          $dest_id Destination id.
+     * @param \WPEasy\BricksStatic\Settings\Destination|null  $dest    Destination.
+     */
+    public static function in_sync(string $dest_id, $dest): bool {
+        $stored = (string) get_option(self::SYNC_SIG . $dest_id, '');
+
+        return $stored !== '' && $stored === self::sync_signature($dest);
     }
 
     /**

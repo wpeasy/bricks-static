@@ -17,6 +17,7 @@ use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Support\Environment;
 use WPEasy\BricksStatic\Sync\Manifest;
 use WPEasy\BricksStatic\Sync\MethodResolver;
+use WPEasy\BricksStatic\Sync\Runner;
 
 defined('ABSPATH') || exit;
 
@@ -61,15 +62,14 @@ final class StatusController {
     public static function get(): WP_REST_Response {
         $state  = get_option('bs_connection_state', []);
         $pushed = Manifest::load(Destinations::pushed_option(Destinations::primary()->id()));
-        $render = Manifest::load(Manifest::RENDER_OPTION);
 
         $connected  = is_array($state) && !empty($state['ok']);
         $has_pushed = !empty($pushed);
 
-        // In sync = something has been pushed and the latest local render matches
-        // it exactly (no changed/new and no removed files).
-        $diff    = Manifest::diff($pushed, $render);
-        $in_sync = $has_pushed && !empty($render) && empty($diff['changed']) && empty($diff['removed']);
+        // In sync = something has been pushed and the destination's last-synced
+        // signature (render + its replacements) still matches the current state.
+        $primary = Destinations::primary();
+        $in_sync = $has_pushed && Runner::in_sync($primary->id(), $primary);
 
         return new WP_REST_Response([
             'connected' => $connected,

@@ -144,6 +144,7 @@ final class Destinations {
                 if (self::target_signature($after) !== $before) {
                     delete_option(self::pushed_option($id));
                     delete_option('bs_pkg_off_' . $id);
+                    delete_option('bs_sync_sig_' . $id);
                 }
 
                 return $after;

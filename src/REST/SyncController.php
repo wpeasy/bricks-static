@@ -201,6 +201,7 @@ final class SyncController {
             $id = (string) ($dest['id'] ?? '');
             delete_option(Destinations::pushed_option($id));
             delete_option('bs_pkg_off_' . $id);
+            delete_option(Runner::SYNC_SIG . $id);
         }
 
         delete_option(Manifest::RENDER_OPTION);
