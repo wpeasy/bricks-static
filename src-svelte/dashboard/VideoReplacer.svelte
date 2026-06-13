@@ -75,10 +75,41 @@
     frame.open();
   }
 
-  // Embed → accept a URL or a pasted <iframe …> (extract its src).
-  function commitEmbed(from: string, value: string): void {
+  // Embed → accept a full URL, a bare video ID, or a pasted <iframe> code, and
+  // resolve to the right embed URL for the provider (matching how Bricks works).
+  function commitEmbed(item: VideoItem, value: string): void {
+    setSwap(item.url, resolveEmbed(item.provider, value), 0);
+  }
+
+  function resolveEmbed(provider: string, raw: string): string {
+    const value = raw.trim();
+    if (value === '') return '';
+
+    if (provider === 'youtube') {
+      const id = youtubeId(value);
+      return id ? `https://www.youtube.com/embed/${id}` : value;
+    }
+    if (provider === 'vimeo') {
+      const id = vimeoId(value);
+      return id ? `https://player.vimeo.com/video/${id}` : value;
+    }
+    // Other embeds: a URL, or the src extracted from pasted <iframe> code.
     const m = value.match(/<iframe[^>]*\ssrc\s*=\s*["']([^"']+)["']/i);
-    setSwap(from, (m ? m[1] : value).trim(), 0);
+    return m ? m[1] : value;
+  }
+
+  // A bare YouTube id, or one pulled from any YouTube URL / embed code.
+  function youtubeId(v: string): string {
+    if (/^[A-Za-z0-9_-]{6,15}$/.test(v)) return v;
+    const m = v.match(/(?:youtube(?:-nocookie)?\.com\/embed\/|youtu\.be\/|[?&]v=)([A-Za-z0-9_-]{6,})/i);
+    return m ? m[1] : '';
+  }
+
+  // A bare numeric Vimeo id, or one pulled from any Vimeo URL.
+  function vimeoId(v: string): string {
+    if (/^\d+$/.test(v)) return v;
+    const m = v.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
+    return m ? m[1] : '';
   }
 
   function isLocal(item: VideoItem): boolean {
@@ -132,7 +163,7 @@
     </div>
   </div>
   <p class="bs-vids__hint">
-    Local videos swap via the media library; embeds (YouTube, Vimeo, …) take a URL or a pasted <code>&lt;iframe&gt;</code>.
+    Local videos swap via the media library; embeds (YouTube, Vimeo, …) take a URL <em>or</em> a video ID (like Bricks).
     An embed’s <code>origin=</code> is rewritten to this destination automatically when a Destination URL is set.
   </p>
 
@@ -170,10 +201,10 @@
             <input
               type="text"
               class="bs-vids__input"
-              placeholder="Replacement URL or <iframe> code…"
+              placeholder="Replacement URL or video ID…"
               value={swaps[item.url]?.to ?? ''}
-              onchange={(e) => commitEmbed(item.url, e.currentTarget.value)}
-              onblur={(e) => commitEmbed(item.url, e.currentTarget.value)}
+              onchange={(e) => commitEmbed(item, e.currentTarget.value)}
+              onblur={(e) => commitEmbed(item, e.currentTarget.value)}
             />
           {/if}
         </div>
