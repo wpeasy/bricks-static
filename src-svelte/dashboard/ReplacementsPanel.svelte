@@ -39,7 +39,9 @@
   }
 </script>
 
-<section class="bs-card bs-stack bs-stack--sm">
+<section class="bs-card bs-stack bs-stack--md">
+  <h2 class="bs-rp__title">Replacements <small>(applied to this destination only)</small></h2>
+
   <ReplacementsRepeater bind:replacements disabled={busy} />
 
   {#if message}
@@ -55,11 +57,23 @@
 
 <style>
   .bs-card {
+    grid-column: 1 / -1;
     padding: var(--bs-space--lg);
     background: var(--bs-color-surface--raised);
     border: var(--bs-border--1) solid var(--bs-color-border);
     border-radius: var(--bs-radius--lg);
     box-shadow: var(--bs-shadow--sm);
+  }
+
+  .bs-rp__title {
+    margin: 0;
+    font-size: var(--bs-text--md);
+    font-weight: var(--bs-weight--semibold);
+  }
+
+  .bs-rp__title small {
+    font-weight: var(--bs-weight--normal);
+    color: var(--bs-color-text--muted);
   }
 
   .bs-btn {

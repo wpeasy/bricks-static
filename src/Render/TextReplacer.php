@@ -13,17 +13,15 @@ namespace WPEasy\BricksStatic\Render;
 defined('ABSPATH') || exit;
 
 /**
- * Applies a destination's literal search/replace pairs to **visible text** and
- * **`<img>` image sources** only — never to other attributes, scripts, styles,
- * comments, or markup. Everything else stays byte-for-byte identical so the
- * static page is otherwise untouched.
+ * Applies a destination's literal search/replace pairs to **visible text content
+ * only** — the text between HTML tags. Tags, attributes, scripts, styles, and
+ * comments are left byte-for-byte identical, so the static page is otherwise
+ * untouched. (Media URLs are handled separately by the media replacer.)
+ *
+ * A replacement value may be plain text or, for "rich" replacements, inline HTML
+ * — both are substituted verbatim into the matched text run.
  */
 final class TextReplacer {
-
-    /**
-     * Image-source attributes that may be rewritten.
-     */
-    private const IMG_ATTRS = 'src|srcset|data-src|data-srcset|data-lazy-src|data-lazy-srcset';
 
     /**
      * Apply replacements to an HTML document.
@@ -52,34 +50,13 @@ final class TextReplacer {
         }
 
         foreach ($parts as $i => $part) {
+            // Even indices are text runs (between tags); odd indices are the
+            // captured tags/scripts/styles/comments, left untouched.
             if ($i % 2 === 0) {
-                // Text node.
                 $parts[$i] = str_replace($searches, $replaces, $part);
-            } elseif (preg_match('/^<img[\s>]/i', $part)) {
-                // <img> tag — rewrite only image-source attribute values.
-                $parts[$i] = self::replace_img_sources($part, $searches, $replaces);
             }
         }
 
         return implode('', $parts);
-    }
-
-    /**
-     * Replace within an <img> tag's image-source attribute values only.
-     *
-     * @param string            $tag      The <img …> tag.
-     * @param array<int,string> $searches Needles.
-     * @param array<int,string> $replaces Replacements.
-     */
-    private static function replace_img_sources(string $tag, array $searches, array $replaces): string {
-        $pattern = '/\b(' . self::IMG_ATTRS . ')\s*=\s*(["\'])(.*?)\2/i';
-
-        return (string) preg_replace_callback(
-            $pattern,
-            static function (array $m) use ($searches, $replaces): string {
-                return $m[1] . '=' . $m[2] . str_replace($searches, $replaces, $m[3]) . $m[2];
-            },
-            $tag
-        );
     }
 }

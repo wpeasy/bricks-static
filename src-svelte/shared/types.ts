@@ -37,6 +37,7 @@ export interface ConnectionResponse {
 export interface Replacement {
   search: string;
   replace: string;
+  rich?: boolean;
 }
 
 export interface DestinationStatus {

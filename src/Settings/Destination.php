@@ -121,7 +121,11 @@ final class Destination {
         $out = [];
         foreach ((array) ($this->data['replacements'] ?? []) as $row) {
             if (is_array($row) && isset($row['search']) && $row['search'] !== '') {
-                $out[] = ['search' => (string) $row['search'], 'replace' => (string) ($row['replace'] ?? '')];
+                $out[] = [
+                    'search'  => (string) $row['search'],
+                    'replace' => (string) ($row['replace'] ?? ''),
+                    'rich'    => (bool) ($row['rich'] ?? false),
+                ];
             }
         }
 
@@ -214,7 +218,11 @@ final class Destination {
             if ($search === '') {
                 continue;
             }
-            $clean[] = ['search' => $search, 'replace' => sanitize_text_field((string) ($row['replace'] ?? ''))];
+            // Rich replacements may carry safe inline HTML; plain ones are text.
+            $rich    = !empty($row['rich']);
+            $replace = (string) ($row['replace'] ?? '');
+            $replace = $rich ? wp_kses_post($replace) : sanitize_text_field($replace);
+            $clean[] = ['search' => $search, 'replace' => $replace, 'rich' => $rich];
         }
 
         return $clean;
