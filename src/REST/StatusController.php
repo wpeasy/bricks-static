@@ -85,6 +85,7 @@ final class StatusController {
             'cli'       => Environment::cli_command(),
             'wpCli'     => Environment::wp_cli(),
             'discoveryMode' => UrlCollector::mode(),
+            'fabEnabled'    => (bool) get_option('bs_fab_enabled', true),
         ]);
     }
 
@@ -100,6 +101,13 @@ final class StatusController {
             UrlCollector::set_mode((string) $params['discoveryMode']);
         }
 
-        return new WP_REST_Response(['discoveryMode' => UrlCollector::mode()]);
+        if (array_key_exists('fabEnabled', $params)) {
+            update_option('bs_fab_enabled', !empty($params['fabEnabled']), false);
+        }
+
+        return new WP_REST_Response([
+            'discoveryMode' => UrlCollector::mode(),
+            'fabEnabled'    => (bool) get_option('bs_fab_enabled', true),
+        ]);
     }
 }

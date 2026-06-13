@@ -144,6 +144,7 @@ export interface Status {
   cli: string;
   wpCli: WpCliInfo;
   discoveryMode: DiscoveryMode;
+  fabEnabled: boolean;
 }
 
 export interface WpCliInfo {

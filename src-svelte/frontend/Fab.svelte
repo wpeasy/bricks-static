@@ -1,7 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
-  let { restUrl, nonce, pageUrl }: { restUrl: string; nonce: string; pageUrl: string } = $props();
+  let {
+    restUrl,
+    nonce,
+    pageUrl,
+    inEditor = false,
+  }: { restUrl: string; nonce: string; pageUrl: string; inEditor?: boolean } = $props();
 
   interface Target {
     id: string;
@@ -33,6 +38,7 @@
   let statusErr = $state('');
   let snap = $state<Snap | null>(null);
   let starting = $state(false);
+  let savingEditor = $state(false);
 
   let running = $derived(!!snap?.running);
   let finished = $derived(!!snap && !snap.running && ['done', 'error', 'cancelled'].includes(snap.phase));
@@ -140,10 +146,79 @@
     }
   }
 
+  // In the Bricks editor, save the open document first (so the static render
+  // reflects unsaved edits): trigger Bricks' own save (Cmd/Ctrl+S) and wait for
+  // its `bricks_save_post` request to finish, with a timeout fallback so we never
+  // hang if there was nothing to save.
+  function saveEditor(timeoutMs = 12000): Promise<void> {
+    return new Promise((resolve) => {
+      const Native = window.XMLHttpRequest;
+      let settled = false;
+      const finish = (): void => {
+        if (settled) return;
+        settled = true;
+        window.XMLHttpRequest = Native;
+        clearTimeout(timer);
+        resolve();
+      };
+      const timer = setTimeout(finish, timeoutMs);
+
+      const matches = (s: unknown): boolean => typeof s === 'string' && s.indexOf('bricks_save_post') !== -1;
+
+      // Watch outgoing XHRs for the save request; resolve when it completes.
+      function Wrapped(this: unknown): XMLHttpRequest {
+        const xhr = new Native();
+        let isSave = false;
+        const open = xhr.open.bind(xhr);
+        const send = xhr.send.bind(xhr);
+        xhr.open = function (method: string, url: string | URL, ...rest: unknown[]): void {
+          if (matches(String(url))) isSave = true;
+          // @ts-expect-error — forwarding native signature
+          return open(method, url, ...rest);
+        };
+        xhr.send = function (body?: Document | XMLHttpRequestBodyInit | null): void {
+          try {
+            if (matches(typeof body === 'string' ? body : '') || (body instanceof FormData && matches(String(body.get('action'))))) {
+              isSave = true;
+            }
+          } catch {
+            /* ignore */
+          }
+          if (isSave) xhr.addEventListener('loadend', finish);
+          return send(body);
+        };
+        return xhr;
+      }
+      window.XMLHttpRequest = Wrapped as unknown as typeof XMLHttpRequest;
+
+      // Fire Bricks' save shortcut on the document (its handler is global).
+      const ev = new KeyboardEvent('keydown', {
+        key: 's',
+        code: 'KeyS',
+        keyCode: 83,
+        which: 83,
+        ctrlKey: true,
+        metaKey: true,
+        bubbles: true,
+        cancelable: true,
+      });
+      document.dispatchEvent(ev);
+    });
+  }
+
   async function syncPage(): Promise<void> {
     starting = true;
     snap = null;
     try {
+      if (inEditor) {
+        savingEditor = true;
+        try {
+          await saveEditor();
+        } finally {
+          savingEditor = false;
+        }
+      }
+
       const started: Snap = await api('/sync/page', { method: 'POST', body: JSON.stringify({ url: pageUrl }) });
       snap = started;
       if (started.phase === 'error') return;
@@ -254,7 +329,7 @@
           onclick={syncPage}
           disabled={starting || running || !status?.canSync}
         >
-          {running || starting ? 'Syncing…' : 'Sync this page'}
+          {savingEditor ? 'Saving editor…' : running || starting ? 'Syncing…' : inEditor ? 'Save & sync this page' : 'Sync this page'}
         </button>
       </div>
     </div>

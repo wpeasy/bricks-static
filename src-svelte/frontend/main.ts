@@ -8,6 +8,7 @@ interface FabData {
   restUrl: string;
   nonce: string;
   pageUrl: string;
+  inEditor?: boolean | string;
 }
 
 const data = (window as unknown as { bsFabData?: FabData }).bsFabData;
@@ -19,6 +20,7 @@ if (data && data.restUrl) {
 
   mount(Fab, {
     target: host,
-    props: { restUrl: data.restUrl, nonce: data.nonce, pageUrl: data.pageUrl },
+    // inEditor may arrive as '1'/'' via wp_localize_script — coerce to boolean.
+    props: { restUrl: data.restUrl, nonce: data.nonce, pageUrl: data.pageUrl, inEditor: !!data.inEditor },
   });
 }

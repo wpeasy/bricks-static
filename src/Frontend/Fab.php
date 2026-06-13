@@ -55,16 +55,27 @@ final class Fab {
             return false;
         }
 
-        // Never inside the Bricks builder (its main window or the preview iframe) —
-        // the iframe renders the user's content and must not run our feature code.
-        if (function_exists('bricks_is_builder_iframe') && bricks_is_builder_iframe()) {
+        // Admin toggle (Bricks Static dashboard app bar), on by default.
+        if (!(bool) get_option('bs_fab_enabled', true)) {
             return false;
         }
-        if (function_exists('bricks_is_builder_main') && bricks_is_builder_main()) {
+
+        // Never inside the preview iframe — it renders the user's content and must
+        // not run our feature code. The builder MAIN window is allowed (the FAB
+        // floats over the editor chrome there).
+        if (function_exists('bricks_is_builder_iframe') && bricks_is_builder_iframe()) {
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Whether the current request is the Bricks builder's main (editor) window —
+     * the FAB triggers a builder save before syncing there.
+     */
+    private static function in_editor(): bool {
+        return function_exists('bricks_is_builder_main') && bricks_is_builder_main();
     }
 
     /**
@@ -87,9 +98,10 @@ final class Fab {
         wp_enqueue_script(self::SCRIPT_HANDLE, BS_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BS_VERSION, true);
 
         wp_localize_script(self::SCRIPT_HANDLE, 'bsFabData', [
-            'restUrl' => esc_url_raw(rest_url('bs/v1')),
-            'nonce'   => wp_create_nonce('wp_rest'),
-            'pageUrl' => self::current_url(),
+            'restUrl'  => esc_url_raw(rest_url('bs/v1')),
+            'nonce'    => wp_create_nonce('wp_rest'),
+            'pageUrl'  => self::current_url(),
+            'inEditor' => self::in_editor(),
         ]);
     }
 

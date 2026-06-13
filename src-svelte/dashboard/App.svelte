@@ -116,6 +116,19 @@
     }
   }
 
+  async function setFabEnabled(enabled: boolean): Promise<void> {
+    if (!status) return;
+    const previous = status.fabEnabled;
+    status.fabEnabled = enabled; // optimistic
+    try {
+      const r = await api.setFabEnabled(enabled);
+      status.fabEnabled = r.fabEnabled;
+    } catch (e) {
+      status.fabEnabled = previous;
+      loadError = (e as Error).message;
+    }
+  }
+
   // The exact CLI command for this run, shown if the auto-spawn doesn't start so
   // the user can run it by hand — targeting the same destination(s) they chose.
   function buildRunCommand(type: 'check' | 'sync', dest: string, prune: boolean): string {
@@ -228,7 +241,15 @@
   {#if status}
     <div class="bs-globalbar">
       <DiscoveryToggle mode={status.discoveryMode} disabled={syncing} onChange={setDiscoveryMode} />
-      <div class="bs-globalbar__notice">
+      <label class="bs-globalbar__group bs-fabtoggle">
+        <input
+          type="checkbox"
+          checked={status.fabEnabled}
+          onchange={(e) => setFabEnabled(e.currentTarget.checked)}
+        />
+        <span>Enable sync single button</span>
+      </label>
+      <div class="bs-globalbar__group bs-globalbar__notice">
         <NoticePanel isLocal={status.isLocal} cli={status.cli} wpCli={status.wpCli} inline />
       </div>
     </div>
@@ -335,16 +356,30 @@
     border-radius: var(--bs-radius--md);
   }
 
-  .bs-globalbar__notice {
-    flex: 0 1 auto;
-    min-width: 0;
-    /* Divider between the toggle and the status, like an app-bar group. */
+  /* App-bar group: a left divider between sections (toggle · button · status). */
+  .bs-globalbar__group {
     padding-left: var(--bs-space--lg);
     border-left: var(--bs-border--1) solid var(--bs-color-border);
   }
 
+  .bs-globalbar__notice {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .bs-fabtoggle {
+    display: flex;
+    align-items: center;
+    gap: var(--bs-space--xs);
+    font-size: var(--bs-text--sm);
+    font-weight: var(--bs-weight--medium);
+    color: var(--bs-color-text--muted);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
   @media (max-width: 640px) {
-    .bs-globalbar__notice {
+    .bs-globalbar__group {
       padding-left: 0;
       border-left: 0;
     }

@@ -64,6 +64,8 @@ export const api = {
   getStatus: () => request<Status>('/status'),
   setDiscoveryMode: (mode: DiscoveryMode) =>
     request<{ discoveryMode: DiscoveryMode }>('/settings', 'POST', { discoveryMode: mode }),
+  setFabEnabled: (enabled: boolean) =>
+    request<{ fabEnabled: boolean }>('/settings', 'POST', { fabEnabled: enabled }),
   getDestinations: () => request<DestinationsResponse>('/destinations'),
   addDestination: (data: ConnectionInput) => request<DestinationsResponse>('/destinations', 'POST', data),
   updateDestination: (id: string, data: ConnectionInput) => request<DestinationsResponse>(`/destinations/${id}`, 'POST', data),
