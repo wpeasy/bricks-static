@@ -26,6 +26,10 @@
   let connected = $derived(destination.status.connected);
   let busy = $derived(saving || running);
 
+  // Why the run buttons are off (a disabled destination is never synced).
+  let blockedReason = $derived(!enabled ? 'Enable this destination first' : !connected ? 'Test the connection first' : '');
+  let canRun = $derived(enabled && connected && !busy);
+
   let url = $derived.by(() => {
     const explicit = destination.destinationUrl.value;
     if (explicit) return explicit;
@@ -65,16 +69,16 @@
       type="button"
       class="bs-btn bs-btn--secondary"
       onclick={() => onCheck(d.id)}
-      disabled={busy || !connected}
-      data-balloon={connected ? undefined : 'Test the connection first'}
+      disabled={!canRun}
+      data-balloon={blockedReason || undefined}
       data-balloon-pos="down"
     >Check</button>
     <button
       type="button"
       class="bs-btn bs-btn--primary"
       onclick={() => onSync(d.id, false)}
-      disabled={busy || !connected}
-      data-balloon={connected ? undefined : 'Test the connection first'}
+      disabled={!canRun}
+      data-balloon={blockedReason || undefined}
       data-balloon-pos="down"
     >Sync</button>
     {#if url}
