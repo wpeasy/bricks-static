@@ -43,6 +43,22 @@ final class PackageDeployer {
     }
 
     /**
+     * Whether to verify TLS when calling a destination's helper over its public
+     * URL (relaxed for local/dev hosts, like the renderer).
+     *
+     * @param string $url The destination URL.
+     */
+    public static function sslverify(string $url): bool {
+        $host  = (string) wp_parse_url($url, PHP_URL_HOST);
+        $local = $host === 'localhost'
+            || strpos($host, '127.0.0.1') === 0
+            || (bool) preg_match('/\.(local|test)$/i', $host);
+
+        /** Filters TLS verification for the package-deploy helper call. */
+        return (bool) apply_filters('bs_package_sslverify', !$local, $url);
+    }
+
+    /**
      * Public URL a destination is served from (used to call the helper): its
      * configured Destination URL, else a best-effort guess from the host.
      *
@@ -99,8 +115,11 @@ final class PackageDeployer {
                 $progress($stage);
             }
         };
-        $fail = static fn(string $msg): array => [
-            'ok' => false, 'extracted' => 0, 'deleted' => 0, 'errors' => [], 'message' => $msg,
+        // 'retryable' = the failure may be transient (network, timeout, FTP), so
+        // the caller should fall back for THIS run but try package again next time.
+        // Only a definitive "this host can't run the helper" disables package.
+        $fail = static fn(string $msg, bool $retryable = true): array => [
+            'ok' => false, 'retryable' => $retryable, 'extracted' => 0, 'deleted' => 0, 'errors' => [], 'message' => $msg,
         ];
 
         if (!self::can_build()) {
@@ -162,17 +181,24 @@ final class PackageDeployer {
 
         $code = (int) wp_remote_retrieve_response_code($response);
         $data = json_decode((string) wp_remote_retrieve_body($response), true);
-        if ($code !== 200 || !is_array($data) || empty($data['ok'])) {
-            return $fail('Deploy helper failed (HTTP ' . $code . ') — the host may not run PHP here.');
+
+        if ($code === 200 && is_array($data) && !empty($data['ok'])) {
+            return [
+                'ok'        => true,
+                'retryable' => true,
+                'extracted' => (int) ($data['extracted'] ?? $added),
+                'deleted'   => (int) ($data['deleted'] ?? 0),
+                'errors'    => is_array($data['errors'] ?? null) ? $data['errors'] : [],
+                'message'   => 'Package deployed.',
+            ];
         }
 
-        return [
-            'ok'        => true,
-            'extracted' => (int) ($data['extracted'] ?? $added),
-            'deleted'   => (int) ($data['deleted'] ?? 0),
-            'errors'    => is_array($data['errors'] ?? null) ? $data['errors'] : [],
-            'message'   => 'Package deployed.',
-        ];
+        // A 200 that isn't our JSON means the host returned the script as text or
+        // an error page — it can't run PHP/ZipArchive here, so disable package
+        // (not retryable). A non-200 (timeout, 5xx, wrong URL) might be transient.
+        $definitive = ($code === 200);
+
+        return $fail('Deploy helper failed (HTTP ' . $code . ') — the host may not run PHP here.', !$definitive);
     }
 
     /**

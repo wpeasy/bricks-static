@@ -41,25 +41,50 @@
   let busy = $derived(saving || testing || running);
 
   // How this destination deploys (live from /destinations).
-  let deployNote = $derived.by<{ tone: 'ok' | 'muted'; text: string } | null>(() => {
+  let deployNote = $derived.by<{ tone: 'ok' | 'muted'; text: string; retest: boolean } | null>(() => {
     const dp = destination.deploy;
     if (!dp) return null;
     if (dp.strategy === 'package') {
       return {
         tone: 'ok',
+        retest: false,
         text: dp.hasUrl
           ? 'Fast deploy: one package, extracted on the destination.'
           : 'Fast deploy enabled — the URL was guessed from the host. Set a Destination URL above to be sure it keeps working.',
       };
     }
+    if (dp.disabled) {
+      return {
+        tone: 'muted',
+        retest: true,
+        text: 'Per-file upload — package deploy hit an error and was turned off here.',
+      };
+    }
     if (!dp.canBuild) {
-      return { tone: 'muted', text: 'Per-file upload — ZipArchive isn’t available on this server.' };
+      return { tone: 'muted', retest: false, text: 'Per-file upload — ZipArchive isn’t available on this server.' };
     }
     return {
       tone: 'muted',
+      retest: false,
       text: 'Per-file upload (slower). Set a Destination URL above to enable fast package deploy (needs PHP on the host).',
     };
   });
+
+  let retesting = $state(false);
+  let retestMsg = $state('');
+  async function retestPackage(): Promise<void> {
+    retesting = true;
+    retestMsg = '';
+    try {
+      const r = await api.packageTest(d.id);
+      retestMsg = r.message;
+      if (r.ok) onSaved(); // reload destinations so the badge flips to package
+    } catch (e) {
+      retestMsg = (e as Error).message;
+    } finally {
+      retesting = false;
+    }
+  }
 
   function handleTransportChange(): void {
     if (!d.port.fromConstant && KNOWN_DEFAULT_PORTS.includes(port)) {
@@ -157,7 +182,13 @@
   </div>
 
   {#if deployNote}
-    <p class="bs-deploy bs-deploy--{deployNote.tone}">{#if deployNote.tone === 'ok'}⚡ {/if}{deployNote.text}</p>
+    <p class="bs-deploy bs-deploy--{deployNote.tone}">
+      {#if deployNote.tone === 'ok'}⚡ {/if}{deployNote.text}
+      {#if deployNote.retest}
+        <button type="button" class="bs-link" onclick={retestPackage} disabled={retesting || busy}>{retesting ? 'Re-testing…' : 'Re-test'}</button>
+      {/if}
+      {#if retestMsg}<span class="bs-deploy__result"> — {retestMsg}</span>{/if}
+    </p>
   {/if}
 
   {#if message}
@@ -259,6 +290,10 @@
 
   .bs-deploy--muted {
     color: var(--bs-color-text--muted);
+  }
+
+  .bs-deploy__result {
+    color: var(--bs-color-text--secondary);
   }
 
   .bs-msg {

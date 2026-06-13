@@ -68,6 +68,7 @@ export const api = {
   updateDestination: (id: string, data: ConnectionInput) => request<DestinationsResponse>(`/destinations/${id}`, 'POST', data),
   removeDestination: (id: string) => request<DestinationsResponse>(`/destinations/${id}`, 'DELETE'),
   testDestination: (id: string, data: ConnectionInput) => request<TestResult>(`/destinations/${id}/test`, 'POST', data),
+  packageTest: (id: string) => request<TestResult>(`/destinations/${id}/package-test`, 'POST', {}),
   syncStart: (type: 'check' | 'sync', opts: { prune?: boolean; dest?: string } = {}) =>
     request<SyncSnapshot>('/sync/start', 'POST', { type, ...opts }),
   syncTick: () => request<SyncSnapshot>('/sync/tick', 'POST', {}),

@@ -767,12 +767,15 @@ final class Runner {
             $job->save();
         };
 
-        $result = PackageDeployer::deploy($transport, $base_url, $files, $deletes, self::package_sslverify($base_url), $progress);
+        $result = PackageDeployer::deploy($transport, $base_url, $files, $deletes, PackageDeployer::sslverify($base_url), $progress);
 
         if (empty($result['ok'])) {
-            // Don't retry package here; fall back to per-file uploads (which will
-            // re-run their own setup, including .htaccess — harmless).
-            update_option(PackageDeployer::OFF_PREFIX . (string) ($job->data['destId'] ?? ''), 1, false);
+            // Only permanently disable package deploy on a DEFINITIVE failure
+            // (host can't run the helper). A transient failure (network, timeout,
+            // FTP) just falls back for this run and retries package next time.
+            if (empty($result['retryable'])) {
+                update_option(PackageDeployer::OFF_PREFIX . (string) ($job->data['destId'] ?? ''), 1, false);
+            }
             $job->data['phase']        = 'upload';
             $job->data['htaccessDone'] = false;
             $job->data['holdingShown'] = false;
@@ -793,20 +796,6 @@ final class Runner {
             self::close_connection();
         }
         $job->save();
-    }
-
-    /**
-     * Whether to verify TLS when calling a destination's deploy helper (relaxed
-     * for local/dev hosts, like the renderer).
-     */
-    private static function package_sslverify(string $url): bool {
-        $host  = (string) wp_parse_url($url, PHP_URL_HOST);
-        $local = $host === 'localhost'
-            || strpos($host, '127.0.0.1') === 0
-            || (bool) preg_match('/\.(local|test)$/i', $host);
-
-        /** Filters TLS verification for the package-deploy helper call. */
-        return (bool) apply_filters('bs_package_sslverify', !$local, $url);
     }
 
     /**

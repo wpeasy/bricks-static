@@ -49,6 +49,7 @@ export interface DestinationDeploy {
   strategy: 'package' | 'perfile';
   canBuild: boolean;
   hasUrl: boolean;
+  disabled: boolean;
 }
 
 export interface DestinationDisplay extends SettingsDisplay {

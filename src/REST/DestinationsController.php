@@ -64,6 +64,65 @@ final class DestinationsController {
             'callback'            => [self::class, 'test'],
             'permission_callback' => [self::class, 'can_manage'],
         ]);
+
+        register_rest_route(self::NS, '/destinations/(?P<id>[A-Za-z0-9]+)/package-test', [
+            'methods'             => 'POST',
+            'callback'            => [self::class, 'package_test'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
+    }
+
+    /**
+     * POST /destinations/{id}/package-test — actually run a tiny package deploy to
+     * confirm the host can extract it, and re-enable package deploy on success.
+     *
+     * @param WP_REST_Request $request Request.
+     */
+    public static function package_test(WP_REST_Request $request): WP_REST_Response {
+        $id   = (string) $request['id'];
+        $dest = Destinations::get($id);
+        if ($dest === null) {
+            return new WP_REST_Response(['ok' => false, 'message' => 'Unknown destination.'], 404);
+        }
+
+        if (!PackageDeployer::can_build()) {
+            return new WP_REST_Response(['ok' => false, 'message' => 'ZipArchive is not available on this server.']);
+        }
+        $base = PackageDeployer::base_url($dest);
+        if ($base === '') {
+            return new WP_REST_Response(['ok' => false, 'message' => 'Set a Destination URL first so the helper can be reached.']);
+        }
+
+        $tmp = wp_tempnam('bs-pkgtest');
+        file_put_contents($tmp, '<!-- bricks-static package test -->');
+
+        try {
+            $transport = TransportFactory::make($dest->connection_config());
+            $transport->connect();
+            $result = PackageDeployer::deploy(
+                $transport,
+                $base,
+                ['.bs-package-test/probe.html' => $tmp],
+                [],
+                PackageDeployer::sslverify($base)
+            );
+            if (!empty($result['ok'])) {
+                $transport->delete('.bs-package-test/probe.html');
+                $transport->delete('.bs-package-test/probe.html.gz');
+            }
+            $transport->disconnect();
+        } catch (\Throwable $e) {
+            @unlink($tmp);
+            return new WP_REST_Response(['ok' => false, 'message' => $e->getMessage()]);
+        }
+        @unlink($tmp);
+
+        if (!empty($result['ok'])) {
+            delete_option(PackageDeployer::OFF_PREFIX . $id);
+            return new WP_REST_Response(['ok' => true, 'message' => 'Package deploy works — re-enabled.']);
+        }
+
+        return new WP_REST_Response(['ok' => false, 'message' => $result['message'] ?? 'Package deploy failed.']);
     }
 
     /**
@@ -196,6 +255,7 @@ final class DestinationsController {
                 'strategy' => PackageDeployer::available_for($id, $obj) ? 'package' : 'perfile',
                 'canBuild' => PackageDeployer::can_build(),
                 'hasUrl'   => $obj !== null && trim((string) $obj->get('destinationUrl')) !== '',
+                'disabled' => (bool) get_option(PackageDeployer::OFF_PREFIX . $id),
             ];
         }
         unset($dest);
