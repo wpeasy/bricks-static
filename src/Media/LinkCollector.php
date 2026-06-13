@@ -93,6 +93,17 @@ final class LinkCollector {
             }
         }
 
+        // <iframe src="…"> — embeds (YouTube/Vimeo/Maps/…); the title is the label.
+        if (preg_match_all('#<iframe\b[^>]*>#i', $html, $iframes)) {
+            foreach ($iframes[0] as $tag) {
+                $src = self::attr($tag, 'src');
+                if (!self::is_linkable($src)) {
+                    continue;
+                }
+                $found[] = ['url' => $src, 'text' => self::attr($tag, 'title')];
+            }
+        }
+
         return $found;
     }
 
@@ -107,7 +118,7 @@ final class LinkCollector {
         if ($href === '' || $href === '#') {
             return false;
         }
-        foreach (['#', 'mailto:', 'tel:', 'javascript:', 'data:', 'sms:'] as $skip) {
+        foreach (['#', 'mailto:', 'tel:', 'javascript:', 'data:', 'sms:', 'about:'] as $skip) {
             if (stripos($href, $skip) === 0) {
                 return false;
             }

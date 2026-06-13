@@ -13,9 +13,9 @@ namespace WPEasy\BricksStatic\Render;
 defined('ABSPATH') || exit;
 
 /**
- * Rewrites the `href` of <a> and <button> elements whose value matches a
- * replacement. Tag-scoped (never touches matching text in body content), so only
- * real link targets are swapped.
+ * Rewrites the link target of <a>/<button> (`href`) and <iframe> (`src`)
+ * elements whose value matches a replacement. Tag-scoped (never touches matching
+ * text in body content), so only real link/embed targets are swapped.
  */
 final class LinkReplacer {
 
@@ -23,7 +23,7 @@ final class LinkReplacer {
      * Apply link swaps to HTML.
      *
      * @param string                $html  HTML.
-     * @param array<string,string>  $swaps Original href => replacement href.
+     * @param array<string,string>  $swaps Original URL => replacement URL (keys decoded).
      * @return string
      */
     public static function apply(string $html, array $swaps): string {
@@ -32,15 +32,18 @@ final class LinkReplacer {
         }
 
         return (string) preg_replace_callback(
-            '#<(?:a|button)\b[^>]*>#i',
+            '#<(a|button|iframe)\b[^>]*>#i',
             static function (array $m) use ($swaps): string {
                 $tag  = $m[0];
-                $href = self::attr($tag, 'href');
-                if ($href === '' || !isset($swaps[$href])) {
+                $name = strtolower($m[1]) === 'iframe' ? 'src' : 'href';
+                // Decode entities (the value carries &amp; in query strings) so it
+                // matches the stored, decoded swap key.
+                $url = html_entity_decode(self::attr($tag, $name), ENT_QUOTES | ENT_HTML5);
+                if ($url === '' || !isset($swaps[$url])) {
                     return $tag;
                 }
 
-                return self::set_attr($tag, 'href', $swaps[$href]);
+                return self::set_attr($tag, $name, $swaps[$url]);
             },
             $html
         );
