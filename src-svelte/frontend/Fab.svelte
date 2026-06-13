@@ -39,6 +39,9 @@
   let snap = $state<Snap | null>(null);
   let starting = $state(false);
   let savingEditor = $state(false);
+  // Hide the action button once this page has been synced — until the modal is
+  // reopened (the work is already done; re-clicking would just repeat it).
+  let syncedThisSession = $state(false);
 
   let running = $derived(!!snap?.running);
   let finished = $derived(!!snap && !snap.running && ['done', 'error', 'cancelled'].includes(snap.phase));
@@ -138,6 +141,7 @@
   async function openModal(): Promise<void> {
     open = true;
     statusErr = '';
+    syncedThisSession = false;
     if (!running) snap = null;
     try {
       status = await api('/sync/page-status?url=' + encodeURIComponent(pageUrl));
@@ -229,6 +233,8 @@
       while (snap?.running) {
         snap = browserDrives ? await api('/sync/tick', { method: 'POST' }) : (await sleep(1200), await api('/sync'));
       }
+      // Done — hide the action button (the page is synced) until the modal reopens.
+      if (snap?.phase === 'done') syncedThisSession = true;
       // Refresh the per-page pushed state after the run.
       try {
         status = await api('/sync/page-status?url=' + encodeURIComponent(pageUrl));
@@ -322,15 +328,18 @@
       </div>
 
       <div class="bs-fabm__foot">
+        {#if syncedThisSession}<span class="bs-fabm__done">✓ Synced</span>{/if}
         <button type="button" class="bs-fabm__btn" onclick={() => (open = false)}>Close</button>
-        <button
-          type="button"
-          class="bs-fabm__btn bs-fabm__btn--primary"
-          onclick={syncPage}
-          disabled={starting || running || !status?.canSync}
-        >
-          {savingEditor ? 'Saving editor…' : running || starting ? 'Syncing…' : inEditor ? 'Save & sync this page' : 'Sync this page'}
-        </button>
+        {#if !syncedThisSession}
+          <button
+            type="button"
+            class="bs-fabm__btn bs-fabm__btn--primary"
+            onclick={syncPage}
+            disabled={starting || running || !status?.canSync}
+          >
+            {savingEditor ? 'Saving editor…' : running || starting ? 'Syncing…' : inEditor ? 'Save & sync this page' : 'Sync this page'}
+          </button>
+        {/if}
       </div>
     </div>
   </div>
@@ -525,10 +534,17 @@
   }
   .bs-fabm__foot {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
     gap: 8px;
     padding: 14px 18px;
     border-top: 1px solid #e5e7eb;
+  }
+  .bs-fabm__done {
+    margin-right: auto;
+    font-size: 13px;
+    font-weight: 600;
+    color: #16a34a;
   }
   .bs-fabm__btn {
     padding: 8px 14px;
