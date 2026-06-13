@@ -54,6 +54,17 @@ export interface MediaReplacement {
   toId?: number;
 }
 
+export interface LinkItem {
+  url: string;
+  text: string;
+  pages: string[];
+}
+
+export interface LinkReplacement {
+  from: string;
+  to: string;
+}
+
 // Minimal typing for the WordPress media library (wp.media), enqueued by the plugin.
 export interface WpMediaAttachment {
   id: number;
@@ -102,6 +113,7 @@ export interface DestinationDisplay extends SettingsDisplay {
   isPrimary: boolean;
   replacements: Replacement[];
   mediaReplacements: MediaReplacement[];
+  linkReplacements: LinkReplacement[];
   status: DestinationStatus;
   deploy: DestinationDeploy;
 }
@@ -223,4 +235,5 @@ export interface ConnectionInput {
   includeInSinglePageSync?: boolean;
   replacements?: Replacement[];
   mediaReplacements?: MediaReplacement[];
+  linkReplacements?: LinkReplacement[];
 }

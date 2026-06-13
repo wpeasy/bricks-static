@@ -3,6 +3,7 @@ import type {
   ConnectionResponse,
   DestinationsResponse,
   DiscoveryMode,
+  LinkItem,
   MediaItem,
   Preflight,
   ServerConfig,
@@ -83,4 +84,5 @@ export const api = {
   preflight: () => request<Preflight>('/sync/preflight', 'POST', {}),
   serverConfig: () => request<ServerConfig>('/sync/server-config'),
   getMedia: () => request<{ media: MediaItem[] }>('/media'),
+  getLinks: () => request<{ links: LinkItem[] }>('/links'),
 };

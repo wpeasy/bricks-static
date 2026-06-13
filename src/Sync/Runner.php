@@ -16,6 +16,7 @@ use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Render\AssetExtractor;
 use WPEasy\BricksStatic\Render\CompatibilityScanner;
 use WPEasy\BricksStatic\Render\FaviconGenerator;
+use WPEasy\BricksStatic\Render\LinkReplacer;
 use WPEasy\BricksStatic\Render\MediaReplacer;
 use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Render\StableHash;
@@ -800,6 +801,12 @@ final class Runner {
         $dest  = $dest_id !== '' ? Destinations::get($dest_id) : Destinations::primary();
         $text  = $dest !== null ? $dest->replacements() : [];
         $media = $dest !== null ? $dest->media_replacements() : [];
+        $links = $dest !== null ? $dest->link_replacements() : [];
+
+        $link_swaps = []; // fromHref => toHref
+        foreach ($links as $l) {
+            $link_swaps[$l['from']] = $l['to'];
+        }
 
         // Sitemaps/robots carry absolute SOURCE URLs in the base render; rewrite
         // them to THIS destination's origin. Needed even with no text/media
@@ -814,7 +821,7 @@ final class Runner {
         }
         $rewrite_abs = $dest_base !== '' && $has_abs;
 
-        if (empty($text) && empty($media) && !$rewrite_abs) {
+        if (empty($text) && empty($media) && empty($link_swaps) && !$rewrite_abs) {
             return $base; // Nothing to transform — deploy the base render verbatim.
         }
 
@@ -879,6 +886,9 @@ final class Runner {
             }
             if (!empty($swaps)) {
                 $transformed = MediaReplacer::apply($transformed, $swaps);
+            }
+            if (!empty($link_swaps)) {
+                $transformed = LinkReplacer::apply($transformed, $link_swaps);
             }
 
             $out[$relative] = self::write_deploy_file($deploy_dir, $relative, $transformed) ?? $meta;
@@ -1284,7 +1294,7 @@ final class Runner {
         // The destination base URL is baked into the deployed sitemap/robots
         // origin, so a change there means the destination needs re-deploying.
         $replacements = $dest !== null
-            ? (string) wp_json_encode([$dest->replacements(), $dest->media_replacements(), PackageDeployer::base_url($dest)])
+            ? (string) wp_json_encode([$dest->replacements(), $dest->media_replacements(), $dest->link_replacements(), PackageDeployer::base_url($dest)])
             : '[]';
 
         return md5(md5(implode('|', $parts)) . '|' . md5($replacements));

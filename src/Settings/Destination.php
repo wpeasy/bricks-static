@@ -156,6 +156,23 @@ final class Destination {
     }
 
     /**
+     * Per-destination link swaps [{from, to}, …] — original link target → its
+     * replacement URL (applied to <a>/<button> href).
+     *
+     * @return array<int,array{from:string,to:string}>
+     */
+    public function link_replacements(): array {
+        $out = [];
+        foreach ((array) ($this->data['linkReplacements'] ?? []) as $row) {
+            if (is_array($row) && !empty($row['from']) && !empty($row['to'])) {
+                $out[] = ['from' => (string) $row['from'], 'to' => (string) $row['to']];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * Display payload (no secrets) for the dashboard.
      *
      * @return array<string,mixed>
@@ -169,6 +186,7 @@ final class Destination {
             'isPrimary'               => $this->is_primary,
             'replacements'            => $this->replacements(),
             'mediaReplacements'       => $this->media_replacements(),
+            'linkReplacements'        => $this->link_replacements(),
         ];
 
         foreach (Schema::fields() as $key => $field) {
@@ -204,6 +222,9 @@ final class Destination {
         }
         if (array_key_exists('mediaReplacements', $input) && is_array($input['mediaReplacements'])) {
             $this->data['mediaReplacements'] = self::sanitize_media_replacements($input['mediaReplacements']);
+        }
+        if (array_key_exists('linkReplacements', $input) && is_array($input['linkReplacements'])) {
+            $this->data['linkReplacements'] = self::sanitize_link_replacements($input['linkReplacements']);
         }
 
         // Connection fields.
@@ -273,6 +294,29 @@ final class Destination {
                 continue;
             }
             $clean[] = ['from' => $from, 'to' => $to, 'toId' => absint($row['toId'] ?? 0)];
+        }
+
+        return $clean;
+    }
+
+    /**
+     * Sanitise a link-replacement list (both sides are URLs; empties dropped).
+     *
+     * @param array<int,mixed> $rows Raw rows.
+     * @return array<int,array{from:string,to:string}>
+     */
+    private static function sanitize_link_replacements(array $rows): array {
+        $clean = [];
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $from = esc_url_raw((string) ($row['from'] ?? ''));
+            $to   = esc_url_raw((string) ($row['to'] ?? ''));
+            if ($from === '' || $to === '') {
+                continue;
+            }
+            $clean[] = ['from' => $from, 'to' => $to];
         }
 
         return $clean;
