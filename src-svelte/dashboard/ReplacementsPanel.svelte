@@ -3,6 +3,7 @@
   import TextReplacements from './TextReplacements.svelte';
   import MediaReplacer from './MediaReplacer.svelte';
   import LinkReplacer from './LinkReplacer.svelte';
+  import VideoReplacer from './VideoReplacer.svelte';
 
   let {
     destination,
@@ -14,7 +15,7 @@
     onSaved: () => void;
   } = $props();
 
-  type Section = 'text' | 'media' | 'links';
+  type Section = 'text' | 'media' | 'links' | 'videos';
   let open = $state<Section>('text');
 
   function toggle(section: Section): void {
@@ -24,6 +25,7 @@
   let textCount = $derived(destination.replacements?.length ?? 0);
   let mediaCount = $derived(destination.mediaReplacements?.length ?? 0);
   let linkCount = $derived(destination.linkReplacements?.length ?? 0);
+  let videoCount = $derived(destination.videoReplacements?.length ?? 0);
 </script>
 
 <section class="bs-card bs-stack bs-stack--sm">
@@ -68,6 +70,20 @@
       {#if open === 'links'}
         <div class="bs-acc__body">
           <LinkReplacer {destination} {onSaved} />
+        </div>
+      {/if}
+    </div>
+
+    <!-- Videos -->
+    <div class="bs-acc__item">
+      <button type="button" class="bs-acc__head" aria-expanded={open === 'videos'} onclick={() => toggle('videos')}>
+        <span class="bs-acc__chev" class:is-open={open === 'videos'}>▸</span>
+        <span class="bs-acc__title">Videos</span>
+        {#if videoCount > 0}<span class="bs-acc__badge">{videoCount}</span>{/if}
+      </button>
+      {#if open === 'videos'}
+        <div class="bs-acc__body">
+          <VideoReplacer {destination} {onSaved} />
         </div>
       {/if}
     </div>

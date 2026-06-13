@@ -173,6 +173,28 @@ final class Destination {
     }
 
     /**
+     * Per-destination video swaps [{from, to, toId}, …] — original embed/video src
+     * → its replacement. `toId` is the attachment id for a local-video swap (so its
+     * file can be uploaded); 0 for an external embed URL.
+     *
+     * @return array<int,array{from:string,to:string,toId:int}>
+     */
+    public function video_replacements(): array {
+        $out = [];
+        foreach ((array) ($this->data['videoReplacements'] ?? []) as $row) {
+            if (is_array($row) && !empty($row['from']) && !empty($row['to'])) {
+                $out[] = [
+                    'from' => (string) $row['from'],
+                    'to'   => (string) $row['to'],
+                    'toId' => (int) ($row['toId'] ?? 0),
+                ];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * Display payload (no secrets) for the dashboard.
      *
      * @return array<string,mixed>
@@ -186,6 +208,7 @@ final class Destination {
             'replacements'            => $this->replacements(),
             'mediaReplacements'       => $this->media_replacements(),
             'linkReplacements'        => $this->link_replacements(),
+            'videoReplacements'       => $this->video_replacements(),
         ];
 
         foreach (Schema::fields() as $key => $field) {
@@ -221,6 +244,10 @@ final class Destination {
         }
         if (array_key_exists('linkReplacements', $input) && is_array($input['linkReplacements'])) {
             $this->data['linkReplacements'] = self::sanitize_link_replacements($input['linkReplacements']);
+        }
+        if (array_key_exists('videoReplacements', $input) && is_array($input['videoReplacements'])) {
+            // Same shape as media (from/to URLs + optional attachment id).
+            $this->data['videoReplacements'] = self::sanitize_media_replacements($input['videoReplacements']);
         }
 
         // Connection fields.

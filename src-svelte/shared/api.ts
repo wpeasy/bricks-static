@@ -6,6 +6,7 @@ import type {
   LinkItem,
   MediaItem,
   Preflight,
+  VideoItem,
   ServerConfig,
   Status,
   SyncSnapshot,
@@ -85,4 +86,5 @@ export const api = {
   serverConfig: () => request<ServerConfig>('/sync/server-config'),
   getMedia: () => request<{ media: MediaItem[] }>('/media'),
   getLinks: () => request<{ links: LinkItem[] }>('/links'),
+  getVideos: () => request<{ videos: VideoItem[] }>('/videos'),
 };

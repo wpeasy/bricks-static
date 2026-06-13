@@ -20,6 +20,7 @@ use WPEasy\BricksStatic\REST\LinksController;
 use WPEasy\BricksStatic\REST\MediaController;
 use WPEasy\BricksStatic\REST\SitemapController;
 use WPEasy\BricksStatic\REST\StatusController;
+use WPEasy\BricksStatic\REST\VideosController;
 use WPEasy\BricksStatic\REST\SyncController;
 
 defined('ABSPATH') || exit;
@@ -90,5 +91,6 @@ final class Plugin {
         SitemapController::register();
         StatusController::register();
         SyncController::register();
+        VideosController::register();
     }
 }

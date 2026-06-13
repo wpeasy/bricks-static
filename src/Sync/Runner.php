@@ -19,6 +19,7 @@ use WPEasy\BricksStatic\Render\FaviconGenerator;
 use WPEasy\BricksStatic\Render\LinkReplacer;
 use WPEasy\BricksStatic\Render\MediaReplacer;
 use WPEasy\BricksStatic\Render\PageRenderer;
+use WPEasy\BricksStatic\Render\VideoReplacer;
 use WPEasy\BricksStatic\Render\StableHash;
 use WPEasy\BricksStatic\Render\TextReplacer;
 use WPEasy\BricksStatic\Render\UrlRewriter;
@@ -802,11 +803,16 @@ final class Runner {
         $text  = $dest !== null ? $dest->replacements() : [];
         $media = $dest !== null ? $dest->media_replacements() : [];
         $links = $dest !== null ? $dest->link_replacements() : [];
+        $videos = $dest !== null ? $dest->video_replacements() : [];
 
         $link_swaps = []; // fromHref => toHref
         foreach ($links as $l) {
             $link_swaps[$l['from']] = $l['to'];
         }
+        // Video swaps resolve to the final src to write: a local-video swap (toId)
+        // becomes the new attachment's root-relative URL and its file is queued for
+        // upload; an external embed URL is used verbatim. Built below alongside
+        // media $extra (which collects replacement files).
 
         // Sitemaps/robots carry absolute SOURCE URLs in the base render; rewrite
         // them to THIS destination's origin. Needed even with no text/media
@@ -821,7 +827,11 @@ final class Runner {
         }
         $rewrite_abs = $dest_base !== '' && $has_abs;
 
-        if (empty($text) && empty($media) && empty($link_swaps) && !$rewrite_abs) {
+        // When a destination URL is known, every page may need its embed origins
+        // rewritten (YouTube origin= etc.) — VideoReplacer handles swaps + that fix.
+        $do_video = !empty($video_swaps) || $dest_base !== '';
+
+        if (empty($text) && empty($media) && empty($link_swaps) && !$do_video && !$rewrite_abs) {
             return $base; // Nothing to transform — deploy the base render verbatim.
         }
 
@@ -859,6 +869,25 @@ final class Runner {
             }
         }
 
+        // Video swaps: a local-video replacement (toId) → the new attachment's
+        // root-relative URL, with its file queued for upload; an external embed
+        // URL is written verbatim.
+        $video_swaps = []; // fromSrc => final src
+        foreach ($videos as $v) {
+            $toId = (int) ($v['toId'] ?? 0);
+            if ($toId > 0) {
+                $url                  = (string) wp_get_attachment_url($toId);
+                $video_swaps[$v['from']] = $url !== '' ? UrlRewriter::rewrite($url) : $v['to'];
+                $file = (string) get_attached_file($toId);
+                $key  = $url !== '' ? Url::to_relative_path($url) : null;
+                if ($file !== '' && is_file($file) && $key !== null) {
+                    $extra[$key] = $file;
+                }
+            } else {
+                $video_swaps[$v['from']] = $v['to'];
+            }
+        }
+
         $deploy_dir = Paths::cache_dir() . '/deploy/' . ($dest !== null ? $dest->id() : 'default');
         self::reset_dir($deploy_dir);
 
@@ -880,7 +909,8 @@ final class Runner {
                 continue;
             }
 
-            $transformed = (string) file_get_contents($meta['src']);
+            $original    = (string) file_get_contents($meta['src']);
+            $transformed = $original;
             if (!empty($searches)) {
                 $transformed = TextReplacer::apply($transformed, $searches, $replaces);
             }
@@ -890,8 +920,15 @@ final class Runner {
             if (!empty($link_swaps)) {
                 $transformed = LinkReplacer::apply($transformed, $link_swaps);
             }
+            if ($do_video) {
+                $transformed = VideoReplacer::apply($transformed, $video_swaps, $dest_base);
+            }
 
-            $out[$relative] = self::write_deploy_file($deploy_dir, $relative, $transformed) ?? $meta;
+            // Only write a per-destination copy when the page actually changed;
+            // otherwise reference the base render (no extra file, no churn).
+            $out[$relative] = $transformed === $original
+                ? $meta
+                : (self::write_deploy_file($deploy_dir, $relative, $transformed) ?? $meta);
         }
 
         // Add the replacement media files (if not already in the render).
@@ -1294,7 +1331,7 @@ final class Runner {
         // The destination base URL is baked into the deployed sitemap/robots
         // origin, so a change there means the destination needs re-deploying.
         $replacements = $dest !== null
-            ? (string) wp_json_encode([$dest->replacements(), $dest->media_replacements(), $dest->link_replacements(), PackageDeployer::base_url($dest)])
+            ? (string) wp_json_encode([$dest->replacements(), $dest->media_replacements(), $dest->link_replacements(), $dest->video_replacements(), PackageDeployer::base_url($dest)])
             : '[]';
 
         return md5(md5(implode('|', $parts)) . '|' . md5($replacements));

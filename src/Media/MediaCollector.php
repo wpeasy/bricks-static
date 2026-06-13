@@ -93,24 +93,8 @@ final class MediaCollector {
             }
         }
 
-        // <video poster> and <source src> (video/picture sources).
-        if (preg_match_all('#<video\b[^>]*>#i', $html, $vids)) {
-            foreach ($vids[0] as $tag) {
-                $poster = self::attr($tag, 'poster');
-                if ($poster !== '') {
-                    $found[] = ['url' => $poster, 'alt' => '', 'type' => 'image'];
-                }
-            }
-        }
-        if (preg_match_all('#<source\b[^>]*>#i', $html, $srcs)) {
-            foreach ($srcs[0] as $tag) {
-                $src  = self::attr($tag, 'src');
-                $type = self::attr($tag, 'type');
-                if ($src !== '' && (stripos($type, 'video') === 0 || preg_match('#\.(mp4|webm|ogg|mov|m4v)(\?|$)#i', $src))) {
-                    $found[] = ['url' => $src, 'alt' => '', 'type' => 'video'];
-                }
-            }
-        }
+        // Video (local <video>/<source> and embeds) is handled by the Videos
+        // panel — see VideoCollector — so Media stays images only.
 
         return $found;
     }
