@@ -28,8 +28,21 @@
   };
 
   // Dismissal: once a run has finished it can be closed. Keyed to the run's
-  // startedAt so a NEW run re-shows the card (the next run has a fresh id).
-  let dismissedRun = $state<number | null>(null);
+  // startedAt so a NEW run re-shows the card (the next run has a fresh id), and
+  // persisted to localStorage so a dismissed run stays dismissed across reloads
+  // (the status endpoint still returns the last finished snapshot on reload).
+  const DISMISS_KEY = 'bs_progress_dismissed';
+
+  function loadDismissed(): number | null {
+    try {
+      const v = localStorage.getItem(DISMISS_KEY);
+      return v ? Number(v) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  let dismissedRun = $state<number | null>(loadDismissed());
   let finished = $derived(!snapshot?.running && ['done', 'error', 'cancelled'].includes(snapshot?.phase ?? ''));
   let dismissed = $derived(snapshot?.startedAt != null && dismissedRun === snapshot.startedAt);
 
@@ -37,7 +50,14 @@
   let phaseLabel = $derived(snapshot ? (PHASE_LABELS[snapshot.phase] ?? snapshot.phase) : '');
 
   function dismiss(): void {
-    if (snapshot?.startedAt != null) dismissedRun = snapshot.startedAt;
+    if (snapshot?.startedAt != null) {
+      dismissedRun = snapshot.startedAt;
+      try {
+        localStorage.setItem(DISMISS_KEY, String(snapshot.startedAt));
+      } catch {
+        /* ignore */
+      }
+    }
   }
 
   // Which destination(s) this run is for (a 'check' run has no real target).
