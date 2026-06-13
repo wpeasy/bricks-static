@@ -33,7 +33,7 @@ final class MethodResolver {
         return [
             'discovery'    => [
                 'mode'        => 'auto',
-                'description' => 'Published content + internal-link crawl from the homepage (sitemap used if present)',
+                'description' => 'Internal-link crawl from the homepage, augmented by the generated sitemap; sitemap.xml, robots.txt and favicon are emitted and uploaded',
             ],
             'transport'    => (string) Settings::get('transport'),
             'compression'  => ['gzip' => function_exists('gzencode')],

@@ -51,6 +51,50 @@ final class UrlRewriter {
     }
 
     /**
+     * Rewrite source-origin URLs to ABSOLUTE destination URLs.
+     *
+     * Used for files that must carry absolute links — sitemaps and robots.txt —
+     * where the root-relative form rewrite() produces is invalid (a `<loc>` and a
+     * robots `Sitemap:` line must be a full URL). Replaces each source origin with
+     * the destination's origin, preserving the path and the //, http(s) and
+     * JSON-escaped forms.
+     *
+     * @param string $content   Document text (XML or plain text).
+     * @param string $dest_base Destination base URL (e.g. "https://example.com").
+     * @return string Rewritten content (unchanged if $dest_base has no host).
+     */
+    public static function to_absolute(string $content, string $dest_base): string {
+        $parts = wp_parse_url($dest_base);
+        if (empty($parts['host'])) {
+            return $content;
+        }
+
+        $scheme    = $parts['scheme'] ?? 'https';
+        $authority = $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
+        $origin    = $scheme . '://' . $authority;
+
+        $search  = [];
+        $replace = [];
+        foreach (self::source_hosts() as $host) {
+            // Same ordering as rewrite(): scheme-qualified before bare "//host".
+            $search[] = 'https://' . $host;
+            $replace[] = $origin;
+            $search[] = 'http://' . $host;
+            $replace[] = $origin;
+            $search[] = '//' . $host;
+            $replace[] = '//' . $authority;
+            $search[] = 'https:\/\/' . $host;
+            $replace[] = str_replace('/', '\/', $origin);
+            $search[] = 'http:\/\/' . $host;
+            $replace[] = str_replace('/', '\/', $origin);
+            $search[] = '\/\/' . $host;
+            $replace[] = '\/\/' . $authority;
+        }
+
+        return str_replace($search, $replace, $content);
+    }
+
+    /**
      * Source hostnames (with www/non-www variants), longest first.
      *
      * @return array<int,string>

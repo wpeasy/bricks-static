@@ -20,6 +20,8 @@ use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Render\StableHash;
 use WPEasy\BricksStatic\Render\TextReplacer;
 use WPEasy\BricksStatic\Render\UrlRewriter;
+use WPEasy\BricksStatic\Sitemap\SitemapGenerator;
+use WPEasy\BricksStatic\Sitemap\SitemapParser;
 use WPEasy\BricksStatic\Support\Paths;
 use WPEasy\BricksStatic\Support\Url;
 use WPEasy\BricksStatic\Transport\TransportFactory;
@@ -89,6 +91,12 @@ final class Runner {
         $job->data['targets'] = $targets;
         $job->data['destId']  = $targets[0];
         foreach (UrlCollector::collect() as $url) {
+            $job->enqueue_page($url);
+        }
+        // Feed the parsed sitemap's URLs into discovery too — this exercises the
+        // generate → parse path and catches pages the link crawl can't reach
+        // (orphaned/unlinked) even in 'linked' mode. enqueue_page dedupes.
+        foreach (self::sitemap_seed_urls() as $url) {
             $job->enqueue_page($url);
         }
 
@@ -531,6 +539,8 @@ final class Runner {
      * @param Job $job Active job.
      */
     private static function tick_finalize(Job $job): void {
+        self::emit_extra_files($job);
+
         $manifest = Manifest::from_plan($job->data['plan']);
         Manifest::save(Manifest::RENDER_OPTION, $manifest);
         self::write_manifest_file($job, $manifest);
@@ -551,6 +561,112 @@ final class Runner {
         $job->data['targetIndex'] = 0;
         self::start_target($job);
         $job->save();
+    }
+
+    /**
+     * Add generated/auxiliary root files to the upload plan: the sitemap set,
+     * robots.txt, and the favicon. Sitemaps/robots are written with absolute
+     * SOURCE URLs here; build_deploy_manifest() rewrites them to each
+     * destination's origin (root-relative would be invalid for a sitemap).
+     *
+     * @param Job $job Active job.
+     */
+    private static function emit_extra_files(Job $job): void {
+        /** Filters whether the dummy sitemap set + robots.txt are generated. */
+        if (apply_filters('bs_generate_sitemaps', true)) {
+            foreach (SitemapGenerator::generate() as $relative => $contents) {
+                self::cache_file($job, $relative, $contents);
+            }
+        }
+
+        self::emit_favicon($job);
+    }
+
+    /**
+     * Plan the favicon for upload. Prefers a real /favicon.ico shipped at the web
+     * root; otherwise creates /favicon.ico from the WordPress Site Icon if one is
+     * set. (Linked <link rel="icon"> images already upload via the crawl — this
+     * is the root fallback browsers request directly.)
+     *
+     * @param Job $job Active job.
+     */
+    private static function emit_favicon(Job $job): void {
+        /** Filters whether a root /favicon.ico is included in the export. */
+        if (!apply_filters('bs_include_favicon', true) || isset($job->data['plan']['favicon.ico'])) {
+            return;
+        }
+
+        // A real favicon.ico at the web root takes precedence.
+        $root_ico = Paths::source_file(home_url('/favicon.ico'));
+        if ($root_ico !== null && is_file($root_ico)) {
+            self::plan_source($job, 'favicon.ico', $root_ico);
+            return;
+        }
+
+        // Otherwise derive /favicon.ico from the Site Icon (Customizer), if any.
+        $icon_url = function_exists('get_site_icon_url') ? (string) get_site_icon_url() : '';
+        if ($icon_url === '') {
+            return;
+        }
+        $icon_src = Paths::source_file($icon_url);
+        if ($icon_src !== null && is_file($icon_src)) {
+            self::plan_source($job, 'favicon.ico', $icon_src);
+        }
+    }
+
+    /**
+     * Page URLs from the generated sitemap, parsed back out — used to augment the
+     * crawl seeds. Disable via the `bs_seed_from_sitemap` filter.
+     *
+     * @return array<int,string>
+     */
+    private static function sitemap_seed_urls(): array {
+        /** Filters whether parsed sitemap URLs augment the crawl seeds. */
+        if (!apply_filters('bs_seed_from_sitemap', true)) {
+            return [];
+        }
+        try {
+            return SitemapParser::collect_set(SitemapGenerator::generate());
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Whether a relative path holds absolute source URLs that must be rewritten to
+     * the destination's origin (a sitemap or robots.txt) rather than made
+     * root-relative like every other document.
+     *
+     * @param string $relative Relative path.
+     */
+    private static function is_origin_absolute_file(string $relative): bool {
+        $name = strtolower(basename($relative));
+
+        return $name === 'robots.txt'
+            || (substr($name, -4) === '.xml' && strpos($name, 'sitemap') === 0);
+    }
+
+    /**
+     * Write a transformed file into the per-destination deploy dir, with a gzip
+     * sibling when compressible. Returns its manifest meta, or null on failure.
+     *
+     * @param string $deploy_dir Per-destination deploy directory.
+     * @param string $relative   Relative path.
+     * @param string $content    Transformed contents.
+     * @return array{size:int,hash:string,src:string}|null
+     */
+    private static function write_deploy_file(string $deploy_dir, string $relative, string $content): ?array {
+        $path = $deploy_dir . '/' . $relative;
+        $dir  = dirname($path);
+
+        if ((!is_dir($dir) && !wp_mkdir_p($dir)) || file_put_contents($path, $content) === false) {
+            return null;
+        }
+        if (Compressor::is_compressible($relative)) {
+            Compressor::write_sibling($path);
+        }
+
+        return ['size' => strlen($content), 'hash' => StableHash::of_html($content), 'src' => wp_normalize_path($path)];
     }
 
     /**
@@ -634,8 +750,21 @@ final class Runner {
         $text  = $dest !== null ? $dest->replacements() : [];
         $media = $dest !== null ? $dest->media_replacements() : [];
 
-        if (empty($text) && empty($media)) {
-            return $base; // No transform — deploy the base render verbatim.
+        // Sitemaps/robots carry absolute SOURCE URLs in the base render; rewrite
+        // them to THIS destination's origin. Needed even with no text/media
+        // replacements, so it can't share their early-out.
+        $dest_base   = PackageDeployer::base_url($dest);
+        $has_abs     = false;
+        foreach ($base as $relative => $meta) {
+            if (self::is_origin_absolute_file($relative)) {
+                $has_abs = true;
+                break;
+            }
+        }
+        $rewrite_abs = $dest_base !== '' && $has_abs;
+
+        if (empty($text) && empty($media) && !$rewrite_abs) {
+            return $base; // Nothing to transform — deploy the base render verbatim.
         }
 
         $searches = array_column($text, 'search');
@@ -677,6 +806,17 @@ final class Runner {
 
         $out = [];
         foreach ($base as $relative => $meta) {
+            // Sitemap/robots: rewrite source origin → this destination's origin.
+            if (self::is_origin_absolute_file($relative)) {
+                if ($rewrite_abs && is_file($meta['src'])) {
+                    $content = UrlRewriter::to_absolute((string) file_get_contents($meta['src']), $dest_base);
+                    $out[$relative] = self::write_deploy_file($deploy_dir, $relative, $content) ?? $meta;
+                } else {
+                    $out[$relative] = $meta;
+                }
+                continue;
+            }
+
             if (substr(strtolower($relative), -5) !== '.html' || !is_file($meta['src'])) {
                 $out[$relative] = $meta;
                 continue;
@@ -690,18 +830,7 @@ final class Runner {
                 $transformed = MediaReplacer::apply($transformed, $swaps);
             }
 
-            $path = $deploy_dir . '/' . $relative;
-            $dir  = dirname($path);
-
-            if ((!is_dir($dir) && !wp_mkdir_p($dir)) || file_put_contents($path, $transformed) === false) {
-                $out[$relative] = $meta; // fall back to base on write failure
-                continue;
-            }
-            if (Compressor::is_compressible($relative)) {
-                Compressor::write_sibling($path);
-            }
-
-            $out[$relative] = ['size' => strlen($transformed), 'hash' => StableHash::of_html($transformed), 'src' => wp_normalize_path($path)];
+            $out[$relative] = self::write_deploy_file($deploy_dir, $relative, $transformed) ?? $meta;
         }
 
         // Add the replacement media files (if not already in the render).
@@ -1101,8 +1230,10 @@ final class Runner {
         }
         sort($parts);
 
+        // The destination base URL is baked into the deployed sitemap/robots
+        // origin, so a change there means the destination needs re-deploying.
         $replacements = $dest !== null
-            ? (string) wp_json_encode([$dest->replacements(), $dest->media_replacements()])
+            ? (string) wp_json_encode([$dest->replacements(), $dest->media_replacements(), PackageDeployer::base_url($dest)])
             : '[]';
 
         return md5(md5(implode('|', $parts)) . '|' . md5($replacements));
