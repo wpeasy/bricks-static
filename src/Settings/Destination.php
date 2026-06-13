@@ -182,7 +182,6 @@ final class Destination {
             'id'                      => $this->id(),
             'name'                    => (string) ($this->data['name'] ?? ''),
             'enabled'                 => (bool) ($this->data['enabled'] ?? true),
-            'includeInSinglePageSync' => (bool) ($this->data['includeInSinglePageSync'] ?? true),
             'isPrimary'               => $this->is_primary,
             'replacements'            => $this->replacements(),
             'mediaReplacements'       => $this->media_replacements(),
@@ -213,9 +212,6 @@ final class Destination {
         }
         if (array_key_exists('enabled', $input)) {
             $this->data['enabled'] = (bool) $input['enabled'];
-        }
-        if (array_key_exists('includeInSinglePageSync', $input)) {
-            $this->data['includeInSinglePageSync'] = (bool) $input['includeInSinglePageSync'];
         }
         if (array_key_exists('replacements', $input) && is_array($input['replacements'])) {
             $this->data['replacements'] = self::sanitize_replacements($input['replacements']);

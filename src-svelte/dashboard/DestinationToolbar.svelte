@@ -20,7 +20,6 @@
   const d = untrack(() => destination);
 
   let enabled = $state(d.enabled);
-  let singlePage = $state(d.includeInSinglePageSync);
   let saving = $state(false);
 
   let connected = $derived(destination.status.connected);
@@ -37,15 +36,13 @@
     return host ? `https://${host}` : '';
   });
 
-  async function toggle(field: 'enabled' | 'includeInSinglePageSync', value: boolean): Promise<void> {
+  async function toggle(value: boolean): Promise<void> {
     saving = true;
     try {
-      await api.updateDestination(d.id, { [field]: value });
+      await api.updateDestination(d.id, { enabled: value });
       onSaved();
     } catch {
-      // Revert the optimistic switch on failure.
-      if (field === 'enabled') enabled = !value;
-      else singlePage = !value;
+      enabled = !value; // revert the optimistic switch on failure
     } finally {
       saving = false;
     }
@@ -60,8 +57,7 @@
   </div>
 
   <div class="bs-dtoolbar__switches">
-    <label class="bs-switch"><input type="checkbox" bind:checked={enabled} disabled={busy} onchange={() => toggle('enabled', enabled)} /> Enabled</label>
-    <label class="bs-switch"><input type="checkbox" bind:checked={singlePage} disabled={busy} onchange={() => toggle('includeInSinglePageSync', singlePage)} /> Include in single-page sync</label>
+    <label class="bs-switch"><input type="checkbox" bind:checked={enabled} disabled={busy} onchange={() => toggle(enabled)} /> Enabled</label>
   </div>
 
   <div class="bs-dtoolbar__actions">

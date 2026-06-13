@@ -85,14 +85,8 @@ final class Destinations {
      * @return array<int,string>
      */
     public static function single_page_ids(): array {
-        $ids = [];
-        foreach (self::objects() as $dest) {
-            if ((bool) $dest->get('enabled') && (bool) $dest->get('includeInSinglePageSync')) {
-                $ids[] = $dest->id();
-            }
-        }
-
-        return $ids;
+        // Single-page sync targets every enabled destination (same as a full sync).
+        return self::enabled_ids();
     }
 
     /**
@@ -265,7 +259,6 @@ final class Destinations {
             'id'                      => $id,
             'name'                    => $name,
             'enabled'                 => true,
-            'includeInSinglePageSync' => true,
             'replacements'            => [],
         ];
 

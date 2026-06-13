@@ -109,7 +109,6 @@ export interface DestinationDisplay extends SettingsDisplay {
   id: string;
   name: string;
   enabled: boolean;
-  includeInSinglePageSync: boolean;
   isPrimary: boolean;
   replacements: Replacement[];
   mediaReplacements: MediaReplacement[];
@@ -232,7 +231,6 @@ export interface ConnectionInput {
   destinationUrl?: string;
   name?: string;
   enabled?: boolean;
-  includeInSinglePageSync?: boolean;
   replacements?: Replacement[];
   mediaReplacements?: MediaReplacement[];
   linkReplacements?: LinkReplacement[];

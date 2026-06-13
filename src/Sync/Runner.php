@@ -23,7 +23,6 @@ use WPEasy\BricksStatic\Render\StableHash;
 use WPEasy\BricksStatic\Render\TextReplacer;
 use WPEasy\BricksStatic\Render\UrlRewriter;
 use WPEasy\BricksStatic\Sitemap\SitemapGenerator;
-use WPEasy\BricksStatic\Sitemap\SitemapParser;
 use WPEasy\BricksStatic\Support\Paths;
 use WPEasy\BricksStatic\Support\Url;
 use WPEasy\BricksStatic\Transport\TransportFactory;
@@ -118,13 +117,12 @@ final class Runner {
         if ($single) {
             $job->enqueue_page($only); // The changed page — always (re)rendered.
         } else {
+            // Seeds come solely from UrlCollector, which honours the discovery mode
+            // ('linked' = home page only, then follow links; 'all' = + every
+            // published post/term). The generated sitemap is built FROM the export
+            // afterwards — it must not seed it, or 'Only linked pages' would still
+            // pull in unlinked content (Sample Page, Hello World, …).
             foreach (UrlCollector::collect() as $url) {
-                $job->enqueue_page($url);
-            }
-            // Feed the parsed sitemap's URLs into discovery too — this exercises the
-            // generate → parse path and catches pages the link crawl can't reach
-            // (orphaned/unlinked) even in 'linked' mode. enqueue_page dedupes.
-            foreach (self::sitemap_seed_urls() as $url) {
                 $job->enqueue_page($url);
             }
         }
@@ -610,22 +608,42 @@ final class Runner {
     }
 
     /**
-     * Add generated/auxiliary root files to the upload plan: the sitemap set,
-     * robots.txt, and the favicon. Sitemaps/robots are written with absolute
-     * SOURCE URLs here; build_deploy_manifest() rewrites them to each
+     * Add generated/auxiliary root files to the upload plan: sitemap.xml,
+     * robots.txt, and the favicon. The sitemap lists ONLY the pages actually
+     * exported in this run (derived from the plan), so it matches the discovery
+     * mode and never points at pages that weren't deployed. URLs are written
+     * absolute-to-SOURCE here; build_deploy_manifest() rewrites them to each
      * destination's origin (root-relative would be invalid for a sitemap).
      *
      * @param Job $job Active job.
      */
     private static function emit_extra_files(Job $job): void {
-        /** Filters whether the dummy sitemap set + robots.txt are generated. */
+        /** Filters whether sitemap.xml + robots.txt are generated. */
         if (apply_filters('bs_generate_sitemaps', true)) {
-            foreach (SitemapGenerator::generate() as $relative => $contents) {
+            $page_urls = [];
+            foreach (array_keys($job->data['plan']) as $rel) {
+                if (substr(strtolower($rel), -5) === '.html') {
+                    $page_urls[] = self::url_for_relative($rel);
+                }
+            }
+            foreach (SitemapGenerator::from_urls($page_urls) as $relative => $contents) {
                 self::cache_file($job, $relative, $contents);
             }
         }
 
         self::emit_favicon($job);
+    }
+
+    /**
+     * Map a cached relative HTML path back to its absolute source URL.
+     *
+     * @param string $relative e.g. "about/index.html" or "index.html".
+     */
+    private static function url_for_relative(string $relative): string {
+        $path = (string) preg_replace('#/?index\.html$#i', '/', $relative);
+        $path = ltrim($path, '/');
+
+        return ($path === '' || $path === '/') ? home_url('/') : home_url('/' . $path);
     }
 
     /**
@@ -663,24 +681,6 @@ final class Runner {
         $ico = FaviconGenerator::ico();
         if ($ico !== '') {
             self::cache_file($job, 'favicon.ico', $ico);
-        }
-    }
-
-    /**
-     * Page URLs from the generated sitemap, parsed back out — used to augment the
-     * crawl seeds. Disable via the `bs_seed_from_sitemap` filter.
-     *
-     * @return array<int,string>
-     */
-    private static function sitemap_seed_urls(): array {
-        /** Filters whether parsed sitemap URLs augment the crawl seeds. */
-        if (!apply_filters('bs_seed_from_sitemap', true)) {
-            return [];
-        }
-        try {
-            return SitemapParser::collect_set(SitemapGenerator::generate());
-        } catch (\Throwable $e) {
-            return [];
         }
     }
 

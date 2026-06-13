@@ -192,7 +192,7 @@ final class SyncController {
 
         $targets = [];
         foreach (Destinations::objects() as $dest) {
-            if (!(bool) $dest->get('enabled') || !(bool) $dest->get('includeInSinglePageSync')) {
+            if (!(bool) $dest->get('enabled')) {
                 continue;
             }
             $pushed    = Manifest::load(Destinations::pushed_option($dest->id()));

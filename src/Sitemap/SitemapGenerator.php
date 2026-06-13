@@ -44,7 +44,37 @@ final class SitemapGenerator {
     }
 
     /**
-     * Generate the dummy sitemap set.
+     * Build a sitemap.xml (urlset) + robots.txt from an explicit list of exported
+     * page URLs — so the sitemap reflects exactly what was deployed (honouring the
+     * discovery mode) rather than every published post. URLs are absolute-to-source;
+     * the deploy step rewrites them to each destination's origin.
+     *
+     * @param array<int,string> $urls Absolute page URLs.
+     * @return array<string,string> Relative path => contents.
+     */
+    public static function from_urls(array $urls): array {
+        $seen    = [];
+        $entries = [];
+        foreach ($urls as $url) {
+            $url = (string) $url;
+            if ($url === '' || isset($seen[$url])) {
+                continue;
+            }
+            $seen[$url] = true;
+            $entries[]  = ['loc' => $url, 'lastmod' => ''];
+        }
+        usort($entries, static fn(array $a, array $b): int => strcmp($a['loc'], $b['loc']));
+
+        return [
+            'sitemap.xml' => self::urlset($entries),
+            'robots.txt'  => self::robots(),
+        ];
+    }
+
+    /**
+     * Generate the dummy sitemap set (every published page/post, split by type).
+     * Used by the diagnostic /sitemap/test endpoint; the live export uses
+     * from_urls() so the sitemap matches what was actually deployed.
      *
      * @return array<string,string> Relative path (e.g. "sitemap.xml") => XML.
      */
