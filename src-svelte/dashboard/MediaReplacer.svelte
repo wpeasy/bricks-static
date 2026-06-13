@@ -85,8 +85,9 @@
 
   let filtered = $derived.by(() => {
     const term = search.trim().toLowerCase();
+    const page = pageFilter.trim().toLowerCase();
     return media.filter((m) => {
-      if (pageFilter && !m.pages.includes(pageFilter)) return false;
+      if (page && !m.pages.some((p) => p.toLowerCase().includes(page))) return false;
       if (term && !basename(m.url).toLowerCase().includes(term) && !m.alt.toLowerCase().includes(term)) return false;
       return true;
     });
@@ -102,10 +103,16 @@
     </span>
     <div class="bs-media__filters">
       <input type="search" placeholder="Search name or alt…" bind:value={search} />
-      <select bind:value={pageFilter} aria-label="Filter by page">
-        <option value="">All pages</option>
-        {#each pages as p}<option value={p}>{p}</option>{/each}
-      </select>
+      <input
+        type="search"
+        list="bs-media-pages"
+        placeholder="Filter by page…"
+        bind:value={pageFilter}
+        aria-label="Filter by page"
+      />
+      <datalist id="bs-media-pages">
+        {#each pages as p}<option value={p}></option>{/each}
+      </datalist>
     </div>
   </div>
 
@@ -181,8 +188,7 @@
     gap: var(--bs-space--xs);
   }
 
-  .bs-media__filters input,
-  .bs-media__filters select {
+  .bs-media__filters input {
     padding: var(--bs-space--2xs) var(--bs-space--sm);
     border: var(--bs-border--1) solid var(--bs-color-border--strong);
     border-radius: var(--bs-radius--md);
