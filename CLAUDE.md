@@ -20,6 +20,7 @@
 | File | Purpose |
 |------|---------|
 | **CODE_STANDARDS.md** | Naming conventions, security, PHP/JS/CSS standards |
+| **SECURITY_PATTERNS.md** | Non-negotiable security rules (admin-only REST model, `Support\UrlSafety` SSRF guard, TLS/`sslverify` rule, `UnzipScript` hardening, SFTP host-key, `{@html}`/`wp_kses_post`). Read before touching any REST controller, the deploy/transport layer, URL fetching, or stored-HTML rendering. |
 | **WORDPRESS.md** | Plugin header template and WordPress configuration |
 | **SVELTE5_IMPLEMENTATION.md** | Svelte 5 runes and patterns (avoid Svelte 4 syntax) |
 | **assets/css/bs-framework.css** | Base framework: design tokens (fluid spacing/type, borders, admin colors) and base styles. Scope admin UI in a `.bs` container and reference `--bs-*` tokens. |

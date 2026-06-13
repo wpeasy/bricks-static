@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2-beta] - 2026-06-13
+
+### Added
+- **Replacements — Media & Links, in an accordion.** Alongside per-destination text replacements (now plain/rich with a small WYSIWYG incl. headings, lists and an HTML source view, edited in a modal): a **Media replacer** (swap any rendered image/video for a media-library item — rebuilding the new image's `srcset` variants so it stays responsive) and a **Link replacer** (rewrite `<a>`/button `href` targets — tag-scoped, so matching body text is never touched). Text/Media/Links are grouped in a one-open-at-a-time accordion. Stale media replacements (original no longer on the site) are pruned automatically.
+- **Single-page sync + floating button.** A draggable "Sync this page" button (position persisted) on front-end pages and in the Bricks editor — where it **saves the editor first**. It renders the changed page and any **new pages it links to** (so you never publish a dead internal link), then pushes only the changed files to destinations opted into **Include in single-page sync**. Gated by an "Enable sync single button" toggle in the dashboard. REST `bs/v1/sync/page` + `/sync/page-status`.
+- **Sitemaps, robots.txt & favicon.** A sitemap index + per-type sitemaps and a robots.txt are generated from discovered content and uploaded, with `<loc>`/`Sitemap:` URLs rewritten to each destination's domain; the sitemap also seeds discovery. A `/favicon.ico` is shipped from a real root favicon, the WordPress Site Icon, or a generated default.
+- **Fast package deploy.** Zips the changed files + a one-shot, token-gated, self-deleting server-side helper, uploads both, and extracts over HTTPS — collapsing hundreds of FTP round trips into one, with automatic per-file fallback and a re-test action.
+- **Documentation admin submenu.** A Svelte page (same styling) covering features, how it works, common issues & resolutions, troubleshooting, and a CLI reference.
+
+### Changed
+- "In sync" is now signature-based (render + that destination's replacements + URL), so a destination with replacements is no longer wrongly flagged "Out of date".
+- A destination's **Check/Sync** buttons are disabled while it is not enabled.
+
+### Fixed
+- **gzip serving.** The `.htaccess` served pre-compressed `.gz` siblings for every type but only set the correct `Content-Encoding`/`Content-Type` for HTML/CSS/JS — so gzipped sitemaps/robots/SVG/JSON were delivered as undecodable blobs on Apache. Headers now cover every compressed type, and files under ~1 KB (e.g. robots.txt) are no longer gzipped.
+- `wp_tempnam()` (wp-admin only) is no longer called on CLI/REST/front-end sync paths, where it fatally errored.
+- The Progress card's dismissal now persists across reloads.
+
+### Security
+- **SSRF guard** (`Support\UrlSafety`) around the user-supplied destination-URL fetch: rejects private/reserved/link-local ranges (cloud metadata, RFC1918, IPv6 ULA/link-local), allows loopback for dev, and disables redirect-following.
+- **SFTP host-key verification** (trust-on-first-use): the server key is read before login and a later mismatch is refused; cleared on connection-target change and via Reset.
+- TLS-verification relaxation is scoped to true dev hosts via exact matching (fixing a `127.0.0.1`-prefix bug); `SECURITY_PATTERNS.md` rewritten for this plugin.
+
+## [0.0.1-beta]
+
 ### Added
 - **Multiple destinations.** Sync one source to many destinations. Each destination has its own connection, per-destination **literal text replacements** (applied only to visible text and `<img>` sources), **Enabled** and **Include in single-page sync** (TBA) switches, and its own pushed-state. The site is **rendered once** and deployed to each destination in turn. Dashboard: a **tabbed, 2-column** UI (add/remove destinations, common status above, an **All Destinations** tab to sync all sequentially or pick one). REST `bs/v1/destinations` CRUD + per-destination test; CLI `wp bricks-static sync --dest=<id> | --all`. The previous single connection migrates automatically to "Destination 1".
 - Initial project scaffold.
