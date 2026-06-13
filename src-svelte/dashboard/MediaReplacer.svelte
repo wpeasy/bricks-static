@@ -22,12 +22,29 @@
   onMount(async () => {
     try {
       media = (await api.getMedia()).media;
+      pruneStaleSwaps();
     } catch (e) {
       error = (e as Error).message;
     } finally {
       loading = false;
     }
   });
+
+  // Drop any saved replacement whose original media is no longer referenced on
+  // the rendered site (e.g. the element was deleted), keeping settings tidy.
+  // Guarded: only prunes when there IS a render to compare against, so an empty
+  // collection (nothing rendered yet) never wipes valid replacements.
+  function pruneStaleSwaps(): void {
+    if (media.length === 0) return;
+    const present = new Set(media.map((m) => m.url));
+    const stale = Object.keys(swaps).filter((from) => !present.has(from));
+    if (stale.length === 0) return;
+
+    const next = { ...swaps };
+    for (const key of stale) delete next[key];
+    swaps = next;
+    void persist();
+  }
 
   function basename(url: string): string {
     const path = url.split('?')[0];
