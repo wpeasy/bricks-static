@@ -19,6 +19,7 @@ use WPEasy\BricksStatic\Sync\HtaccessBuilder;
 use WPEasy\BricksStatic\Sync\Job;
 use WPEasy\BricksStatic\Sync\Manifest;
 use WPEasy\BricksStatic\Sync\Runner;
+use WPEasy\BricksStatic\Support\Url;
 
 defined('ABSPATH') || exit;
 
@@ -47,6 +48,18 @@ final class SyncController {
         register_rest_route(self::NS, '/sync/tick', [
             'methods'             => 'POST',
             'callback'            => [self::class, 'tick'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
+
+        register_rest_route(self::NS, '/sync/page', [
+            'methods'             => 'POST',
+            'callback'            => [self::class, 'start_page'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
+
+        register_rest_route(self::NS, '/sync/page-status', [
+            'methods'             => 'GET',
+            'callback'            => [self::class, 'page_status'],
             'permission_callback' => [self::class, 'can_manage'],
         ]);
 
@@ -134,6 +147,67 @@ final class SyncController {
         } catch (\Throwable $e) {
             return new WP_REST_Response(['phase' => 'error', 'message' => $e->getMessage()], 200);
         }
+    }
+
+    /**
+     * POST /sync/page — single-page sync: render one changed page (plus any NEW
+     * internal pages it links to) and push only the changed files to the
+     * destinations opted into single-page sync. Driven like a normal run.
+     *
+     * @param WP_REST_Request $request Request.
+     */
+    public static function start_page(WP_REST_Request $request): WP_REST_Response {
+        $params = (array) $request->get_json_params();
+        $url    = esc_url_raw((string) ($params['url'] ?? ''));
+
+        if ($url === '' || !Url::is_internal($url)) {
+            return new WP_REST_Response(['phase' => 'error', 'message' => 'A valid internal page URL is required.'], 200);
+        }
+        if (empty(Destinations::single_page_ids())) {
+            return new WP_REST_Response([
+                'phase'   => 'error',
+                'message' => 'No destinations are enabled for single-page sync. Turn on “Include in single-page sync” on a destination first.',
+            ], 200);
+        }
+
+        try {
+            $snapshot           = Runner::start('sync', ['only' => $url]);
+            $snapshot['driver'] = Background::spawn_run() ? 'cli' : 'browser';
+
+            return new WP_REST_Response($snapshot);
+        } catch (\Throwable $e) {
+            return new WP_REST_Response(['phase' => 'error', 'message' => $e->getMessage()], 200);
+        }
+    }
+
+    /**
+     * GET /sync/page-status — per-destination push state for a single page, plus
+     * whether single-page sync has any eligible destinations.
+     *
+     * @param WP_REST_Request $request Request.
+     */
+    public static function page_status(WP_REST_Request $request): WP_REST_Response {
+        $url = esc_url_raw((string) $request->get_param('url'));
+        $rel = $url !== '' && Url::is_internal($url) ? Url::to_relative_path($url) : null;
+
+        $targets = [];
+        foreach (Destinations::objects() as $dest) {
+            if (!(bool) $dest->get('enabled') || !(bool) $dest->get('includeInSinglePageSync')) {
+                continue;
+            }
+            $pushed    = Manifest::load(Destinations::pushed_option($dest->id()));
+            $targets[] = [
+                'id'     => $dest->id(),
+                'name'   => (string) $dest->get('name'),
+                'pushed' => $rel !== null && isset($pushed[$rel]),
+            ];
+        }
+
+        return new WP_REST_Response([
+            'rel'     => $rel,
+            'targets' => $targets,
+            'canSync' => !empty($targets),
+        ]);
     }
 
     /**

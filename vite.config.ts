@@ -16,6 +16,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         dashboard: 'src-svelte/dashboard/main.ts',
+        frontend: 'src-svelte/frontend/main.ts',
       },
     },
   },

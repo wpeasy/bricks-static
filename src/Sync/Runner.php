@@ -71,34 +71,61 @@ final class Runner {
             throw new \RuntimeException('The staging cache directory is not writable: ' . Paths::cache_dir());
         }
 
-        self::reset_output();
+        // Single-page sync: push ONE changed page (and only NEW pages it links to),
+        // merging into the existing render — not a full-site rebuild. So we keep the
+        // existing cache + manifest and never prune.
+        $only   = trim((string) ($options['only'] ?? ''));
+        $single = $only !== '';
+
+        if (!$single) {
+            self::reset_output();
+        }
         Job::clear();
         delete_option(self::CANCEL_FLAG);
         delete_option(self::HEARTBEAT);
         self::release_driver();
 
         $job = Job::create($type);
-        $job->data['prune'] = !empty($options['prune']);
+        $job->data['prune'] = !$single && !empty($options['prune']); // never prune on single-page
 
-        // Which destination(s) this run pushes to. 'targets' is a list (for
-        // "sync all"); 'destId' is the single-target shorthand; default primary.
+        if ($single) {
+            $job->data['singlePage'] = true;
+            // Pages already in the render — don't re-crawl them; only follow links
+            // to pages NOT yet here, so a page is never pushed with links to
+            // internal pages that haven't been rendered/deployed.
+            $job->data['known'] = array_fill_keys(array_keys(Manifest::load(Manifest::RENDER_OPTION)), true);
+        }
+
+        // Which destination(s) this run pushes to. Single-page targets the
+        // destinations opted into single-page sync; otherwise 'targets' (sync all)
+        // / 'destId' / primary.
         $targets = [];
-        if (isset($options['targets']) && is_array($options['targets'])) {
+        if ($single) {
+            $targets = Destinations::single_page_ids();
+        } elseif (isset($options['targets']) && is_array($options['targets'])) {
             $targets = array_values(array_filter(array_map('strval', $options['targets'])));
         }
         if (empty($targets)) {
+            if ($single) {
+                throw new \RuntimeException('No destinations are enabled for single-page sync.');
+            }
             $targets = [(string) ($options['destId'] ?? Destinations::primary()->id())];
         }
         $job->data['targets'] = $targets;
         $job->data['destId']  = $targets[0];
-        foreach (UrlCollector::collect() as $url) {
-            $job->enqueue_page($url);
-        }
-        // Feed the parsed sitemap's URLs into discovery too — this exercises the
-        // generate → parse path and catches pages the link crawl can't reach
-        // (orphaned/unlinked) even in 'linked' mode. enqueue_page dedupes.
-        foreach (self::sitemap_seed_urls() as $url) {
-            $job->enqueue_page($url);
+
+        if ($single) {
+            $job->enqueue_page($only); // The changed page — always (re)rendered.
+        } else {
+            foreach (UrlCollector::collect() as $url) {
+                $job->enqueue_page($url);
+            }
+            // Feed the parsed sitemap's URLs into discovery too — this exercises the
+            // generate → parse path and catches pages the link crawl can't reach
+            // (orphaned/unlinked) even in 'linked' mode. enqueue_page dedupes.
+            foreach (self::sitemap_seed_urls() as $url) {
+                $job->enqueue_page($url);
+            }
         }
 
         $job->data['phase']            = 'render';
@@ -441,6 +468,15 @@ final class Runner {
                 }
 
                 foreach (AssetExtractor::extract_links($result['body'], $url) as $link) {
+                    // Single-page: follow a link only if it points at a page NOT
+                    // already rendered — pulling in just the new pages this change
+                    // introduced, so none of them ship as a dead internal link.
+                    if (!empty($job->data['singlePage'])) {
+                        $rel = Url::to_relative_path($link);
+                        if ($rel !== null && isset($job->data['known'][$rel])) {
+                            continue;
+                        }
+                    }
                     $job->enqueue_page($link);
                 }
                 foreach (AssetExtractor::extract_assets($result['body'], $url) as $asset) {
@@ -540,9 +576,17 @@ final class Runner {
      * @param Job $job Active job.
      */
     private static function tick_finalize(Job $job): void {
-        self::emit_extra_files($job);
+        if (empty($job->data['singlePage'])) {
+            self::emit_extra_files($job);
+            $manifest = Manifest::from_plan($job->data['plan']);
+        } else {
+            // Merge the (re)rendered page + any newly-linked pages/assets into the
+            // existing render, leaving the rest of the site untouched. (Sitemaps
+            // aren't regenerated here — the next full sync refreshes them.)
+            $manifest = array_merge(Manifest::load(Manifest::RENDER_OPTION), Manifest::from_plan($job->data['plan']));
+            ksort($manifest);
+        }
 
-        $manifest = Manifest::from_plan($job->data['plan']);
         Manifest::save(Manifest::RENDER_OPTION, $manifest);
         self::write_manifest_file($job, $manifest);
 

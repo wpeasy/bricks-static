@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace WPEasy\BricksStatic;
 
 use WPEasy\BricksStatic\Admin\Menu;
+use WPEasy\BricksStatic\Frontend\Fab;
 use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\REST\ConnectionController;
@@ -37,6 +38,9 @@ final class Plugin {
         if (is_admin()) {
             Menu::init();
         }
+
+        // Frontend "Sync this page" FAB (self-gates to admins on public pages).
+        Fab::init();
 
         add_action('rest_api_init', [self::class, 'register_rest_routes']);
 

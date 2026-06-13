@@ -80,6 +80,22 @@ final class Destinations {
     }
 
     /**
+     * Ids of enabled destinations opted into single-page (push-this-page) sync.
+     *
+     * @return array<int,string>
+     */
+    public static function single_page_ids(): array {
+        $ids = [];
+        foreach (self::objects() as $dest) {
+            if ((bool) $dest->get('enabled') && (bool) $dest->get('includeInSinglePageSync')) {
+                $ids[] = $dest->id();
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
      * Find a destination by id.
      *
      * @param string $id Destination id.
