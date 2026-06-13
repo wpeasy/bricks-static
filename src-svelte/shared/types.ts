@@ -51,6 +51,7 @@ export interface MediaItem {
 export interface MediaReplacement {
   from: string;
   to: string;
+  toId?: number;
 }
 
 // Minimal typing for the WordPress media library (wp.media), enqueued by the plugin.

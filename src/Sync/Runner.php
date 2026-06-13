@@ -15,6 +15,7 @@ use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Render\AssetExtractor;
 use WPEasy\BricksStatic\Render\CompatibilityScanner;
+use WPEasy\BricksStatic\Render\MediaReplacer;
 use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Render\StableHash;
 use WPEasy\BricksStatic\Render\TextReplacer;
@@ -641,19 +642,33 @@ final class Runner {
         $replaces = array_column($text, 'replace');
 
         // Media swaps: original URL (as it appears in the rewritten HTML) →
-        // replacement URL (relativised the same way), plus the replacement files
-        // to add as uploadable assets.
-        $media_from = [];
-        $media_to   = [];
-        $extra      = []; // manifest key => local source file
+        // {to, srcset} (relativised the same way), plus every replacement file
+        // (full + responsive variants) to add as uploadable assets.
+        $swaps = []; // fromUrl => ['to' => …, 'srcset' => …]
+        $extra = []; // manifest key => local source file
         foreach ($media as $m) {
-            $media_from[] = $m['from'];
-            $media_to[]   = UrlRewriter::rewrite($m['to']);
+            $from = $m['from'];
+            $toId = (int) ($m['toId'] ?? 0);
 
-            $src = Paths::source_file($m['to']);
-            $key = Url::to_relative_path($m['to']);
-            if ($src !== null && is_file($src) && $key !== null) {
-                $extra[$key] = $src;
+            if ($toId > 0 && wp_attachment_is_image($toId)) {
+                $swaps[$from] = [
+                    'to'     => UrlRewriter::rewrite((string) wp_get_attachment_url($toId)),
+                    'srcset' => self::attachment_srcset($toId),
+                ];
+                foreach (self::attachment_files($toId) as $vurl => $vpath) {
+                    $key = Url::to_relative_path($vurl);
+                    if ($key !== null && is_file($vpath)) {
+                        $extra[$key] = $vpath;
+                    }
+                }
+            } else {
+                // No attachment id (or not an image) — swap the URL verbatim.
+                $swaps[$from] = ['to' => UrlRewriter::rewrite($m['to']), 'srcset' => ''];
+                $src = Paths::source_file($m['to']);
+                $key = Url::to_relative_path($m['to']);
+                if ($src !== null && is_file($src) && $key !== null) {
+                    $extra[$key] = $src;
+                }
             }
         }
 
@@ -671,8 +686,8 @@ final class Runner {
             if (!empty($searches)) {
                 $transformed = TextReplacer::apply($transformed, $searches, $replaces);
             }
-            if (!empty($media_from)) {
-                $transformed = str_replace($media_from, $media_to, $transformed);
+            if (!empty($swaps)) {
+                $transformed = MediaReplacer::apply($transformed, $swaps);
             }
 
             $path = $deploy_dir . '/' . $relative;
@@ -697,6 +712,47 @@ final class Runner {
         }
 
         return $out;
+    }
+
+    /**
+     * Root-relative srcset for a replacement image attachment ('' if none).
+     *
+     * @param int $id Attachment id.
+     */
+    private static function attachment_srcset(int $id): string {
+        $srcset = wp_get_attachment_image_srcset($id, 'full');
+
+        return is_string($srcset) ? UrlRewriter::rewrite($srcset) : '';
+    }
+
+    /**
+     * All files for an image attachment (full size + every generated variant),
+     * keyed by absolute URL => local file path, so each can be uploaded.
+     *
+     * @param int $id Attachment id.
+     * @return array<string,string>
+     */
+    private static function attachment_files(int $id): array {
+        $files     = [];
+        $full_path = (string) get_attached_file($id);
+        $full_url  = (string) wp_get_attachment_url($id);
+        if ($full_path === '' || $full_url === '') {
+            return $files;
+        }
+        $files[$full_url] = $full_path;
+
+        $meta = wp_get_attachment_metadata($id);
+        if (is_array($meta) && !empty($meta['sizes'])) {
+            $dir_path = dirname($full_path);
+            $base_url = dirname($full_url);
+            foreach ((array) $meta['sizes'] as $size) {
+                if (!empty($size['file'])) {
+                    $files[$base_url . '/' . $size['file']] = $dir_path . '/' . $size['file'];
+                }
+            }
+        }
+
+        return $files;
     }
 
     /**

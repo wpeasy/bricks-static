@@ -142,7 +142,13 @@ final class Destination {
         $out = [];
         foreach ((array) ($this->data['mediaReplacements'] ?? []) as $row) {
             if (is_array($row) && !empty($row['from']) && !empty($row['to'])) {
-                $out[] = ['from' => (string) $row['from'], 'to' => (string) $row['to']];
+                $out[] = [
+                    'from' => (string) $row['from'],
+                    'to'   => (string) $row['to'],
+                    // Attachment id of the replacement, so its size variants
+                    // (srcset) can be rebuilt at deploy time. 0 if unknown.
+                    'toId' => (int) ($row['toId'] ?? 0),
+                ];
             }
         }
 
@@ -266,7 +272,7 @@ final class Destination {
             if ($from === '' || $to === '') {
                 continue;
             }
-            $clean[] = ['from' => $from, 'to' => $to];
+            $clean[] = ['from' => $from, 'to' => $to, 'toId' => absint($row['toId'] ?? 0)];
         }
 
         return $clean;

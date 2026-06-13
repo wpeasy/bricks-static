@@ -11,9 +11,12 @@
   let pageFilter = $state('');
   let search = $state('');
 
-  // Local swap map (original url → replacement url), seeded from the destination.
-  let swaps = $state<Record<string, string>>(
-    untrack(() => Object.fromEntries((destination.mediaReplacements ?? []).map((r) => [r.from, r.to]))),
+  // Local swap map (original url → {replacement url, attachment id}), seeded
+  // from the destination.
+  let swaps = $state<Record<string, { to: string; toId: number }>>(
+    untrack(() =>
+      Object.fromEntries((destination.mediaReplacements ?? []).map((r) => [r.from, { to: r.to, toId: r.toId ?? 0 }])),
+    ),
   );
 
   onMount(async () => {
@@ -33,7 +36,11 @@
 
   async function persist(): Promise<void> {
     try {
-      const mediaReplacements: MediaReplacement[] = Object.entries(swaps).map(([from, to]) => ({ from, to }));
+      const mediaReplacements: MediaReplacement[] = Object.entries(swaps).map(([from, s]) => ({
+        from,
+        to: s.to,
+        toId: s.toId,
+      }));
       await api.updateDestination(destination.id, { mediaReplacements });
       onSaved();
     } catch (e) {
@@ -56,7 +63,7 @@
     frame.on('select', () => {
       const att = frame.state().get('selection').first().toJSON();
       if (att?.url) {
-        swaps = { ...swaps, [item.url]: att.url };
+        swaps = { ...swaps, [item.url]: { to: att.url, toId: att.id ?? 0 } };
         void persist();
       }
     });
@@ -133,11 +140,11 @@
               {#if item.type === 'video'}
                 <span class="bs-media__thumb bs-media__thumb--video">▶</span>
               {:else}
-                <img class="bs-media__thumb" src={swaps[item.url]} alt="" loading="lazy" />
+                <img class="bs-media__thumb" src={swaps[item.url].to} alt="" loading="lazy" />
               {/if}
               <div class="bs-media__meta">
                 <span class="bs-media__swaplabel">↳ replaced with</span>
-                <span class="bs-media__name" title={swaps[item.url]}>{basename(swaps[item.url])}</span>
+                <span class="bs-media__name" title={swaps[item.url].to}>{basename(swaps[item.url].to)}</span>
               </div>
               <button type="button" class="bs-link bs-link--danger" onclick={() => clearSwap(item.url)}>Remove</button>
             </div>
