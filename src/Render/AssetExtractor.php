@@ -127,7 +127,7 @@ final class AssetExtractor {
         $content = preg_replace('#<script\b[^>]*>.*?</script>#is', '', $content) ?? $content;
 
         return array_merge(
-            self::match($content, '#url\(\s*("[^"]*"|\'[^\']*\'|[^)\s]+)\s*\)#i'),
+            self::match($content, '#url\(\s*("[^"]*"|\'[^\']*\'|[^)\s"\']+)\s*\)#i'),
             self::match($content, '#@import\s+("[^"]*"|\'[^\']*\')#i')
         );
     }
@@ -168,7 +168,7 @@ final class AssetExtractor {
 
         foreach (self::match($html, '#\sdata-(?:bg|background|background-image|bg-image)\s*=\s*("[^"]*"|\'[^\']*\')#i') as $value) {
             if (stripos($value, 'url(') !== false) {
-                foreach (self::match($value, '#url\(\s*("[^"]*"|\'[^\']*\'|[^)\s]+)\s*\)#i') as $inner) {
+                foreach (self::match($value, '#url\(\s*("[^"]*"|\'[^\']*\'|[^)\s"\']+)\s*\)#i') as $inner) {
                     $out[] = $inner;
                 }
             } else {
@@ -191,14 +191,26 @@ final class AssetExtractor {
 
         if (preg_match_all($regex, $content, $matches)) {
             foreach ($matches[1] as $raw) {
-                $raw = trim(trim($raw), "\"'");
-                if ($raw !== '') {
-                    $out[] = $raw;
-                }
+                $out[] = self::clean($raw);
             }
         }
 
-        return $out;
+        return array_values(array_filter($out, static fn(string $v): bool => $v !== ''));
+    }
+
+    /**
+     * Normalise a captured reference: decode HTML entities (inline-style values
+     * carry entity-encoded quotes — `url(&quot;…&quot;)` — and `&amp;` in query
+     * strings), then strip surrounding quotes/whitespace. Without the decode, an
+     * entity-quoted url() value is captured whole (quotes and all) and mis-parsed
+     * as a relative path.
+     *
+     * @param string $raw Raw captured value.
+     */
+    private static function clean(string $raw): string {
+        $raw = html_entity_decode($raw, ENT_QUOTES | ENT_HTML5);
+
+        return trim(trim($raw), "\"'");
     }
 
     /**
