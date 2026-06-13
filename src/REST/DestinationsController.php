@@ -94,7 +94,12 @@ final class DestinationsController {
             return new WP_REST_Response(['ok' => false, 'message' => 'Set a Destination URL first so the helper can be reached.']);
         }
 
-        $tmp = wp_tempnam('bs-pkgtest');
+        // get_temp_dir()/tempnam work in every context; wp_tempnam() needs
+        // wp-admin/includes/file.php, which isn't loaded on REST/frontend requests.
+        $tmp = tempnam(get_temp_dir(), 'bs-pkgtest-');
+        if ($tmp === false) {
+            return new WP_REST_Response(['ok' => false, 'message' => 'Could not create a temporary file for the test.']);
+        }
         file_put_contents($tmp, '<!-- bricks-static package test -->');
 
         try {

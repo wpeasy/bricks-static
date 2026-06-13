@@ -168,7 +168,12 @@ final class FtpTransport implements TransportInterface {
      */
     public function get(string $remote_path): string {
         $conn = $this->require_connection();
-        $tmp  = wp_tempnam('bs-ftp-get');
+        // get_temp_dir()/tempnam are available in every context; wp_tempnam() lives
+        // in wp-admin/includes/file.php, which isn't loaded during a CLI/loopback sync.
+        $tmp = tempnam(get_temp_dir(), 'bs-ftp-');
+        if ($tmp === false) {
+            return '';
+        }
 
         if (!@ftp_get($conn, $tmp, $this->absolute($remote_path), FTP_BINARY)) {
             @unlink($tmp);
