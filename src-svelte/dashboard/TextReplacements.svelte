@@ -141,7 +141,7 @@
         <button type="button" class="bs-seg__btn" class:is-active={fRich} onclick={() => (fRich = true)} disabled={busy}>Rich</button>
       </div>
       {#if fRich}
-        <RichTextEditor bind:value={fReplace} disabled={busy} />
+        <RichTextEditor bind:value={fReplace} disabled={busy} rows={10} />
       {:else}
         <input type="text" placeholder="Replace with" bind:value={fReplace} disabled={busy} />
       {/if}

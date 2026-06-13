@@ -5,7 +5,8 @@
     value = $bindable(''),
     disabled = false,
     placeholder = 'Replace with…',
-  }: { value: string; disabled?: boolean; placeholder?: string } = $props();
+    rows = 3,
+  }: { value: string; disabled?: boolean; placeholder?: string; rows?: number } = $props();
 
   let el: HTMLDivElement | undefined = $state();
 
@@ -53,6 +54,7 @@
     class="bs-rte__body"
     contenteditable={!disabled}
     data-placeholder={placeholder}
+    style="min-height: {(rows * 1.6).toFixed(1)}em"
     oninput={sync}
     onblur={sync}
   ></div>
@@ -95,11 +97,12 @@
   }
 
   .bs-rte__body {
-    min-height: 3rem;
-    max-height: 10rem;
+    /* min-height is set inline from the `rows` prop. */
+    max-height: 60vh;
     overflow: auto;
     padding: var(--bs-space--xs) var(--bs-space--sm);
     font-size: var(--bs-text--sm);
+    line-height: 1.6;
     color: var(--bs-color-text);
     outline: none;
   }
