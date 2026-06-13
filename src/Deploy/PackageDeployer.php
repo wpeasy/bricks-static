@@ -13,6 +13,7 @@ namespace WPEasy\BricksStatic\Deploy;
 
 use WPEasy\BricksStatic\Sync\Compressor;
 use WPEasy\BricksStatic\Support\Paths;
+use WPEasy\BricksStatic\Support\UrlSafety;
 use WPEasy\BricksStatic\Transport\TransportInterface;
 
 defined('ABSPATH') || exit;
@@ -49,10 +50,10 @@ final class PackageDeployer {
      * @param string $url The destination URL.
      */
     public static function sslverify(string $url): bool {
-        $host  = (string) wp_parse_url($url, PHP_URL_HOST);
-        $local = $host === 'localhost'
-            || strpos($host, '127.0.0.1') === 0
-            || (bool) preg_match('/\.(local|test)$/i', $host);
+        // Relax ONLY for true local/dev hosts (which can't hold a public CA cert).
+        // is_dev_host uses exact matching, so e.g. "127.0.0.1.attacker.com" — a real
+        // public host — is verified, not silently exempted.
+        $local = UrlSafety::is_dev_host((string) wp_parse_url($url, PHP_URL_HOST));
 
         /** Filters TLS verification for the package-deploy helper call. */
         return (bool) apply_filters('bs_package_sslverify', !$local, $url);
@@ -165,7 +166,9 @@ final class PackageDeployer {
         self::cleanup_local($zip_path, $php_path);
 
         $report('Extracting on the destination…');
-        $response = wp_remote_post(rtrim($base_url, '/') . '/' . $php_name, [
+        // SSRF guard: the destination URL is user-supplied, so validate it resolves
+        // to a public (or loopback-for-dev) address and don't follow redirects.
+        $response = UrlSafety::guarded_post(rtrim($base_url, '/') . '/' . $php_name, [
             'timeout'   => 120,
             'sslverify' => $sslverify,
             'body'      => ['token' => $token, 'deletes' => wp_json_encode(array_values($deletes))],

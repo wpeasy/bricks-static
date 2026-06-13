@@ -145,6 +145,11 @@ final class Destinations {
                     delete_option(self::pushed_option($id));
                     delete_option('bs_pkg_off_' . $id);
                     delete_option('bs_sync_sig_' . $id);
+
+                    // Re-pointed at a different server — forget the old target's
+                    // trusted SFTP host key so the new one is established afresh.
+                    $cfg = $after->connection_config();
+                    \WPEasy\BricksStatic\Transport\SftpTransport::forget_host_key((string) $cfg['host'], (int) $cfg['port']);
                 }
 
                 return $after;

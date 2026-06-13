@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Render;
 
+use WPEasy\BricksStatic\Support\UrlSafety;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -123,11 +125,10 @@ final class PageRenderer {
      * Whether to verify TLS for loopback requests. Relaxed for local/dev hosts.
      */
     private static function should_verify_ssl(): bool {
-        $host        = (string) wp_parse_url(home_url(), PHP_URL_HOST);
         $is_local    = in_array(wp_get_environment_type(), ['local', 'development'], true);
-        $is_dev_host = $host === 'localhost'
-            || strpos($host, '127.0.0.1') === 0
-            || (bool) preg_match('/\.(local|test)$/i', $host);
+        // Exact dev-host match (not a prefix), so a public host that merely starts
+        // with "127.0.0.1" isn't exempted from TLS verification.
+        $is_dev_host = UrlSafety::is_dev_host((string) wp_parse_url(home_url(), PHP_URL_HOST));
 
         $verify = !($is_local || $is_dev_host);
 

@@ -25,6 +25,11 @@ final class SftpTransport implements TransportInterface {
     private const DEFAULT_PORT = 22;
 
     /**
+     * Option holding trusted server host keys, keyed by "host:port".
+     */
+    private const KNOWN_HOSTS_OPTION = 'bs_sftp_known_hosts';
+
+    /**
      * Connection config: host, port, username, password, remotePath.
      *
      * @var array<string,mixed>
@@ -68,11 +73,81 @@ final class SftpTransport implements TransportInterface {
         $port = (int) ($this->config['port'] ?? 0) ?: self::DEFAULT_PORT;
         $sftp = new SFTP($host, $port, 15);
 
+        // Verify the server identity BEFORE sending credentials, so a MITM that
+        // impersonates the destination can't capture the password.
+        self::verify_host_key($sftp, $host, $port);
+
         if (!$sftp->login((string) ($this->config['username'] ?? ''), (string) ($this->config['password'] ?? ''))) {
             throw new \RuntimeException('SFTP authentication failed. Check host, port, username and password.');
         }
 
         $this->sftp = $sftp;
+    }
+
+    /**
+     * Trust-on-first-use host-key check: record the server's public host key on
+     * the first connection to a host:port, and refuse to continue if it later
+     * changes (a man-in-the-middle would present a different key). Reading the key
+     * triggers the SSH key exchange but happens before login(), so credentials are
+     * never sent to an unverified or changed host.
+     *
+     * @param SFTP   $sftp Unauthenticated SFTP connection.
+     * @param string $host Host.
+     * @param int    $port Port.
+     * @throws \RuntimeException On a host-key mismatch or unreadable key.
+     */
+    private static function verify_host_key(SFTP $sftp, string $host, int $port): void {
+        /** Filters whether SFTP host-key verification is enforced. */
+        if (!apply_filters('bs_sftp_verify_host_key', true, $host, $port)) {
+            return;
+        }
+
+        $key = $sftp->getServerPublicHostKey();
+        if (!is_string($key) || $key === '') {
+            throw new \RuntimeException('Could not read the SFTP server host key to verify the server identity.');
+        }
+
+        $id     = strtolower($host) . ':' . $port;
+        $known  = get_option(self::KNOWN_HOSTS_OPTION, []);
+        $known  = is_array($known) ? $known : [];
+        $stored = isset($known[$id]) ? (string) $known[$id] : '';
+
+        if ($stored === '') {
+            $known[$id] = $key; // Trust on first use.
+            update_option(self::KNOWN_HOSTS_OPTION, $known, false);
+            return;
+        }
+
+        if (!hash_equals($stored, $key)) {
+            throw new \RuntimeException(sprintf(
+                'SFTP host key for %s has changed since the first connection. If the server was legitimately rebuilt or migrated, use "Reset sync state" to clear the stored key; otherwise this may be a man-in-the-middle attempt and the connection was refused.',
+                $id
+            ));
+        }
+    }
+
+    /**
+     * Forget the stored host key for a host:port (e.g. when the destination is
+     * re-pointed, or on reset), so the next connection re-establishes trust.
+     *
+     * @param string $host Host ('' clears all).
+     * @param int    $port Port.
+     */
+    public static function forget_host_key(string $host = '', int $port = 0): void {
+        if ($host === '') {
+            delete_option(self::KNOWN_HOSTS_OPTION);
+            return;
+        }
+
+        $known = get_option(self::KNOWN_HOSTS_OPTION, []);
+        if (!is_array($known)) {
+            return;
+        }
+        $id = strtolower($host) . ':' . ($port ?: self::DEFAULT_PORT);
+        if (isset($known[$id])) {
+            unset($known[$id]);
+            update_option(self::KNOWN_HOSTS_OPTION, $known, false);
+        }
     }
 
     /**

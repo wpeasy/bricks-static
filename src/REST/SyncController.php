@@ -206,6 +206,10 @@ final class SyncController {
 
         delete_option(Manifest::RENDER_OPTION);
 
+        // Escape hatch for a legitimate host-key change (server rebuild/migration):
+        // clearing trusted SFTP host keys lets the next connection re-establish trust.
+        \WPEasy\BricksStatic\Transport\SftpTransport::forget_host_key();
+
         return new WP_REST_Response(['ok' => true]);
     }
 
