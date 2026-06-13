@@ -53,7 +53,7 @@
 </script>
 
 <div class="bs-rte" class:is-disabled={disabled}>
-  <div class="bs-rte__bar" role="toolbar" aria-label="Formatting" onmousedown={keepSelection}>
+  <div class="bs-rte__bar" role="toolbar" tabindex="-1" aria-label="Formatting" onmousedown={keepSelection}>
     {#if !source}
       <button type="button" class="bs-rte__btn" onclick={() => exec('formatBlock', 'P')} {disabled} data-balloon="Paragraph" data-balloon-pos="down">¶</button>
       <button type="button" class="bs-rte__btn" onclick={() => exec('formatBlock', 'H1')} {disabled} data-balloon="Heading 1" data-balloon-pos="down">H1</button>
