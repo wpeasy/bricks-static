@@ -16,6 +16,7 @@ use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\REST\ConnectionController;
 use WPEasy\BricksStatic\REST\DestinationsController;
 use WPEasy\BricksStatic\REST\MediaController;
+use WPEasy\BricksStatic\REST\SitemapController;
 use WPEasy\BricksStatic\REST\StatusController;
 use WPEasy\BricksStatic\REST\SyncController;
 
@@ -80,6 +81,7 @@ final class Plugin {
         ConnectionController::register();
         DestinationsController::register();
         MediaController::register();
+        SitemapController::register();
         StatusController::register();
         SyncController::register();
     }
