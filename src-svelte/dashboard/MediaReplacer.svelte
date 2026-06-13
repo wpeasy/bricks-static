@@ -86,8 +86,16 @@
   let filtered = $derived.by(() => {
     const term = search.trim().toLowerCase();
     const page = pageFilter.trim().toLowerCase();
+    // An exact page path (e.g. the home "/", picked from the list) matches that
+    // page only; a partial string matches any page containing it.
+    const exact = page !== '' && pages.some((p) => p.toLowerCase() === page);
     return media.filter((m) => {
-      if (page && !m.pages.some((p) => p.toLowerCase().includes(page))) return false;
+      if (page) {
+        const match = exact
+          ? m.pages.some((p) => p.toLowerCase() === page)
+          : m.pages.some((p) => p.toLowerCase().includes(page));
+        if (!match) return false;
+      }
       if (term && !basename(m.url).toLowerCase().includes(term) && !m.alt.toLowerCase().includes(term)) return false;
       return true;
     });
