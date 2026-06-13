@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Frontend;
 
+use WPEasy\BricksStatic\Render\PageRenderer;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -41,6 +43,14 @@ final class Fab {
      * Whether the FAB should load on the current request.
      */
     private static function should_load(): bool {
+        // Never inject the button into a static render. The loopback render request
+        // is unauthenticated (so the capability check below already excludes it),
+        // but gate on it explicitly too so the FAB can't leak into captured HTML
+        // even if a filter ever adds auth to the render request.
+        if (PageRenderer::is_render_request()) {
+            return false;
+        }
+
         if (is_admin() || !current_user_can('manage_options')) {
             return false;
         }
