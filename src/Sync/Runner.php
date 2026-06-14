@@ -15,6 +15,7 @@ use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Render\AssetExtractor;
 use WPEasy\BricksStatic\Render\CompatibilityScanner;
+use WPEasy\BricksStatic\Render\DataAttrReplacer;
 use WPEasy\BricksStatic\Render\FaviconGenerator;
 use WPEasy\BricksStatic\Render\LinkReplacer;
 use WPEasy\BricksStatic\Render\MediaReplacer;
@@ -804,6 +805,7 @@ final class Runner {
         $media = $dest !== null ? $dest->media_replacements() : [];
         $links = $dest !== null ? $dest->link_replacements() : [];
         $videos = $dest !== null ? $dest->video_replacements() : [];
+        $data = $dest !== null ? $dest->data_replacements() : [];
 
         $link_swaps = []; // fromHref => toHref
         foreach ($links as $l) {
@@ -831,7 +833,7 @@ final class Runner {
         // rewritten (YouTube origin= etc.) — VideoReplacer handles swaps + that fix.
         $do_video = !empty($video_swaps) || $dest_base !== '';
 
-        if (empty($text) && empty($media) && empty($link_swaps) && !$do_video && !$rewrite_abs) {
+        if (empty($text) && empty($media) && empty($link_swaps) && !$do_video && empty($data) && !$rewrite_abs) {
             return $base; // Nothing to transform — deploy the base render verbatim.
         }
 
@@ -922,6 +924,9 @@ final class Runner {
             }
             if ($do_video) {
                 $transformed = VideoReplacer::apply($transformed, $video_swaps, $dest_base);
+            }
+            if (!empty($data)) {
+                $transformed = DataAttrReplacer::apply($transformed, $data);
             }
 
             // Only write a per-destination copy when the page actually changed;
@@ -1331,7 +1336,7 @@ final class Runner {
         // The destination base URL is baked into the deployed sitemap/robots
         // origin, so a change there means the destination needs re-deploying.
         $replacements = $dest !== null
-            ? (string) wp_json_encode([$dest->replacements(), $dest->media_replacements(), $dest->link_replacements(), $dest->video_replacements(), PackageDeployer::base_url($dest)])
+            ? (string) wp_json_encode([$dest->replacements(), $dest->media_replacements(), $dest->link_replacements(), $dest->video_replacements(), $dest->data_replacements(), PackageDeployer::base_url($dest)])
             : '[]';
 
         return md5(md5(implode('|', $parts)) . '|' . md5($replacements));

@@ -4,6 +4,7 @@
   import MediaReplacer from './MediaReplacer.svelte';
   import LinkReplacer from './LinkReplacer.svelte';
   import VideoReplacer from './VideoReplacer.svelte';
+  import DataAttrReplacer from './DataAttrReplacer.svelte';
 
   let {
     destination,
@@ -15,7 +16,7 @@
     onSaved: () => void;
   } = $props();
 
-  type Section = 'text' | 'media' | 'links' | 'videos';
+  type Section = 'text' | 'media' | 'links' | 'videos' | 'data';
   let open = $state<Section>('text');
 
   function toggle(section: Section): void {
@@ -26,6 +27,7 @@
   let mediaCount = $derived(destination.mediaReplacements?.length ?? 0);
   let linkCount = $derived(destination.linkReplacements?.length ?? 0);
   let videoCount = $derived(destination.videoReplacements?.length ?? 0);
+  let dataCount = $derived(destination.dataReplacements?.length ?? 0);
 </script>
 
 <section class="bs-card bs-stack bs-stack--sm">
@@ -84,6 +86,20 @@
       {#if open === 'videos'}
         <div class="bs-acc__body">
           <VideoReplacer {destination} {onSaved} />
+        </div>
+      {/if}
+    </div>
+
+    <!-- Data attributes -->
+    <div class="bs-acc__item">
+      <button type="button" class="bs-acc__head" aria-expanded={open === 'data'} onclick={() => toggle('data')}>
+        <span class="bs-acc__chev" class:is-open={open === 'data'}>▸</span>
+        <span class="bs-acc__title">Data attributes</span>
+        {#if dataCount > 0}<span class="bs-acc__badge">{dataCount}</span>{/if}
+      </button>
+      {#if open === 'data'}
+        <div class="bs-acc__body">
+          <DataAttrReplacer {destination} {onSaved} />
         </div>
       {/if}
     </div>

@@ -15,6 +15,7 @@ use WPEasy\BricksStatic\Frontend\Fab;
 use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\REST\ConnectionController;
+use WPEasy\BricksStatic\REST\DataAttrController;
 use WPEasy\BricksStatic\REST\DestinationsController;
 use WPEasy\BricksStatic\REST\LinksController;
 use WPEasy\BricksStatic\REST\MediaController;
@@ -85,6 +86,7 @@ final class Plugin {
      */
     public static function register_rest_routes(): void {
         ConnectionController::register();
+        DataAttrController::register();
         DestinationsController::register();
         LinksController::register();
         MediaController::register();
