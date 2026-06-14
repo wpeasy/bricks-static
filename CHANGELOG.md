@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.3-beta] - 2026-06-14
+
+### Added
+- **Videos panel (type-aware).** A dedicated Videos section detects each video and offers the right control: local `<video>`/`<source>` files swap via the **WP media library** (the file is uploaded), while **YouTube/Vimeo/embeds** take a **URL or video ID** (matching Bricks — or paste embed code). YouTube gets a thumbnail; local video uses its poster. An embed's `origin=` (including the percent-encoded source domain) is **rewritten to each destination automatically** when a Destination URL is set. Video moved out of the Media panel (Media = images only).
+- **Links panel.** Replace `<a>`/`<button>` `href` targets per destination — tag-scoped (body text is never touched).
+- **Data attributes panel.** Replace the **value** of a `data-*` attribute per destination (the name is never changed), scoped to element tags only; framework-internal names and random ids are filtered from the list.
+- Replacements are now a **single-open accordion** (Text · Media · Links · Videos · Data attributes), each with a count badge. Text replacements gained a modal editor and a richer WYSIWYG (headings, lists, HTML source view).
+- **Documentation** admin submenu (features, how it works, common issues, troubleshooting, CLI).
+
+### Changed
+- "Only linked pages" is honoured strictly again — the crawl is no longer seeded from an all-published sitemap. The emitted `sitemap.xml` is now built from the pages actually exported, so it matches the discovery mode.
+- Removed the per-destination "Include in single-page sync" setting — single-page sync now targets every enabled destination.
+- The deploy only writes a per-destination page copy when the page actually changed.
+
+### Fixed
+- CSS background `url(&quot;…&quot;)` (entity-encoded quotes) and any `&amp;`-laden attribute/embed URL are parsed correctly — assets are collected/uploaded instead of producing broken 404 URLs.
+- `wp_tempnam()` is no longer called on CLI/REST/front-end sync paths (it lives in wp-admin only and fatally errored there).
+
+### Security
+- See `SECURITY_PATTERNS.md`: SSRF guard (`Support\UrlSafety`) on the destination-URL fetch, SFTP host-key verification (trust-on-first-use), and TLS relaxation scoped to true dev hosts.
+
 ## [0.0.2-beta] - 2026-06-13
 
 ### Added
