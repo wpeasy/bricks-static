@@ -13,15 +13,12 @@ namespace WPEasy\BricksStatic;
 use WPEasy\BricksStatic\Admin\Menu;
 use WPEasy\BricksStatic\Frontend\Fab;
 use WPEasy\BricksStatic\Render\PageRenderer;
+use WPEasy\BricksStatic\Render\TextDeployReplacer;
 use WPEasy\BricksStatic\Settings\Destinations;
+use WPEasy\BricksStatic\Sync\Pipeline;
 use WPEasy\BricksStatic\REST\ConnectionController;
-use WPEasy\BricksStatic\REST\DataAttrController;
 use WPEasy\BricksStatic\REST\DestinationsController;
-use WPEasy\BricksStatic\REST\LinksController;
-use WPEasy\BricksStatic\REST\MediaController;
-use WPEasy\BricksStatic\REST\SitemapController;
 use WPEasy\BricksStatic\REST\StatusController;
-use WPEasy\BricksStatic\REST\VideosController;
 use WPEasy\BricksStatic\REST\SyncController;
 
 defined('ABSPATH') || exit;
@@ -37,6 +34,9 @@ final class Plugin {
     public static function init(): void {
         // Migrate the legacy single destination into the destinations list once.
         Destinations::ensure_migrated();
+
+        // Register the Free deploy replacer(s). Pro adds the rest on `bs_loaded`.
+        self::register_pipeline();
 
         if (is_admin()) {
             Menu::init();
@@ -56,6 +56,21 @@ final class Plugin {
         if (defined('WP_CLI') && \WP_CLI) {
             \WP_CLI::add_command('bricks-static', new \WPEasy\BricksStatic\CLI\SyncCommand());
         }
+
+        /**
+         * Fires once the Free plugin has wired up its subsystems and seams. The
+         * Pro addon boots from here, guaranteeing Free's hooks/registries exist.
+         */
+        do_action('bs_loaded');
+    }
+
+    /**
+     * Register the deploy-pipeline replacers shipped in Free. Currently just the
+     * Text replacer; the Pro addon registers media/link/video/data + sitemaps
+     * onto the same {@see Pipeline} when its license is active.
+     */
+    private static function register_pipeline(): void {
+        Pipeline::register_replacer(new TextDeployReplacer());
     }
 
     /**
@@ -86,13 +101,15 @@ final class Plugin {
      */
     public static function register_rest_routes(): void {
         ConnectionController::register();
-        DataAttrController::register();
         DestinationsController::register();
-        LinksController::register();
-        MediaController::register();
-        SitemapController::register();
         StatusController::register();
         SyncController::register();
-        VideosController::register();
+
+        /**
+         * Lets add-ons register additional REST controllers under the bs/v1
+         * namespace. The Pro addon registers the media, links, videos,
+         * data-attributes and sitemap controllers from here.
+         */
+        do_action('bs_register_rest_routes');
     }
 }

@@ -2,10 +2,13 @@
 node_modules/
 # vendor/ is committed on purpose — phpseclib must ship in the plugin zip.
 
-# Build artifacts
+# Build artifacts (compiled Svelte bundles — built at release time, not committed)
 assets/dist/
-build/
+pro/assets/dist/
 *.log
+
+# Two-plugin zip output (scripts/make-zips.mjs)
+dist/
 
 # Editor / OS
 .DS_Store

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { DestinationDisplay } from '../shared/types';
+  import { canAddDestination } from '../shared/capabilities.svelte';
 
   let {
     destinations,
@@ -16,6 +17,8 @@
   } = $props();
 
   let showAll = $derived(destinations.length > 1);
+  // Multiple destinations are a Pro capability; the cap is 1 in Free.
+  let canAdd = $derived(canAddDestination(destinations.length));
 
   let editingId = $state('');
   let editValue = $state('');
@@ -67,7 +70,15 @@
       </button>
     {/if}
   {/each}
-  <button type="button" class="bs-tab bs-tab--add" onclick={onAdd} aria-label="Add destination">+</button>
+  <button
+    type="button"
+    class="bs-tab bs-tab--add"
+    onclick={() => canAdd && onAdd()}
+    disabled={!canAdd}
+    data-balloon={canAdd ? null : 'Multiple destinations — Requires Pro'}
+    data-balloon-pos="down"
+    aria-label="Add destination"
+  >+</button>
 </div>
 
 <style>

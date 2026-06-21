@@ -13,6 +13,20 @@
 - **JS Global:** `BS` (window.BS)
 - **CSS Prefix:** `.bs-`
 
+## Free/Pro Split — Two Plugins, One Codebase
+
+This repo ships **two** plugins from one codebase:
+- **Free** (`bricks-static.php`, `WPEasy\BricksStatic`, `BS_*`) — wp.org. Changelog: `CHANGELOG.md`.
+- **Pro** (`pro/bricks-static-pro.php`, `WPEasy\BricksStaticPro`, `BSP_*`, own PSR-4 autoloader over `pro/src/`) — an **add-on** that `Requires Plugins: bricks-static`. Changelog: `pro/CHANGELOG.md`.
+
+Rules:
+- **wp.org compliance:** the Free zip must contain **zero functional Pro code**. Pro PHP lives only under `pro/`; the build allowlist (`scripts/make-zips.mjs`, `npm run zip`) stages Free from an explicit allowlist and **fails if any staged Free PHP references `BricksStaticPro`**. Pro Svelte panels live in `pro/src-svelte/pro/` and are never imported by the Free bundle (only inert teasers ship in Free).
+- **One toggle point:** `Support\Edition` resolves the edition/capabilities; everything (PHP + JS) reads from it. Pro flips it via the `bs_license_edition` filter (its `Licensing\LicenseEnforcer`). Never gate a feature by anything other than `Edition`/capabilities.
+- **Seam, not fork:** Pro plugs into Free via hooks — `bs_loaded`, `bs_register_rest_routes`, the `Sync\Pipeline` replacer/extra-file registry, and the `window.BS` JS panel registry. Add new shared features as a Free seam Pro registers into; never have Free reference a Pro class.
+- **Edition gating is three-layer** (UI/runtime/storage), e.g. the destination cap: `Destinations::can_add()`/`visible_objects()` (storage), `DestinationsController` 403 (REST), disabled "+ Add" (UI). Downgrades **hide, never delete** (`visible_objects()`); use it (not `objects()`) anywhere destinations are shown or synced.
+- **Versioning/changelogs:** Free and Pro version independently; `BSP_MIN_FREE` is the compatibility floor (bump only when Pro needs a new Free seam). `src-svelte/shared/` + `src-svelte/lib/` compile into **both** bundles, so a change there bumps both. See `.claude/commands/commit-version.md` (project-local, split-aware).
+- **Dev setup:** a directory **junction** `wp-content/plugins/bricks-static-pro` → `bricks-static/pro` makes WP see both plugins from the one repo (the junction lives outside the repo; git ignores it).
+
 ## Required Reading
 
 **IMPORTANT:** You MUST read the following documentation files BEFORE writing any code for this project:

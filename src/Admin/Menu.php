@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Admin;
 
+use WPEasy\BricksStatic\Support\Edition;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -144,10 +146,28 @@ final class Menu {
         wp_enqueue_script($handle, BS_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BS_VERSION, true);
 
         wp_localize_script($handle, 'bsData', [
-            'restUrl' => esc_url_raw(rest_url('bs/v1')),
-            'nonce'   => wp_create_nonce('wp_rest'),
-            'version' => BS_VERSION,
+            'restUrl'      => esc_url_raw(rest_url('bs/v1')),
+            'nonce'        => wp_create_nonce('wp_rest'),
+            'version'      => BS_VERSION,
+            // Boot snapshot of the edition/capability map. The live source of
+            // truth is /status (re-read on poll), so a license change reflects
+            // without a hard reload.
+            'capabilities' => Edition::capabilities(),
         ]);
+    }
+
+    /**
+     * The dashboard page hook suffix (for add-ons that enqueue onto our page).
+     */
+    public static function dashboard_hook(): string {
+        return self::$page_hook;
+    }
+
+    /**
+     * The dashboard menu slug (parent slug for add-on submenus).
+     */
+    public static function dashboard_slug(): string {
+        return self::MENU_SLUG;
     }
 
     /**

@@ -15,16 +15,11 @@ use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Render\AssetExtractor;
 use WPEasy\BricksStatic\Render\CompatibilityScanner;
-use WPEasy\BricksStatic\Render\DataAttrReplacer;
 use WPEasy\BricksStatic\Render\FaviconGenerator;
-use WPEasy\BricksStatic\Render\LinkReplacer;
-use WPEasy\BricksStatic\Render\MediaReplacer;
 use WPEasy\BricksStatic\Render\PageRenderer;
-use WPEasy\BricksStatic\Render\VideoReplacer;
 use WPEasy\BricksStatic\Render\StableHash;
-use WPEasy\BricksStatic\Render\TextReplacer;
 use WPEasy\BricksStatic\Render\UrlRewriter;
-use WPEasy\BricksStatic\Sitemap\SitemapGenerator;
+use WPEasy\BricksStatic\Support\Edition;
 use WPEasy\BricksStatic\Support\Paths;
 use WPEasy\BricksStatic\Support\Url;
 use WPEasy\BricksStatic\Transport\TransportFactory;
@@ -88,7 +83,8 @@ final class Runner {
         self::release_driver();
 
         $job = Job::create($type);
-        $job->data['prune'] = !$single && !empty($options['prune']); // never prune on single-page
+        // Pruning is a Pro capability; never prune on a single-page sync.
+        $job->data['prune'] = !$single && !empty($options['prune']) && Edition::capabilities()['prune'];
 
         if ($single) {
             $job->data['singlePage'] = true;
@@ -610,26 +606,30 @@ final class Runner {
     }
 
     /**
-     * Add generated/auxiliary root files to the upload plan: sitemap.xml,
-     * robots.txt, and the favicon. The sitemap lists ONLY the pages actually
-     * exported in this run (derived from the plan), so it matches the discovery
-     * mode and never points at pages that weren't deployed. URLs are written
-     * absolute-to-SOURCE here; build_deploy_manifest() rewrites them to each
-     * destination's origin (root-relative would be invalid for a sitemap).
+     * Add generated/auxiliary root files to the upload plan.
+     *
+     * The favicon is always emitted (a Free feature). Other root files —
+     * sitemap.xml + robots.txt — come from emitters registered on the
+     * {@see Pipeline} (the Pro addon registers the sitemap generator). Each
+     * emitter receives the list of exported page URLs (absolute-to-SOURCE) and
+     * returns relativePath => contents; build_deploy_manifest() rewrites any
+     * origin-absolute file to each destination's origin.
      *
      * @param Job $job Active job.
      */
     private static function emit_extra_files(Job $job): void {
-        /** Filters whether sitemap.xml + robots.txt are generated. */
-        if (apply_filters('bs_generate_sitemaps', true)) {
+        $emitters = Pipeline::extra_file_emitters();
+        if (!empty($emitters)) {
             $page_urls = [];
             foreach (array_keys($job->data['plan']) as $rel) {
                 if (substr(strtolower($rel), -5) === '.html') {
                     $page_urls[] = self::url_for_relative($rel);
                 }
             }
-            foreach (SitemapGenerator::from_urls($page_urls) as $relative => $contents) {
-                self::cache_file($job, $relative, $contents);
+            foreach ($emitters as $emit) {
+                foreach ((array) $emit($page_urls) as $relative => $contents) {
+                    self::cache_file($job, (string) $relative, (string) $contents);
+                }
             }
         }
 
@@ -789,38 +789,44 @@ final class Runner {
     }
 
     /**
-     * Build the deploy manifest for a destination: the base render with that
-     * destination's text replacements applied to HTML text and its media swaps
-     * applied to media URLs (written to a per-destination deploy dir). The
-     * replacement media files are added to the manifest so they get uploaded.
-     * Files without changes reference the base.
+     * Build the deploy manifest for a destination: the base render with every
+     * registered {@see DeployReplacer} applied to each HTML page (written to a
+     * per-destination deploy dir), plus any extra files those replacers need
+     * uploaded (e.g. swapped-in media variants). Pages without changes — and the
+     * whole manifest when no replacer is active — reference the base render.
      *
      * @param array<string,array{size:int,hash:string,src:string}> $base    Base render manifest.
      * @param string                                                $dest_id Target destination id.
      * @return array<string,array{size:int,hash:string,src:string}>
      */
     private static function build_deploy_manifest(array $base, string $dest_id): array {
-        $dest  = $dest_id !== '' ? Destinations::get($dest_id) : Destinations::primary();
-        $text  = $dest !== null ? $dest->replacements() : [];
-        $media = $dest !== null ? $dest->media_replacements() : [];
-        $links = $dest !== null ? $dest->link_replacements() : [];
-        $videos = $dest !== null ? $dest->video_replacements() : [];
-        $data = $dest !== null ? $dest->data_replacements() : [];
-
-        $link_swaps = []; // fromHref => toHref
-        foreach ($links as $l) {
-            $link_swaps[$l['from']] = $l['to'];
+        $dest = $dest_id !== '' ? Destinations::get($dest_id) : Destinations::primary();
+        if ($dest === null) {
+            return $base; // Unknown destination — deploy the base render verbatim.
         }
-        // Video swaps resolve to the final src to write: a local-video swap (toId)
-        // becomes the new attachment's root-relative URL and its file is queued for
-        // upload; an external embed URL is used verbatim. Built below alongside
-        // media $extra (which collects replacement files).
+
+        $dest_base = PackageDeployer::base_url($dest);
+
+        // Prepare each registered replacer once for this destination. An inactive
+        // replacer (null ctx) is skipped; active ones contribute a transform
+        // context and any extra files to add to the upload manifest.
+        $active = []; // list of ['replacer' => DeployReplacer, 'ctx' => mixed]
+        $extra  = []; // manifest key => local source file
+        foreach (Pipeline::replacers() as $replacer) {
+            $prepared = $replacer->prepare($dest, $dest_base);
+            if (($prepared['ctx'] ?? null) === null) {
+                continue;
+            }
+            $active[] = ['replacer' => $replacer, 'ctx' => $prepared['ctx']];
+            foreach ((array) ($prepared['files'] ?? []) as $key => $src) {
+                $extra[(string) $key] = (string) $src;
+            }
+        }
 
         // Sitemaps/robots carry absolute SOURCE URLs in the base render; rewrite
-        // them to THIS destination's origin. Needed even with no text/media
-        // replacements, so it can't share their early-out.
-        $dest_base   = PackageDeployer::base_url($dest);
-        $has_abs     = false;
+        // them to THIS destination's origin. Needed even with no active
+        // replacers, so it can't share their early-out.
+        $has_abs = false;
         foreach ($base as $relative => $meta) {
             if (self::is_origin_absolute_file($relative)) {
                 $has_abs = true;
@@ -829,68 +835,11 @@ final class Runner {
         }
         $rewrite_abs = $dest_base !== '' && $has_abs;
 
-        // When a destination URL is known, every page may need its embed origins
-        // rewritten (YouTube origin= etc.) — VideoReplacer handles swaps + that fix.
-        $do_video = !empty($video_swaps) || $dest_base !== '';
-
-        if (empty($text) && empty($media) && empty($link_swaps) && !$do_video && empty($data) && !$rewrite_abs) {
+        if (empty($active) && !$rewrite_abs) {
             return $base; // Nothing to transform — deploy the base render verbatim.
         }
 
-        $searches = array_column($text, 'search');
-        $replaces = array_column($text, 'replace');
-
-        // Media swaps: original URL (as it appears in the rewritten HTML) →
-        // {to, srcset} (relativised the same way), plus every replacement file
-        // (full + responsive variants) to add as uploadable assets.
-        $swaps = []; // fromUrl => ['to' => …, 'srcset' => …]
-        $extra = []; // manifest key => local source file
-        foreach ($media as $m) {
-            $from = $m['from'];
-            $toId = (int) ($m['toId'] ?? 0);
-
-            if ($toId > 0 && wp_attachment_is_image($toId)) {
-                $swaps[$from] = [
-                    'to'     => UrlRewriter::rewrite((string) wp_get_attachment_url($toId)),
-                    'srcset' => self::attachment_srcset($toId),
-                ];
-                foreach (self::attachment_files($toId) as $vurl => $vpath) {
-                    $key = Url::to_relative_path($vurl);
-                    if ($key !== null && is_file($vpath)) {
-                        $extra[$key] = $vpath;
-                    }
-                }
-            } else {
-                // No attachment id (or not an image) — swap the URL verbatim.
-                $swaps[$from] = ['to' => UrlRewriter::rewrite($m['to']), 'srcset' => ''];
-                $src = Paths::source_file($m['to']);
-                $key = Url::to_relative_path($m['to']);
-                if ($src !== null && is_file($src) && $key !== null) {
-                    $extra[$key] = $src;
-                }
-            }
-        }
-
-        // Video swaps: a local-video replacement (toId) → the new attachment's
-        // root-relative URL, with its file queued for upload; an external embed
-        // URL is written verbatim.
-        $video_swaps = []; // fromSrc => final src
-        foreach ($videos as $v) {
-            $toId = (int) ($v['toId'] ?? 0);
-            if ($toId > 0) {
-                $url                  = (string) wp_get_attachment_url($toId);
-                $video_swaps[$v['from']] = $url !== '' ? UrlRewriter::rewrite($url) : $v['to'];
-                $file = (string) get_attached_file($toId);
-                $key  = $url !== '' ? Url::to_relative_path($url) : null;
-                if ($file !== '' && is_file($file) && $key !== null) {
-                    $extra[$key] = $file;
-                }
-            } else {
-                $video_swaps[$v['from']] = $v['to'];
-            }
-        }
-
-        $deploy_dir = Paths::cache_dir() . '/deploy/' . ($dest !== null ? $dest->id() : 'default');
+        $deploy_dir = Paths::cache_dir() . '/deploy/' . $dest->id();
         self::reset_dir($deploy_dir);
 
         $out = [];
@@ -913,20 +862,8 @@ final class Runner {
 
             $original    = (string) file_get_contents($meta['src']);
             $transformed = $original;
-            if (!empty($searches)) {
-                $transformed = TextReplacer::apply($transformed, $searches, $replaces);
-            }
-            if (!empty($swaps)) {
-                $transformed = MediaReplacer::apply($transformed, $swaps);
-            }
-            if (!empty($link_swaps)) {
-                $transformed = LinkReplacer::apply($transformed, $link_swaps);
-            }
-            if ($do_video) {
-                $transformed = VideoReplacer::apply($transformed, $video_swaps, $dest_base);
-            }
-            if (!empty($data)) {
-                $transformed = DataAttrReplacer::apply($transformed, $data);
+            foreach ($active as $a) {
+                $transformed = $a['replacer']->apply($transformed, $a['ctx']);
             }
 
             // Only write a per-destination copy when the page actually changed;
@@ -936,55 +873,14 @@ final class Runner {
                 : (self::write_deploy_file($deploy_dir, $relative, $transformed) ?? $meta);
         }
 
-        // Add the replacement media files (if not already in the render).
+        // Add the replacement files (if not already in the render).
         foreach ($extra as $key => $src) {
-            if (!isset($out[$key])) {
+            if (!isset($out[$key]) && is_file($src)) {
                 $out[$key] = ['size' => (int) filesize($src), 'hash' => StableHash::of_file($src), 'src' => wp_normalize_path($src)];
             }
         }
 
         return $out;
-    }
-
-    /**
-     * Root-relative srcset for a replacement image attachment ('' if none).
-     *
-     * @param int $id Attachment id.
-     */
-    private static function attachment_srcset(int $id): string {
-        $srcset = wp_get_attachment_image_srcset($id, 'full');
-
-        return is_string($srcset) ? UrlRewriter::rewrite($srcset) : '';
-    }
-
-    /**
-     * All files for an image attachment (full size + every generated variant),
-     * keyed by absolute URL => local file path, so each can be uploaded.
-     *
-     * @param int $id Attachment id.
-     * @return array<string,string>
-     */
-    private static function attachment_files(int $id): array {
-        $files     = [];
-        $full_path = (string) get_attached_file($id);
-        $full_url  = (string) wp_get_attachment_url($id);
-        if ($full_path === '' || $full_url === '') {
-            return $files;
-        }
-        $files[$full_url] = $full_path;
-
-        $meta = wp_get_attachment_metadata($id);
-        if (is_array($meta) && !empty($meta['sizes'])) {
-            $dir_path = dirname($full_path);
-            $base_url = dirname($full_url);
-            foreach ((array) $meta['sizes'] as $size) {
-                if (!empty($size['file'])) {
-                    $files[$base_url . '/' . $size['file']] = $dir_path . '/' . $size['file'];
-                }
-            }
-        }
-
-        return $files;
     }
 
     /**
@@ -1314,10 +1210,11 @@ final class Runner {
 
     /**
      * A fingerprint of what a destination's deploy depends on: the current
-     * render plus that destination's text + media replacements. Stored when a
-     * sync completes and compared for the "in sync" indicator — so a destination
-     * with replacements (whose deployed bytes differ from the base render) isn't
-     * wrongly flagged out of date, while a real source or replacement change is.
+     * render plus each registered replacer's settings for that destination.
+     * Stored when a sync completes and compared for the "in sync" indicator — so
+     * a destination with replacements (whose deployed bytes differ from the base
+     * render) isn't wrongly flagged out of date, while a real source or
+     * replacement change is.
      *
      * @param \WPEasy\BricksStatic\Settings\Destination|null $dest Destination.
      */
@@ -1333,11 +1230,18 @@ final class Runner {
         }
         sort($parts);
 
-        // The destination base URL is baked into the deployed sitemap/robots
+        // Fold each registered replacer's signature contribution, keyed by its
+        // stable key so the result is independent of registration order, plus
+        // the destination base URL — baked into the deployed sitemap/robots
         // origin, so a change there means the destination needs re-deploying.
-        $replacements = $dest !== null
-            ? (string) wp_json_encode([$dest->replacements(), $dest->media_replacements(), $dest->link_replacements(), $dest->video_replacements(), $dest->data_replacements(), PackageDeployer::base_url($dest)])
-            : '[]';
+        $sig = [];
+        foreach (Pipeline::replacers() as $replacer) {
+            $sig[$replacer->key()] = $dest !== null ? $replacer->signature($dest) : null;
+        }
+        ksort($sig);
+        $sig['__base'] = $dest !== null ? PackageDeployer::base_url($dest) : '';
+
+        $replacements = (string) wp_json_encode($sig);
 
         return md5(md5(implode('|', $parts)) . '|' . md5($replacements));
     }

@@ -14,6 +14,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WPEasy\BricksStatic\Deploy\PackageDeployer;
 use WPEasy\BricksStatic\Settings\Destinations;
+use WPEasy\BricksStatic\Support\Edition;
 use WPEasy\BricksStatic\Sync\Runner;
 use WPEasy\BricksStatic\Sync\Manifest;
 use WPEasy\BricksStatic\Transport\TransportFactory;
@@ -151,6 +152,15 @@ final class DestinationsController {
      * @param WP_REST_Request $request Request.
      */
     public static function add(WP_REST_Request $request): WP_REST_Response {
+        // Runtime enforcement of the edition cap (the storage layer enforces it
+        // too). Multiple destinations are a Pro capability.
+        if (!Destinations::can_add()) {
+            return new WP_REST_Response([
+                'error'   => 'Multiple destinations require Bricks Static Pro.',
+                'edition' => Edition::capabilities(),
+            ], 403);
+        }
+
         Destinations::add((array) $request->get_json_params());
 
         return self::list_response();
@@ -239,7 +249,9 @@ final class DestinationsController {
      * The destinations list payload, each with its per-destination status.
      */
     private static function list_response(): WP_REST_Response {
-        $list = Destinations::for_display();
+        // Only destinations visible under the edition cap are returned; any
+        // beyond it are preserved in storage but hidden (a downgraded Pro user).
+        $list = array_slice(Destinations::for_display(), 0, Destinations::max());
 
         foreach ($list as &$dest) {
             $id     = (string) $dest['id'];
@@ -269,6 +281,8 @@ final class DestinationsController {
         return new WP_REST_Response([
             'destinations' => $list,
             'capabilities' => TransportFactory::capabilities(),
+            'edition'      => Edition::capabilities(),
+            'hiddenCount'  => Destinations::hidden_count(),
         ]);
     }
 }

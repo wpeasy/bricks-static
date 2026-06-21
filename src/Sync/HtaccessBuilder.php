@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Sync;
 
+use WPEasy\BricksStatic\Support\Edition;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -120,14 +122,17 @@ final class HtaccessBuilder {
     }
 
     /**
-     * The rule body (without markers).
+     * The rule body (without markers). The pre-compressed gzip rules are emitted
+     * only when gzip is enabled (Pro); Free ships cache rules for plain files.
      */
     private static function rules(): string {
-        $assets      = self::ASSET_EXT;
-        $precompressed = self::precompressed_headers();
+        $assets = self::ASSET_EXT;
 
-        return <<<HTACCESS
-DirectoryIndex index.html
+        // mod_rewrite gzip-serving block — Pro only.
+        $rewrite = '';
+        if (Edition::gzip_enabled()) {
+            $rewrite = <<<HTACCESS
+
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
@@ -142,13 +147,19 @@ DirectoryIndex index.html
     RewriteCond %{REQUEST_FILENAME}index.html.gz -f
     RewriteRule ^(.*)/?\$ \$1/index.html.gz [L]
 </IfModule>
+HTACCESS;
+        }
+
+        // Pre-compressed Content-Encoding/Type headers — Pro only. Without them a
+        // .gz sibling would be served as an undecodable binary blob.
+        $precompressed = Edition::gzip_enabled() ? "\n" . self::precompressed_headers() . "\n" : '';
+
+        return <<<HTACCESS
+DirectoryIndex index.html
+$rewrite
 
 <IfModule mod_headers.c>
-    # Pre-compressed responses: set encoding + correct content type, vary on
-    # encoding. Covers every type we gzip — without these, a .gz sibling is
-    # served as an undecodable binary blob.
 $precompressed
-
     # Cache policy: assets immutable for a year, HTML always revalidated.
     <FilesMatch "\.($assets)\$">
         Header set Cache-Control "public, max-age=31536000, immutable"
@@ -166,15 +177,17 @@ HTACCESS;
     public static function nginx(): string {
         $assets = self::ASSET_EXT;
 
+        // Pre-compressed serving is a Pro capability; omit it in Free.
+        $gzip = Edition::gzip_enabled()
+            ? "\n# Serve pre-compressed .gz when available.\ngzip_static on;\n"
+            : '';
+
         return <<<NGINX
 # Bricks Static — nginx equivalent. Paste inside your server { } block, then reload nginx.
 # (nginx config cannot be applied over FTP/SFTP, so this is manual.)
 
 index index.html;
-
-# Serve pre-compressed .gz when available.
-gzip_static on;
-
+$gzip
 location / {
     try_files \$uri \$uri/ \$uri/index.html =404;
 }

@@ -1,12 +1,16 @@
 {
   "name": "bricks-static",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite build --watch",
-    "build": "vite build",
-    "check": "svelte-check --tsconfig ./tsconfig.json"
+    "dev": "vite build -c vite.free.config.ts --watch",
+    "dev:pro": "vite build -c vite.pro.config.ts --watch",
+    "build:free": "vite build -c vite.free.config.ts",
+    "build:pro": "vite build -c vite.pro.config.ts",
+    "build": "npm run build:free && npm run build:pro",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "zip": "node scripts/make-zips.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.0",

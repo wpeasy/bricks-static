@@ -14,6 +14,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Settings\Destinations;
+use WPEasy\BricksStatic\Support\Edition;
 use WPEasy\BricksStatic\Support\Environment;
 use WPEasy\BricksStatic\Sync\Manifest;
 use WPEasy\BricksStatic\Sync\MethodResolver;
@@ -86,6 +87,9 @@ final class StatusController {
             'wpCli'     => Environment::wp_cli(),
             'discoveryMode' => UrlCollector::mode(),
             'fabEnabled'    => (bool) get_option('bs_fab_enabled', true),
+            // Live edition/capability map — keeps the UI in step with a license
+            // change between page loads.
+            'capabilities'  => Edition::capabilities(),
         ]);
     }
 

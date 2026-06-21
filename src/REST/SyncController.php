@@ -191,7 +191,9 @@ final class SyncController {
         $rel = $url !== '' && Url::is_internal($url) ? Url::to_relative_path($url) : null;
 
         $targets = [];
-        foreach (Destinations::objects() as $dest) {
+        // Only destinations visible under the edition cap — a destination hidden
+        // by a downgrade is preserved in storage but never offered for sync.
+        foreach (Destinations::visible_objects() as $dest) {
             if (!(bool) $dest->get('enabled')) {
                 continue;
             }

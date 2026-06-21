@@ -10,11 +10,19 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Sync;
 
+use WPEasy\BricksStatic\Support\Edition;
+
 defined('ABSPATH') || exit;
 
 /**
  * Writes `.gz` siblings next to compressible files so the destination can serve
- * pre-compressed responses (see HtaccessBuilder in M3).
+ * pre-compressed responses (see HtaccessBuilder).
+ *
+ * Gzip pre-compression is a Pro capability. In the Free edition the two
+ * chokepoints below ({@see is_compressible()} and {@see extensions()}) report
+ * "nothing is compressible", which neutralises every consumer at once: the
+ * Runner skips writing/uploading `.gz` siblings, the PackageDeployer tells its
+ * server-side helper to gzip nothing, and HtaccessBuilder omits the gzip rules.
  */
 final class Compressor {
 
@@ -46,19 +54,25 @@ final class Compressor {
 
     /**
      * Extensions worth pre-compressing (for the server-side deploy helper).
+     * Empty when gzip is disabled (Free), so the helper gzips nothing.
      *
      * @return array<int,string>
      */
     public static function extensions(): array {
-        return self::TEXT_EXTENSIONS;
+        return Edition::gzip_enabled() ? self::TEXT_EXTENSIONS : [];
     }
 
     /**
-     * Whether a relative path looks like a compressible text file.
+     * Whether a relative path looks like a compressible text file. Always false
+     * when gzip is disabled (Free ships plain, uncompressed files).
      *
      * @param string $relative_path Relative file path.
      */
     public static function is_compressible(string $relative_path): bool {
+        if (!Edition::gzip_enabled()) {
+            return false;
+        }
+
         $ext = strtolower(pathinfo($relative_path, PATHINFO_EXTENSION));
 
         return in_array($ext, self::TEXT_EXTENSIONS, true);

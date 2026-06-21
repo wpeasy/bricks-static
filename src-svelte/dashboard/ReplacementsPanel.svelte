@@ -1,10 +1,12 @@
 <script lang="ts">
   import type { DestinationDisplay } from '../shared/types';
   import TextReplacements from './TextReplacements.svelte';
-  import MediaReplacer from './MediaReplacer.svelte';
-  import LinkReplacer from './LinkReplacer.svelte';
-  import VideoReplacer from './VideoReplacer.svelte';
-  import DataAttrReplacer from './DataAttrReplacer.svelte';
+  import ProPanelMount from './ProPanelMount.svelte';
+  import ProBadge from '../lib/ProBadge.svelte';
+  import UpgradeCta from '../lib/UpgradeCta.svelte';
+  import { REPLACEMENT_CATALOG, type ReplacementEntry } from '../shared/replacementCatalog';
+  import { caps } from '../shared/capabilities.svelte';
+  import { getPanel } from '../shared/panelRegistry.svelte';
 
   let {
     destination,
@@ -16,93 +18,65 @@
     onSaved: () => void;
   } = $props();
 
-  type Section = 'text' | 'media' | 'links' | 'videos' | 'data';
-  let open = $state<Section>('text');
+  // Single-open accordion; key matches the catalogue entry key.
+  let open = $state<string>('text');
 
-  function toggle(section: Section): void {
-    open = open === section ? ('' as Section) : section;
+  function toggle(key: string): void {
+    open = open === key ? '' : key;
   }
 
-  let textCount = $derived(destination.replacements?.length ?? 0);
-  let mediaCount = $derived(destination.mediaReplacements?.length ?? 0);
-  let linkCount = $derived(destination.linkReplacements?.length ?? 0);
-  let videoCount = $derived(destination.videoReplacements?.length ?? 0);
-  let dataCount = $derived(destination.dataReplacements?.length ?? 0);
+  // Saved-row count for the blue badge — from the registered Pro panel if it
+  // provides one, otherwise from the destination's stored rows (still present in
+  // the payload even when locked, so a downgraded user sees their saved counts).
+  function count(entry: ReplacementEntry): number {
+    const panel = getPanel(entry.key);
+    if (panel?.badge) {
+      return panel.badge(destination);
+    }
+    const rows = (destination as unknown as Record<string, unknown[]>)[entry.countProp];
+    return Array.isArray(rows) ? rows.length : 0;
+  }
+
+  // A Pro row is locked when advanced replacements aren't licensed.
+  function locked(entry: ReplacementEntry): boolean {
+    return entry.tier === 'pro' && !caps.advancedReplacements;
+  }
 </script>
 
 <section class="bs-card bs-stack bs-stack--sm">
   <h2 class="bs-rp__title">Replacements <small>(applied to this destination only · saved automatically)</small></h2>
 
   <div class="bs-acc">
-    <!-- Text -->
-    <div class="bs-acc__item">
-      <button type="button" class="bs-acc__head" aria-expanded={open === 'text'} onclick={() => toggle('text')}>
-        <span class="bs-acc__chev" class:is-open={open === 'text'}>▸</span>
-        <span class="bs-acc__title">Text</span>
-        {#if textCount > 0}<span class="bs-acc__badge">{textCount}</span>{/if}
-      </button>
-      {#if open === 'text'}
-        <div class="bs-acc__body">
-          <TextReplacements {destination} {running} {onSaved} />
-        </div>
-      {/if}
-    </div>
-
-    <!-- Media -->
-    <div class="bs-acc__item">
-      <button type="button" class="bs-acc__head" aria-expanded={open === 'media'} onclick={() => toggle('media')}>
-        <span class="bs-acc__chev" class:is-open={open === 'media'}>▸</span>
-        <span class="bs-acc__title">Media</span>
-        {#if mediaCount > 0}<span class="bs-acc__badge">{mediaCount}</span>{/if}
-      </button>
-      {#if open === 'media'}
-        <div class="bs-acc__body">
-          <MediaReplacer {destination} {onSaved} />
-        </div>
-      {/if}
-    </div>
-
-    <!-- Links -->
-    <div class="bs-acc__item">
-      <button type="button" class="bs-acc__head" aria-expanded={open === 'links'} onclick={() => toggle('links')}>
-        <span class="bs-acc__chev" class:is-open={open === 'links'}>▸</span>
-        <span class="bs-acc__title">Links</span>
-        {#if linkCount > 0}<span class="bs-acc__badge">{linkCount}</span>{/if}
-      </button>
-      {#if open === 'links'}
-        <div class="bs-acc__body">
-          <LinkReplacer {destination} {onSaved} />
-        </div>
-      {/if}
-    </div>
-
-    <!-- Videos -->
-    <div class="bs-acc__item">
-      <button type="button" class="bs-acc__head" aria-expanded={open === 'videos'} onclick={() => toggle('videos')}>
-        <span class="bs-acc__chev" class:is-open={open === 'videos'}>▸</span>
-        <span class="bs-acc__title">Videos</span>
-        {#if videoCount > 0}<span class="bs-acc__badge">{videoCount}</span>{/if}
-      </button>
-      {#if open === 'videos'}
-        <div class="bs-acc__body">
-          <VideoReplacer {destination} {onSaved} />
-        </div>
-      {/if}
-    </div>
-
-    <!-- Data attributes -->
-    <div class="bs-acc__item">
-      <button type="button" class="bs-acc__head" aria-expanded={open === 'data'} onclick={() => toggle('data')}>
-        <span class="bs-acc__chev" class:is-open={open === 'data'}>▸</span>
-        <span class="bs-acc__title">Data attributes</span>
-        {#if dataCount > 0}<span class="bs-acc__badge">{dataCount}</span>{/if}
-      </button>
-      {#if open === 'data'}
-        <div class="bs-acc__body">
-          <DataAttrReplacer {destination} {onSaved} />
-        </div>
-      {/if}
-    </div>
+    {#each REPLACEMENT_CATALOG as entry (entry.key)}
+      <div class="bs-acc__item">
+        <button
+          type="button"
+          class="bs-acc__head"
+          aria-expanded={open === entry.key}
+          onclick={() => toggle(entry.key)}
+        >
+          <span class="bs-acc__chev" class:is-open={open === entry.key}>▸</span>
+          <span class="bs-acc__title">{entry.title}</span>
+          {#if count(entry) > 0}<span class="bs-acc__badge">{count(entry)}</span>{/if}
+          {#if locked(entry)}<ProBadge />{/if}
+        </button>
+        {#if open === entry.key}
+          <div class="bs-acc__body">
+            {#if entry.key === 'text'}
+              <TextReplacements {destination} {running} {onSaved} />
+            {:else if caps.advancedReplacements}
+              {#if getPanel(entry.key)}
+                <ProPanelMount entryKey={entry.key} {destination} {onSaved} />
+              {:else}
+                <p class="bs-acc__loading">Loading…</p>
+              {/if}
+            {:else}
+              <UpgradeCta description={entry.description} />
+            {/if}
+          </div>
+        {/if}
+      </div>
+    {/each}
   </div>
 </section>
 
@@ -199,5 +173,11 @@
     padding: var(--bs-space--md);
     border-top: var(--bs-border--1) solid var(--bs-color-border);
     background: var(--bs-color-surface--raised);
+  }
+
+  .bs-acc__loading {
+    margin: 0;
+    color: var(--bs-color-text--muted);
+    font-size: var(--bs-text--sm);
   }
 </style>
