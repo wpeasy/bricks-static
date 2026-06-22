@@ -1,0 +1,26 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bricks Static — from CMS to fast static site">
+  <defs>
+    <linearGradient id="bs-bg" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded app tile -->
+  <rect width="256" height="256" rx="52" fill="url(#bs-bg)"/>
+
+  <!-- LEFT: the CMS / database you're leaving behind (slightly faded) -->
+  <g opacity="0.8">
+    <path d="M44 100 V156 A26 8 0 0 0 96 156 V100 A26 8 0 0 1 44 100 Z" fill="#ffffff"/>
+    <ellipse cx="70" cy="100" rx="26" ry="8" fill="#ffffff"/>
+    <path d="M44 120 A26 8 0 0 0 96 120" fill="none" stroke="#4f46e5" stroke-opacity="0.4" stroke-width="3"/>
+    <path d="M44 138 A26 8 0 0 0 96 138" fill="none" stroke="#4f46e5" stroke-opacity="0.4" stroke-width="3"/>
+  </g>
+
+  <!-- Migration arrow -->
+  <polygon points="106,123 134,123 134,116 148,128 134,140 134,133 106,133" fill="#ffffff"/>
+
+  <!-- RIGHT: the static page (fast = green bolt) -->
+  <rect x="162" y="96" width="56" height="66" rx="9" fill="#ffffff"/>
+  <polygon points="198,104 180,132 190,132 184,156 202,126 192,126" fill="#22c55e"/>
+</svg>

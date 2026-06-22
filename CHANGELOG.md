@@ -5,17 +5,16 @@ All notable changes to **Bricks Static** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-## [0.0.4-beta] - 2026-06-21
+## [1.0.0] - 2026-06-21
 
 ### Changed
 - **Bricks Static is now split into a free plugin and a paid add-on.** This free plugin keeps the core feature set; advanced features move to **Bricks Static Pro** (sold separately). Pro features still appear in the dashboard but as disabled **"Requires Pro"** rows with an upgrade prompt, so nothing silently disappears.
-- **Free now covers:** static generation, **one** destination, **Text** replacements, per-file and package (zip) deploy, plain (uncompressed) files, `.htaccess` + nginx config, favicon, the single-page sync FAB, and CLI sync.
-- **Moved to Pro:** multiple destinations, Media/Links/Videos/Data-attribute replacements, gzip pre-compression, remote pruning, and sitemap/robots generation.
+- **Free now covers:** static generation (**up to 10 pages per sync**), **one** destination, **Text** replacements, per-file and package (zip) deploy, plain (uncompressed) files, `.htaccess` + nginx config, favicon, the single-page sync FAB, and CLI sync.
+- **Moved to Pro:** unlimited pages, multiple destinations, Media/Links/Videos/Data-attribute replacements, gzip pre-compression, remote pruning, and sitemap/robots generation.
 - If you previously configured **multiple destinations**, the extras are **hidden, not deleted** — they return if Bricks Static Pro is activated.
 
 ### Added
+- The dashboard shows a **version badge** beside the title and, on the free version, a panel summarising the plan limits with an upgrade link. A sync that reaches the 10-page limit shows how to render the rest with Pro.
 - An internal **edition/capability** layer and a deploy-pipeline seam so the Pro add-on can register its replacers, REST routes and sitemap generation without modifying this plugin.
 
 ### Fixed

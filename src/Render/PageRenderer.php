@@ -36,7 +36,7 @@ final class PageRenderer {
      * static output, never to the live front end.
      */
     public static function is_render_request(): bool {
-        $ua = isset($_SERVER['HTTP_USER_AGENT']) ? (string) $_SERVER['HTTP_USER_AGENT'] : '';
+        $ua = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '';
         return strpos($ua, self::USER_AGENT_PREFIX) === 0;
     }
 

@@ -1,6 +1,6 @@
 {
   "name": "bricks-static",
-  "version": "0.0.4",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,11 +10,16 @@
     "build:pro": "vite build -c vite.pro.config.ts",
     "build": "npm run build:free && npm run build:pro",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "zip": "node scripts/make-zips.mjs"
+    "lint:php": "phpcs",
+    "lint:php:fix": "phpcbf",
+    "zip": "node scripts/make-zips.mjs",
+    "assets": "node scripts/render-assets.mjs"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "@tsconfig/svelte": "^5.0.0",
+    "sharp": "^0.35.2",
     "svelte": "^5.0.0",
     "svelte-check": "^4.0.0",
     "typescript": "^5.6.0",

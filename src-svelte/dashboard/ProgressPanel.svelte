@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { SyncSnapshot } from '../shared/types';
+  import { caps } from '../shared/capabilities.svelte';
+  import { PURCHASE_URL } from '../shared/upsell';
 
   let {
     snapshot,
@@ -158,6 +160,13 @@
       {#if (snapshot.errorCount ?? 0) > 0}<span class="bs-progress__err">{snapshot.errorCount} errors</span>{/if}
       {#if failedCount > 0}<span class="bs-progress__err">{failedCount} failed upload{failedCount === 1 ? '' : 's'}</span>{/if}
     </div>
+
+    {#if snapshot.pageLimitHit}
+      <div class="bs-progress__limit">
+        <span><strong>Free plan renders up to {caps.maxPages} pages.</strong> Additional pages weren't synced.</span>
+        <a class="bs-btn bs-btn--primary" href={PURCHASE_URL} target="_blank" rel="noopener noreferrer">Upgrade to Pro</a>
+      </div>
+    {/if}
 
     {#if failedCount > 0}
       <div class="bs-progress__retry">
@@ -356,6 +365,21 @@
   }
 
   .bs-progress__retry span {
+    flex: 1;
+  }
+
+  .bs-progress__limit {
+    display: flex;
+    align-items: center;
+    gap: var(--bs-space--md);
+    padding: var(--bs-space--sm) var(--bs-space--md);
+    border: var(--bs-border--1) solid var(--bs-color-accent, #7c3aed);
+    border-radius: var(--bs-radius--md);
+    background: color-mix(in srgb, var(--bs-color-accent, #7c3aed) 7%, var(--bs-color-surface--raised));
+    font-size: var(--bs-text--sm);
+  }
+
+  .bs-progress__limit span {
     flex: 1;
   }
 

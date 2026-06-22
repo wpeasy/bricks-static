@@ -1,12 +1,10 @@
 <script lang="ts">
   import { caps } from '../shared/capabilities.svelte';
+  import { PURCHASE_URL, ACCOUNT_URL } from '../shared/upsell';
 
   // Upsell shown in the body of a locked Pro feature. Switches to "renew" copy
   // when a previously-valid license has expired.
   let { description = '' }: { description?: string } = $props();
-
-  const PURCHASE_URL = 'https://brxprod.com/bricks-static/';
-  const ACCOUNT_URL = 'https://brxprod.com/account/';
 
   let expired = $derived(caps.licenseState === 'expired');
 </script>

@@ -49,6 +49,10 @@ final class Bootstrap {
             return;
         }
 
+        // Advertise the Pro version to Free (dashboard version badge) whenever the
+        // addon is active, regardless of license state.
+        add_filter('bs_pro_version', static fn(): string => BSP_VERSION);
+
         // Always boot licensing so the activation page works and the edition
         // filters Free reads are present.
         self::boot_licensing();

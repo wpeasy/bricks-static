@@ -56,6 +56,22 @@ final class Edition {
     }
 
     /**
+     * The maximum number of HTML pages a full sync may render in the current
+     * edition (Free is capped; Pro is effectively unlimited). Assets, sitemaps,
+     * robots.txt and the favicon do not count toward this.
+     */
+    public static function max_pages(): int {
+        $default = self::is_pro() ? self::UNLIMITED : 10;
+
+        /**
+         * Filters the per-run page cap.
+         *
+         * @param int $max Default cap for the active edition.
+         */
+        return max(1, (int) apply_filters('bs_max_pages', $default));
+    }
+
+    /**
      * Whether gzip pre-compression (.gz siblings + serving rules) is enabled.
      *
      * Defaults to the Pro edition; Pro adds an explicit `__return_true` filter
@@ -87,11 +103,16 @@ final class Edition {
         return [
             'edition'              => $pro ? 'pro' : 'free',
             'maxDestinations'      => self::max_destinations(),
+            'maxPages'             => self::max_pages(),
             'advancedReplacements' => $pro,
             'gzip'                 => self::gzip_enabled(),
             'sitemap'              => $pro,
             'prune'                => $pro,
             'licenseValid'         => $pro,
+            // free | unlicensed | valid | grace | expired — drives upgrade vs renew copy.
+            'licenseState'         => (string) License::status()['state'],
+            // The Pro addon's version when it is installed (any license state), else ''.
+            'proVersion'           => (string) apply_filters('bs_pro_version', ''),
         ];
     }
 }

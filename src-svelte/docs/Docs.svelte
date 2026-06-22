@@ -1,7 +1,10 @@
 <script lang="ts">
+  import { caps } from '../shared/capabilities.svelte';
+
   const version = (window as unknown as { bsData?: { version?: string } }).bsData?.version ?? '';
 
   const sections = [
+    { id: 'free-vs-pro', label: 'Free vs Pro' },
     { id: 'features', label: 'Features' },
     { id: 'how', label: 'How it works' },
     { id: 'issues', label: 'Common issues' },
@@ -60,6 +63,34 @@
     </nav>
 
     <div class="bs-docs__content bs-stack bs-stack--lg">
+      <!-- Free vs Pro -->
+      <section id="free-vs-pro" class="bs-docs__section bs-stack bs-stack--sm">
+        <h2>Free vs Pro</h2>
+        <p>
+          Bricks Static (this plugin) is free and fully functional for small sites.
+          <a href="https://brxprod.com/bricks-static" target="_blank" rel="noopener noreferrer">Bricks Static Pro</a>
+          is an optional add-on that removes the limits and adds advanced tooling.
+        </p>
+        <div class="bs-docs__tablewrap">
+          <table class="bs-docs__table">
+            <thead>
+              <tr><th>Feature</th><th>Free</th><th>Pro</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Pages per sync</td><td>{caps.maxPages}</td><td>Unlimited</td></tr>
+              <tr><td>Destinations</td><td>1</td><td>Unlimited + sync&#8209;all</td></tr>
+              <tr><td>Text replacements</td><td>Yes</td><td>Yes</td></tr>
+              <tr><td>Media / Links / Videos / Data&#8209;attribute replacements</td><td>—</td><td>Yes</td></tr>
+              <tr><td>Gzip pre&#8209;compression (.gz)</td><td>—</td><td>Yes</td></tr>
+              <tr><td>Remote pruning (delete stale files)</td><td>—</td><td>Yes</td></tr>
+              <tr><td>Sitemap.xml + robots.txt</td><td>—</td><td>Yes</td></tr>
+              <tr><td>Per&#8209;file &amp; package (zip) deploy</td><td>Yes</td><td>Yes</td></tr>
+              <tr><td>.htaccess + nginx, favicon, single&#8209;page sync, WP&#8209;CLI</td><td>Yes</td><td>Yes</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- Features -->
       <section id="features" class="bs-docs__section">
         <h2>Features</h2>
@@ -169,7 +200,7 @@ wp bricks-static sync --check    # dry run (render + catalogue, no upload)
 wp bricks-static sync --prune    # also remove remote files no longer present</pre>
         <ul class="bs-docs__list">
           <li><strong>Cache:</strong> the staging copy lives under <code>wp-content/cache/bricks-static</code> (or uploads if that isn’t writable).</li>
-          <li><strong>Server config:</strong> the managed <code>.htaccess</code> is uploaded automatically; the <em>Server Configuration</em> tab has the nginx equivalent to paste manually.</li>
+          <li><strong>Server config:</strong> the managed <code>.htaccess</code> is uploaded automatically; the <em>Destination Server Configuration</em> tab has the nginx equivalent to paste manually.</li>
           <li><strong>Filters:</strong> behaviour is adjustable via <code>bs_*</code> hooks (e.g. <code>bs_generate_sitemaps</code>, <code>bs_include_favicon</code>, <code>bs_seed_from_sitemap</code>, <code>bs_excluded_post_types</code>).</li>
         </ul>
       </section>
@@ -257,6 +288,37 @@ wp bricks-static sync --prune    # also remove remote files no longer present</p
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: var(--bs-space--md);
+  }
+
+  .bs-docs__tablewrap {
+    overflow-x: auto;
+  }
+
+  .bs-docs__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--bs-text--sm);
+  }
+
+  .bs-docs__table th,
+  .bs-docs__table td {
+    padding: var(--bs-space--xs) var(--bs-space--sm);
+    border: var(--bs-border--1) solid var(--bs-color-border);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .bs-docs__table thead th {
+    background: var(--bs-color-surface--sunken);
+    font-weight: var(--bs-weight--semibold);
+  }
+
+  .bs-docs__table td:nth-child(2),
+  .bs-docs__table th:nth-child(2),
+  .bs-docs__table td:nth-child(3),
+  .bs-docs__table th:nth-child(3) {
+    width: 22%;
+    white-space: nowrap;
   }
 
   .bs-docs__feature {

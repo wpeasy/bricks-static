@@ -9,14 +9,13 @@ Bricks Static Pro is an add-on that requires the free **Bricks Static** plugin.
 Its changelog is kept separate from Free's (`../CHANGELOG.md`); each release notes
 only Pro-facing changes. Compatibility with Free is declared by `BSP_MIN_FREE`.
 
-## [Unreleased]
-
-## [0.0.4-beta] - 2026-06-21
+## [1.0.0] - 2026-06-21
 
 First release as a standalone Pro add-on, split out of Bricks Static. Requires
-Bricks Static (free) **0.0.4-beta** or newer (`BSP_MIN_FREE`).
+Bricks Static (free) **1.0.0** or newer (`BSP_MIN_FREE`).
 
 ### Added
+- **Unlimited pages** per sync — the free plugin renders up to 10 pages; Pro removes the cap.
 - **Multiple destinations** — the free plugin is capped at one; Pro unlocks unlimited destinations and "sync all". Destinations beyond the free cap are preserved (never deleted) if the license lapses, and reappear when Pro is active again.
 - **Advanced replacements** — Media, Links, Videos and Data-attribute replacement panels, injected into the free dashboard's Replacements accordion. (Text replacements remain in Free.)
 - **Gzip pre-compression** — `.gz` siblings plus the matching `.htaccess`/nginx serving rules. Free ships plain, uncompressed files.

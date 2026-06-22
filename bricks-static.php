@@ -3,7 +3,7 @@
  * Plugin Name:       Bricks Static
  * Plugin URI:        https://alanblair.co/bricks-static
  * Description:       Generate and serve static HTML versions of Bricks-built pages for performance.
- * Version:           0.0.4-beta
+ * Version:           1.0.0
  * Requires at least: 6.5
  * Tested up to:      7.0
  * Requires PHP:      8.0
@@ -28,7 +28,7 @@ defined('ABSPATH') || exit;
 /**
  * Plugin constants.
  */
-define('BS_VERSION', '0.0.4-beta');
+define('BS_VERSION', '1.0.0');
 define('BS_PLUGIN_FILE', __FILE__);
 define('BS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('BS_PLUGIN_URL', plugin_dir_url(__FILE__));

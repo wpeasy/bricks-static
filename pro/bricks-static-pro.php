@@ -3,7 +3,7 @@
  * Plugin Name:       Bricks Static Pro
  * Plugin URI:        https://brxprod.com/bricks-static
  * Description:       Pro features for Bricks Static — multiple destinations, advanced replacements (media/links/videos/data), gzip pre-compression, pruning, and sitemaps.
- * Version:           0.0.4-beta
+ * Version:           1.0.0
  * Requires at least: 6.5
  * Tested up to:      7.0
  * Requires PHP:      8.0
@@ -29,7 +29,7 @@ defined('ABSPATH') || exit;
 /**
  * Plugin constants.
  */
-define('BSP_VERSION', '0.0.4-beta');
+define('BSP_VERSION', '1.0.0');
 define('BSP_PLUGIN_FILE', __FILE__);
 define('BSP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('BSP_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -39,7 +39,7 @@ define('BSP_PLUGIN_BASENAME', plugin_basename(__FILE__));
  * The minimum Free (Bricks Static) version that ships the extension seams this
  * addon plugs into. Bootstrap refuses to register features against an older Free.
  */
-define('BSP_MIN_FREE', '0.0.4-beta');
+define('BSP_MIN_FREE', '1.0.0');
 
 /**
  * Licensing configuration (FluentCart) — see FLUENT_LICENSING.md.
@@ -48,7 +48,7 @@ define('BSP_MIN_FREE', '0.0.4-beta');
  * is filled in AFTER the first release is added as a product in FluentCart;
  * until then the addon stays unlicensed (free behaviour) gracefully.
  */
-define('BSP_LICENSE_ITEM_ID', '[PENDING]'); // TODO: set from the FluentCart product once created.
+define('BSP_LICENSE_ITEM_ID', '1518'); // FluentCart product id.
 define('BSP_LICENSE_API_URL', 'https://brxprod.com/');
 define('BSP_LICENSE_SLUG', 'bricks-static-pro');
 define('BSP_LICENSE_SETTINGS_KEY', 'bricks_static_pro_license_settings');

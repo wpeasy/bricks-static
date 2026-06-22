@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../shared/api';
+  import { caps } from '../shared/capabilities.svelte';
+  import { PURCHASE_URL } from '../shared/upsell';
   import type { DestinationsResponse, DiscoveryMode, Status, SyncSnapshot } from '../shared/types';
   import NoticePanel from './NoticePanel.svelte';
   import DiscoveryToggle from './DiscoveryToggle.svelte';
@@ -13,6 +15,8 @@
   import AllDestinationsPanel from './AllDestinationsPanel.svelte';
   import ProgressPanel from './ProgressPanel.svelte';
   import ServerConfigPanel from './ServerConfigPanel.svelte';
+
+  const freeVersion = (window as unknown as { bsData?: { version?: string } }).bsData?.version ?? '';
 
   let dests = $state<DestinationsResponse | null>(null);
   let status = $state<Status | null>(null);
@@ -232,9 +236,48 @@
 
 <div class="bs-dash bs-stack bs-stack--lg">
   <header class="bs-stack bs-stack--xs">
-    <h1>Bricks Static</h1>
+    <h1>
+      Bricks Static
+      <span class="bs-verbadge" class:bs-verbadge--pro={caps.edition === 'pro'}>
+        v{freeVersion}{#if caps.proVersion} · Pro v{caps.proVersion}{/if}
+      </span>
+      <span class="bs-dash__by">Another plugin by <a href="https://brxprod.com" target="_blank" rel="noopener noreferrer">BRXProd</a></span>
+    </h1>
     <p class="bs-dash__lead">Generate and serve static HTML versions of your site for performance.</p>
   </header>
+
+  {#if caps.edition !== 'pro'}
+    <div class="bs-freebox">
+      <div class="bs-freebox__head">
+        <strong class="bs-freebox__title">You're on the free version of Bricks Static</strong>
+        <a class="bs-freebox__btn" href={PURCHASE_URL} target="_blank" rel="noopener noreferrer">Upgrade to Pro</a>
+      </div>
+      <div class="bs-freebox__cols">
+        <div class="bs-freebox__col">
+          <h3 class="bs-freebox__colhead">Free — this plugin</h3>
+          <ul class="bs-freebox__list">
+            <li>Static generation — up to {caps.maxPages} pages per sync</li>
+            <li>1 destination (SFTP / FTP / FTPS)</li>
+            <li>Text replacements</li>
+            <li>Per-file &amp; package (zip) deploy</li>
+            <li>.htaccess + nginx config, favicon</li>
+            <li>Single-page sync &amp; WP-CLI</li>
+          </ul>
+        </div>
+        <div class="bs-freebox__col bs-freebox__col--pro">
+          <h3 class="bs-freebox__colhead">Pro — add-on</h3>
+          <ul class="bs-freebox__list">
+            <li><strong>Unlimited</strong> pages</li>
+            <li><strong>Unlimited</strong> destinations + sync-all</li>
+            <li>Media, Links, Videos &amp; Data replacements</li>
+            <li>Gzip pre-compression (.gz)</li>
+            <li>Remote pruning</li>
+            <li>Sitemap.xml + robots.txt</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  {/if}
 
   {#if loadError}<div class="bs-dash__error">{loadError}</div>{/if}
 
@@ -264,7 +307,7 @@
       Destinations
     </button>
     <button type="button" class="bs-toptab" class:bs-toptab--active={topTab === 'server'} onclick={() => (topTab = 'server')}>
-      Server Configuration
+      Destination Server Configuration
     </button>
   </div>
 
@@ -334,6 +377,117 @@
   .bs-dash__lead {
     color: var(--bs-color-text--muted);
     font-size: var(--bs-text--lg);
+  }
+
+  .bs-verbadge {
+    display: inline-block;
+    margin-left: var(--bs-space--xs);
+    padding: 0 var(--bs-space--xs);
+    border-radius: var(--bs-radius--pill);
+    background: var(--bs-color-surface--sunken);
+    border: var(--bs-border--1) solid var(--bs-color-border);
+    color: var(--bs-color-text--muted);
+    font-size: var(--bs-text--xs);
+    font-weight: var(--bs-weight--semibold);
+    vertical-align: middle;
+  }
+
+  .bs-verbadge--pro {
+    background: color-mix(in srgb, var(--bs-color-accent, #7c3aed) 14%, transparent);
+    border-color: var(--bs-color-accent, #7c3aed);
+    color: var(--bs-color-text);
+  }
+
+  .bs-dash__by {
+    margin-left: var(--bs-space--sm);
+    font-size: var(--bs-text--sm);
+    font-weight: var(--bs-weight--normal);
+    color: var(--bs-color-text--muted);
+    vertical-align: middle;
+  }
+
+  .bs-dash__by a {
+    color: var(--bs-color-primary);
+    text-decoration: none;
+  }
+
+  .bs-dash__by a:hover {
+    text-decoration: underline;
+  }
+
+  .bs-freebox {
+    display: flex;
+    flex-direction: column;
+    gap: var(--bs-space--md);
+    padding: var(--bs-space--md) var(--bs-space--lg);
+    border: var(--bs-border--1) solid var(--bs-color-accent, #7c3aed);
+    border-radius: var(--bs-radius--lg);
+    background: color-mix(in srgb, var(--bs-color-accent, #7c3aed) 6%, var(--bs-color-surface--raised));
+  }
+
+  .bs-freebox__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--bs-space--md);
+    flex-wrap: wrap;
+  }
+
+  .bs-freebox__title {
+    font-size: var(--bs-text--md);
+  }
+
+  .bs-freebox__cols {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--bs-space--md);
+  }
+
+  @media (min-width: 640px) {
+    .bs-freebox__cols {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .bs-freebox__col {
+    padding: var(--bs-space--sm) var(--bs-space--md);
+    border: var(--bs-border--1) solid var(--bs-color-border);
+    border-radius: var(--bs-radius--md);
+    background: var(--bs-color-surface--raised);
+  }
+
+  .bs-freebox__col--pro {
+    border-color: var(--bs-color-accent, #7c3aed);
+    background: color-mix(in srgb, var(--bs-color-accent, #7c3aed) 8%, var(--bs-color-surface--raised));
+  }
+
+  .bs-freebox__colhead {
+    margin: 0 0 var(--bs-space--2xs);
+    font-size: var(--bs-text--sm);
+    font-weight: var(--bs-weight--semibold);
+  }
+
+  .bs-freebox__list {
+    margin: 0;
+    padding-left: var(--bs-space--lg);
+    color: var(--bs-color-text--muted);
+    font-size: var(--bs-text--sm);
+    line-height: 1.6;
+  }
+
+  .bs-freebox__btn {
+    flex: 0 0 auto;
+    padding: var(--bs-space--xs) var(--bs-space--lg);
+    border-radius: var(--bs-radius--md);
+    background: var(--bs-color-accent, #7c3aed);
+    color: #fff;
+    font-weight: var(--bs-weight--semibold);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .bs-freebox__btn:hover {
+    filter: brightness(1.08);
   }
 
   .bs-dash__error {

@@ -54,9 +54,6 @@ define('{PREFIX}LICENSE_MENU_TITLE', 'License');
 define('{PREFIX}LICENSE_PAGE_TITLE', '{Plugin Name} - License');
 define('{PREFIX}LICENSE_PURCHASE_URL', 'https://wpeasy.au/{slug}/');
 define('{PREFIX}LICENSE_ACCOUNT_URL', 'https://alanblair.co/my-account/');
-
-// Development Override (do not document publicly)
-define('{PREFIX}LICENSE_DEV_OVERRIDE_KEY', '{slug}-activate-for-dev-20112026');
 ```
 
 **Replace placeholders:**
@@ -75,7 +72,6 @@ define('{PREFIX}LICENSE_DEV_OVERRIDE_KEY', '{slug}-activate-for-dev-20112026');
 - **{PREFIX}LICENSE_PAGE_TITLE**: Browser title for license page
 - **{PREFIX}LICENSE_PURCHASE_URL**: Link to purchase license
 - **{PREFIX}LICENSE_ACCOUNT_URL**: Link to manage existing licenses
-- **{PREFIX}LICENSE_DEV_OVERRIDE_KEY**: Development override license key (do not document publicly)
 
 ---
 
@@ -117,7 +113,6 @@ define('{PREFIX}LICENSE_MENU_TITLE', 'License');
 define('{PREFIX}LICENSE_PAGE_TITLE', '{Plugin Name} - License');
 define('{PREFIX}LICENSE_PURCHASE_URL', 'https://wpeasy.au/{slug}/');
 define('{PREFIX}LICENSE_ACCOUNT_URL', 'https://alanblair.co/my-account/');
-define('{PREFIX}LICENSE_DEV_OVERRIDE_KEY', '{slug}-activate-for-dev-20112026');
 ```
 
 **Replace all placeholders with actual values from CLAUDE.md**
@@ -181,7 +176,7 @@ add_action('init', function() {
 $licensing = {Namespace}\Licensing\FluentLicensing::getInstance();
 $status = $licensing->getStatus(); // Local check (fast)
 
-if ($status->status !== 'valid' && !is_dev_override()) {
+if ($status->status !== 'valid') {
     // Show license activation page only
     display_license_required_notice();
     return;
@@ -263,63 +258,6 @@ function is_local_dev_site() {
 
 ---
 
-## Development Override License
-
-### Override Key
-
-Use the constant: `{PREFIX}LICENSE_DEV_OVERRIDE_KEY`
-Default pattern: `{slug}-activate-for-dev-20112026`
-
-### Implementation Requirements
-
-When this license is entered:
-1. **Do NOT** call FluentCart API (skip all remote calls)
-2. Store override flag: `update_option('{options_prefix}_dev_override', true)`
-3. Return mock "valid" status locally
-4. Set license status to `valid` immediately
-5. Disable all update checks from FluentCart
-6. Log override activation for debugging
-
-### Override Check Function
-
-```php
-function is_dev_override() {
-    return get_option('{options_prefix}_dev_override', false) === true;
-}
-
-function check_license_key($key) {
-    // Check for development override key (using constant)
-    if ($key === {PREFIX}LICENSE_DEV_OVERRIDE_KEY) {
-        update_option('{options_prefix}_dev_override', true);
-        update_option('{options_prefix}_license_key', $key);
-        return [
-            'status' => 'valid',
-            'expires' => 'never',
-            'override' => true
-        ];
-    }
-
-    // Normal FluentCart activation
-    $licensing = {Namespace}\Licensing\FluentLicensing::getInstance();
-    return $licensing->activate($key);
-}
-```
-
-**Replace placeholders:**
-- `{PREFIX}` = Constants Prefix from CLAUDE.md
-- `{options_prefix}` = Text domain with underscores (e.g., `wpe_rm`)
-- `{Namespace}` = Full namespace from CLAUDE.md
-
-### Security Note
-
-This override should:
-- Be clearly marked as "Development Override" in UI
-- Show warning that updates are disabled
-- Not be documented in public-facing documentation
-- Optionally expire after specific date (2026-11-20)
-
----
-
 ## UI/UX Requirements
 
 ### License Not Active State
@@ -354,7 +292,6 @@ This override should:
 - [ ] Test license activation with invalid key
 - [ ] Test license deactivation
 - [ ] Test local/dev site bypass (all detection methods)
-- [ ] Test dev override key
 - [ ] Test expired license scenario
 - [ ] Test disabled/refunded license scenario
 - [ ] Test network/API error scenarios
@@ -372,11 +309,10 @@ This override should:
 3. **Get Item ID:** Contact FluentCart/create product to obtain item ID, then update `{PREFIX}LICENSE_ITEM_ID` constant
 4. **Update Namespace:** Ensure licensing classes use `{Namespace}\Licensing` namespace
 5. **Configure API URL:** Verify FluentCart installation URL in `{PREFIX}LICENSE_API_URL` constant
-6. **Test Override:** Ensure dev override works without API calls
-7. **Initialize Licensing:** Add licensing initialization code using the defined constants
-8. **Add Status Indicator:** Show license status in plugin admin area
-9. **Error Handling:** Implement comprehensive WP_Error handling for all licensing methods
-10. **Daily Cron:** Set up `wp_schedule_event` for daily remote license validation
+6. **Initialize Licensing:** Add licensing initialization code using the defined constants
+7. **Add Status Indicator:** Show license status in plugin admin area
+8. **Error Handling:** Implement comprehensive WP_Error handling for all licensing methods
+9. **Daily Cron:** Set up `wp_schedule_event` for daily remote license validation
 
 ---
 

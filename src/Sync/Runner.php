@@ -125,6 +125,12 @@ final class Runner {
             }
         }
 
+        // Free renders at most maxPages page documents per full sync (assets,
+        // sitemaps, robots and favicon don't count). Single-page sync is
+        // incremental and not separately capped — the next full sync re-enforces.
+        $job->data['pageLimit']    = $single ? PHP_INT_MAX : Edition::max_pages();
+        $job->data['pageLimitHit'] = false;
+
         $job->data['phase']            = 'render';
         $job->data['message']          = 'Rendering pages…';
         $job->data['totals']['pages']  = count($job->data['queue']['pages']);
@@ -335,12 +341,14 @@ final class Runner {
      */
     public static function claim_driver(string $who): string {
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic driver lock; the options API can't INSERT IGNORE atomically.
         $wpdb->query($wpdb->prepare(
             "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
             self::DRIVER_OPTION,
             $who
         ));
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- reads back the lock owner just written; must bypass the options cache.
         return (string) $wpdb->get_var($wpdb->prepare(
             "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s",
             self::DRIVER_OPTION
@@ -353,6 +361,7 @@ final class Runner {
      */
     private static function release_driver(): void {
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- direct delete so a long-lived process can't serve a stale cached value.
         $wpdb->delete($wpdb->options, ['option_name' => self::DRIVER_OPTION]);
     }
 
@@ -363,6 +372,7 @@ final class Runner {
      */
     private static function is_driver_alive(): bool {
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- cross-process heartbeat read; must bypass the in-memory options cache.
         $ts = (int) $wpdb->get_var(
             $wpdb->prepare("SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", self::HEARTBEAT)
         );
@@ -386,6 +396,7 @@ final class Runner {
      */
     private static function is_cancelled(): bool {
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- cross-process cancel flag; get_option() would serve the value cached at job start.
         $val = $wpdb->get_var(
             $wpdb->prepare("SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", self::CANCEL_FLAG)
         );
@@ -433,6 +444,11 @@ final class Runner {
         foreach ($batch as $url) {
             if (self::is_cancelled()) {
                 break; // tick() finalizes the cancelled state on the next call.
+            }
+            if ($job->data['counts']['pagesDone'] >= (int) ($job->data['pageLimit'] ?? PHP_INT_MAX)) {
+                // Free page cap reached — stop rendering further pages.
+                $job->data['pageLimitHit'] = true;
+                break;
             }
             self::beat(); // Keep the heartbeat fresh through a slow batch.
 
@@ -482,6 +498,12 @@ final class Runner {
             } catch (\Throwable $e) {
                 $job->error($url, $e->getMessage());
             }
+        }
+
+        // Free page cap reached: drop any remaining queued pages so the run
+        // renders no more than maxPages page documents.
+        if (!empty($job->data['pageLimitHit'])) {
+            $job->data['queue']['pages'] = [];
         }
 
         $job->data['totals']['pages'] = $job->data['counts']['pagesDone'] + count($job->data['queue']['pages']);
@@ -1563,6 +1585,7 @@ HTML;
             ],
             'removed'      => $d['removed'] ?? 0,
             'prune'        => !empty($d['prune']),
+            'pageLimitHit' => !empty($d['pageLimitHit']),
             'targets'      => [
                 'index' => (int) ($d['targetIndex'] ?? 0),
                 'total' => count($d['targets'] ?? []),

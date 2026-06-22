@@ -9,6 +9,7 @@
 export interface Capabilities {
   edition: 'free' | 'pro';
   maxDestinations: number;
+  maxPages: number;
   advancedReplacements: boolean;
   gzip: boolean;
   sitemap: boolean;
@@ -16,17 +17,21 @@ export interface Capabilities {
   licenseValid: boolean;
   /** free | unlicensed | valid | grace | expired — drives upgrade vs renew copy. */
   licenseState: string;
+  /** The Pro addon's version when installed, else '' (Free only). */
+  proVersion: string;
 }
 
 const FREE_DEFAULTS: Capabilities = {
   edition: 'free',
   maxDestinations: 1,
+  maxPages: 10,
   advancedReplacements: false,
   gzip: false,
   sitemap: false,
   prune: false,
   licenseValid: false,
   licenseState: 'free',
+  proVersion: '',
 };
 
 function normalize(raw: unknown): Capabilities {
@@ -37,12 +42,14 @@ function normalize(raw: unknown): Capabilities {
   return {
     edition: r.edition === 'pro' ? 'pro' : 'free',
     maxDestinations: Math.max(1, Number(r.maxDestinations) || 1),
+    maxPages: Math.max(1, Number(r.maxPages) || 10),
     advancedReplacements: !!r.advancedReplacements,
     gzip: !!r.gzip,
     sitemap: !!r.sitemap,
     prune: !!r.prune,
     licenseValid: !!r.licenseValid,
     licenseState: typeof r.licenseState === 'string' ? r.licenseState : 'free',
+    proVersion: typeof r.proVersion === 'string' ? r.proVersion : '',
   };
 }
 

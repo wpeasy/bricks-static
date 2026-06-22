@@ -239,6 +239,8 @@ export interface SyncSnapshot {
   running?: boolean;
   cliAlive?: boolean;
   driver?: 'cli' | 'browser';
+  /** True when a full sync stopped at the Free page cap (more pages need Pro). */
+  pageLimitHit?: boolean;
 }
 
 export interface ServerConfig {

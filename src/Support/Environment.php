@@ -40,7 +40,7 @@ final class Environment {
             $local = true;
         }
 
-        $software = strtolower((string) ($_SERVER['SERVER_SOFTWARE'] ?? ''));
+        $software = isset($_SERVER['SERVER_SOFTWARE']) ? strtolower(sanitize_text_field(wp_unslash($_SERVER['SERVER_SOFTWARE']))) : '';
         if (strpos($software, 'flywheel') !== false) {
             $local = true;
         }

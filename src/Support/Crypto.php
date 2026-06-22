@@ -68,6 +68,7 @@ final class Crypto {
             return '';
         }
 
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- encoding AES-256-GCM ciphertext bytes for storage, not code obfuscation.
         return self::PREFIX . base64_encode($iv . $tag . $ct);
     }
 
@@ -82,6 +83,7 @@ final class Crypto {
             return '';
         }
 
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- decoding our own AES-256-GCM ciphertext, not code obfuscation.
         $raw = base64_decode(substr($payload, strlen(self::PREFIX)), true);
 
         if ($raw === false || strlen($raw) < 28) {

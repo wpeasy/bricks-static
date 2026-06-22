@@ -254,10 +254,10 @@ final class WpCli {
     }
 
     private static function user_home(): ?string {
-        $home = $_SERVER['USERPROFILE'] ?? getenv('USERPROFILE');
+        $home = isset($_SERVER['USERPROFILE']) ? sanitize_text_field(wp_unslash($_SERVER['USERPROFILE'])) : getenv('USERPROFILE');
         if (!$home) {
-            $drive = $_SERVER['HOMEDRIVE'] ?? getenv('HOMEDRIVE');
-            $path  = $_SERVER['HOMEPATH'] ?? getenv('HOMEPATH');
+            $drive = isset($_SERVER['HOMEDRIVE']) ? sanitize_text_field(wp_unslash($_SERVER['HOMEDRIVE'])) : getenv('HOMEDRIVE');
+            $path  = isset($_SERVER['HOMEPATH']) ? sanitize_text_field(wp_unslash($_SERVER['HOMEPATH'])) : getenv('HOMEPATH');
             if ($drive && $path) {
                 $home = $drive . $path;
             }
@@ -282,6 +282,7 @@ final class WpCli {
     private static function try_command(string $cmd): array {
         $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
 
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open -- runs the resolved wp binary to detect/drive WP-CLI; the command is built from a resolved path, not request input.
         $process = @proc_open($cmd, $descriptors, $pipes);
         if (!is_resource($process)) {
             return ['ok' => false, 'stdout' => '', 'stderr' => 'spawn failed', 'exit' => -1];

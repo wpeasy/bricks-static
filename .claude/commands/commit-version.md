@@ -31,13 +31,13 @@ If nothing in the shipped surfaces changed, say so and skip the bump.
 - **Free** bumped → add the new version to `CHANGELOG.md` with notes on Free-facing fixes/changes/features.
 - **Pro** bumped → add the new version to `pro/CHANGELOG.md` with notes on Pro-facing changes. Create `pro/CHANGELOG.md` if it doesn't exist.
 - Keep entries scoped: Free-only changes never appear in the Pro changelog and vice-versa. A shared change is described from each product's perspective in both.
-- If the `user-changelog` skill is available and the project already has user-facing changelog files, run it per bumped side to regenerate them (Free: repo root `CHANGELOG_*`; Pro: `pro/CHANGELOG_*`). Skip silently otherwise.
+- Run the **project-local** `/user-changelog` to regenerate the user-facing snapshot(s) for the bumped side(s): Free → `CHANGELOG_FREE_VERSION.md`/`.html` at the repo root; Pro → `pro/CHANGELOG_PRO_VERSION.md`/`.html`. Each overwrites in full with just the latest release (there are no cumulative `CHANGELOG_USER.*` files in this repo).
 
 ### 5. CLAUDE.md
 If the change introduces a new pattern/convention worth recording, add a short note to `CLAUDE.md`.
 
 ### 6. Build the distributable zips
-Run `npm run zip` (this runs `npm run build` for both bundles, enforces the "no Pro code in Free" guard, and writes `dist/bricks-static.zip` + `dist/bricks-static-pro.zip`). Do NOT use the old single `/zip-plugin`. If the build or the guard fails, STOP and report — do not commit a broken build.
+Run `npm run zip` (this runs `npm run build` for both bundles, enforces the "no Pro code in Free" guard, and writes version-stamped zips `dist/bricks-static-<ver>.zip` + `dist/bricks-static-pro-<ver>.zip`). Do NOT use the old single `/zip-plugin`. If the build or the guard fails, STOP and report — do not commit a broken build.
 
 ### 7. Commit & sync
 - Stage and commit with a short, meaningful message that names the side(s) bumped and the new version(s), e.g. `Free 0.0.5-beta: fix single-page modal cap` or `Pro 0.0.5-beta + Free 0.0.5-beta: shared lib update`.

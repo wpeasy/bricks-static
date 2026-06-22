@@ -71,6 +71,7 @@ final class Background {
             }
             $bat_win = str_replace('/', '\\', $bat);
 
+            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_popen -- spawns the background WP-CLI sync runner; the command is built from internal paths, not request input.
             $handle = @popen('start "bricks-static" /B "' . $bat_win . '"', 'r');
             if (is_resource($handle)) {
                 pclose($handle);
@@ -80,6 +81,7 @@ final class Background {
         }
 
         if (function_exists('exec')) {
+            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec -- spawns the background WP-CLI sync runner; the command is built internally, not from request input.
             @exec('nohup ' . $command . ' > /dev/null 2>&1 &');
             return true;
         }

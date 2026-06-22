@@ -206,6 +206,7 @@ class PluginUpdater {
         /** @var string $pagenow */
         global $pagenow;
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only cache-bust check of a core admin screen's query var; no form processing or state change.
         if ('update-core.php' === $pagenow || ($pagenow === 'plugin-install.php' && !empty($_GET['plugin']))) {
             return false;
         }
