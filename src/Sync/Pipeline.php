@@ -4,7 +4,7 @@
  * replacers / extra-file generators.
  *
  * Free registers its Text replacer here; the Pro addon registers the media,
- * link, video and data-attribute replacers plus the sitemap/robots emitter.
+ * link and video replacers plus the sitemap/robots emitter.
  * The Runner consults this registry at deploy time, so it never references a
  * concrete (or Pro) replacer class directly.
  *

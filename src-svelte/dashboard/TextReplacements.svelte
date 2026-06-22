@@ -4,6 +4,7 @@
   import type { DestinationDisplay, Replacement } from '../shared/types';
   import Modal from '../lib/Modal.svelte';
   import RichTextEditor from '../lib/RichTextEditor.svelte';
+  import { __ } from '../shared/i18n';
 
   let {
     destination,
@@ -78,47 +79,44 @@
 
 <div class="bs-tr">
   <div class="bs-tr__head">
-    <span>Text replacements <small>(optional)</small></span>
-    <button type="button" class="bs-btn bs-btn--sm" onclick={openAdd} disabled={busy}>+ Add</button>
+    <span>{__('textReplTitle')} <small>{__('optional')}</small></span>
+    <button type="button" class="bs-btn bs-btn--sm" onclick={openAdd} disabled={busy}>{__('btnAdd')}</button>
   </div>
-  <p class="bs-tr__warn">
-    Literal find/replace, applied only to visible text content between tags — never attributes, scripts or markup. Be
-    specific to avoid unintended matches.
-  </p>
+  <p class="bs-tr__warn">{__('textReplWarn')}</p>
 
   {#if error}
     <p class="bs-tr__msg">{error}</p>
   {/if}
 
   {#if replacements.length === 0}
-    <p class="bs-tr__empty">No text replacements yet.</p>
+    <p class="bs-tr__empty">{__('noTextRepl')}</p>
   {:else}
     <ul class="bs-tr__list">
       {#each replacements as row, i (i)}
         <li class="bs-tr__row">
           <div class="bs-tr__main">
             <div class="bs-tr__line">
-              <span class="bs-tr__label">Find</span>
+              <span class="bs-tr__label">{__('lblFind')}</span>
               <span class="bs-tr__val bs-clamp">{row.search}</span>
             </div>
             <div class="bs-tr__line">
-              <span class="bs-tr__label">Replace</span>
+              <span class="bs-tr__label">{__('lblReplace')}</span>
               {#if row.rich}
                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                <span class="bs-tr__val bs-clamp">{@html row.replace || '<em>(empty)</em>'}</span>
+                <span class="bs-tr__val bs-clamp">{@html row.replace || __('richEmpty')}</span>
               {:else}
-                <span class="bs-tr__val bs-clamp">{row.replace || '(empty)'}</span>
+                <span class="bs-tr__val bs-clamp">{row.replace || __('valEmpty')}</span>
               {/if}
             </div>
           </div>
 
           <div class="bs-tr__actions">
             {#if confirmIndex === i}
-              <button type="button" class="bs-icon bs-icon--danger" onclick={() => del(i)} disabled={busy} data-balloon="Confirm delete" data-balloon-pos="down">Delete</button>
-              <button type="button" class="bs-icon" onclick={() => (confirmIndex = -1)} data-balloon="Keep" data-balloon-pos="down">Cancel</button>
+              <button type="button" class="bs-icon bs-icon--danger" onclick={() => del(i)} disabled={busy} data-balloon={__('confirmDelete')} data-balloon-pos="down">{__('delete')}</button>
+              <button type="button" class="bs-icon" onclick={() => (confirmIndex = -1)} data-balloon={__('keep')} data-balloon-pos="down">{__('btnCancel')}</button>
             {:else}
-              <button type="button" class="bs-icon" onclick={() => openEdit(i)} disabled={busy} aria-label="Edit" data-balloon="Edit" data-balloon-pos="down">✎</button>
-              <button type="button" class="bs-icon" onclick={() => (confirmIndex = i)} disabled={busy} aria-label="Delete" data-balloon="Delete" data-balloon-pos="down">🗑</button>
+              <button type="button" class="bs-icon" onclick={() => openEdit(i)} disabled={busy} aria-label={__('edit')} data-balloon={__('edit')} data-balloon-pos="down">✎</button>
+              <button type="button" class="bs-icon" onclick={() => (confirmIndex = i)} disabled={busy} aria-label={__('delete')} data-balloon={__('delete')} data-balloon-pos="down">🗑</button>
             {/if}
           </div>
         </li>
@@ -127,30 +125,30 @@
   {/if}
 </div>
 
-<Modal bind:open={editorOpen} title={editIndex === -1 ? 'Add text replacement' : 'Edit text replacement'}>
+<Modal bind:open={editorOpen} title={editIndex === -1 ? __('modalAddText') : __('modalEditText')}>
   <div class="bs-ed">
     <label class="bs-ed__field">
-      <span class="bs-ed__label">Find</span>
-      <input type="text" placeholder="Text to find" bind:value={fSearch} disabled={busy} />
+      <span class="bs-ed__label">{__('lblFind')}</span>
+      <input type="text" placeholder={__('phTextToFind')} bind:value={fSearch} disabled={busy} />
     </label>
 
     <div class="bs-ed__field">
-      <span class="bs-ed__label">Replace with</span>
-      <div class="bs-seg" role="group" aria-label="Replacement format">
-        <button type="button" class="bs-seg__btn" class:is-active={!fRich} onclick={() => (fRich = false)} disabled={busy}>Plain</button>
-        <button type="button" class="bs-seg__btn" class:is-active={fRich} onclick={() => (fRich = true)} disabled={busy}>Rich</button>
+      <span class="bs-ed__label">{__('lblReplaceWith')}</span>
+      <div class="bs-seg" role="group" aria-label={__('replFormatAria')}>
+        <button type="button" class="bs-seg__btn" class:is-active={!fRich} onclick={() => (fRich = false)} disabled={busy}>{__('formatPlain')}</button>
+        <button type="button" class="bs-seg__btn" class:is-active={fRich} onclick={() => (fRich = true)} disabled={busy}>{__('formatRich')}</button>
       </div>
       {#if fRich}
         <RichTextEditor bind:value={fReplace} disabled={busy} rows={10} />
       {:else}
-        <input type="text" placeholder="Replace with" bind:value={fReplace} disabled={busy} />
+        <input type="text" placeholder={__('phReplaceWith')} bind:value={fReplace} disabled={busy} />
       {/if}
     </div>
 
     <div class="bs-ed__actions">
-      <button type="button" class="bs-btn" onclick={() => (editorOpen = false)}>Cancel</button>
+      <button type="button" class="bs-btn" onclick={() => (editorOpen = false)}>{__('btnCancel')}</button>
       <button type="button" class="bs-btn bs-btn--primary" onclick={saveDraft} disabled={busy || fSearch.trim() === ''}>
-        {editIndex === -1 ? 'Add' : 'Save'}
+        {editIndex === -1 ? __('btnAddShort') : __('btnSave')}
       </button>
     </div>
   </div>

@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { __ } from '../shared/i18n';
+
   // Small "Requires Pro" pill shown on locked feature rows/controls.
-  let { label = 'Requires Pro' }: { label?: string } = $props();
+  let { label = __('requiresPro') }: { label?: string } = $props();
 </script>
 
 <span class="bs-pro-badge">{label}</span>

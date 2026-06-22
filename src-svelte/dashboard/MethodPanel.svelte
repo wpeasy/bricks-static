@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Method } from '../shared/types';
+  import { __ } from '../shared/i18n';
 
   let { method }: { method: Method | null } = $props();
 
@@ -27,27 +28,27 @@
 </script>
 
 <section class="bs-card bs-stack bs-stack--sm">
-  <h2>Method</h2>
-  <p class="bs-method__lead">How the next sync will run, resolved for this site:</p>
+  <h2>{__('method')}</h2>
+  <p class="bs-method__lead">{__('methodLead')}</p>
   <dl class="bs-method">
     <div class="bs-method__row">
-      <dt>Discovery</dt>
+      <dt>{__('mDiscovery')}</dt>
       <dd>{discovery}</dd>
     </div>
     <div class="bs-method__row">
-      <dt>Transport</dt>
+      <dt>{__('mTransport')}</dt>
       <dd>{transportLabel}</dd>
     </div>
     <div class="bs-method__row">
-      <dt>Compression</dt>
+      <dt>{__('mCompression')}</dt>
       <dd>{gzip}</dd>
     </div>
     <div class="bs-method__row">
-      <dt>Server target</dt>
+      <dt>{__('mServerTarget')}</dt>
       <dd>{target}</dd>
     </div>
     <div class="bs-method__row">
-      <dt>Links</dt>
+      <dt>{__('mLinks')}</dt>
       <dd>{method ? method.links : '…'}</dd>
     </div>
   </dl>

@@ -18,14 +18,13 @@ namespace WPEasy\BricksStaticPro;
 
 use WPEasy\BricksStatic\Support\Edition;
 use WPEasy\BricksStatic\Sync\Pipeline;
+use WPEasy\BricksStaticPro\Admin\ProMenu;
 use WPEasy\BricksStaticPro\Licensing\FluentLicensing;
 use WPEasy\BricksStaticPro\Licensing\LicenseEnforcer;
 use WPEasy\BricksStaticPro\Licensing\LicenseSettings;
-use WPEasy\BricksStaticPro\Render\DataAttrDeployReplacer;
 use WPEasy\BricksStaticPro\Render\LinkDeployReplacer;
 use WPEasy\BricksStaticPro\Render\MediaDeployReplacer;
 use WPEasy\BricksStaticPro\Render\VideoDeployReplacer;
-use WPEasy\BricksStaticPro\REST\DataAttrController;
 use WPEasy\BricksStaticPro\REST\LinksController;
 use WPEasy\BricksStaticPro\REST\MediaController;
 use WPEasy\BricksStaticPro\REST\SitemapController;
@@ -49,6 +48,11 @@ final class Bootstrap {
             return;
         }
 
+        // Load Pro translations from pro/languages (bundled .mo files).
+        add_action('init', static function (): void {
+            load_plugin_textdomain('bricks-static-pro', false, dirname(BSP_PLUGIN_BASENAME) . '/languages');
+        });
+
         // Advertise the Pro version to Free (dashboard version badge) whenever the
         // addon is active, regardless of license state.
         add_filter('bs_pro_version', static fn(): string => BSP_VERSION);
@@ -64,10 +68,7 @@ final class Bootstrap {
         if (Edition::is_pro()) {
             self::register_pipeline();
             add_action('bs_register_rest_routes', [self::class, 'register_rest_routes']);
-
-            if (class_exists(ProMenu::class)) {
-                ProMenu::init();
-            }
+            ProMenu::init();
         }
     }
 
@@ -133,7 +134,6 @@ final class Bootstrap {
         Pipeline::register_replacer(new MediaDeployReplacer());
         Pipeline::register_replacer(new LinkDeployReplacer());
         Pipeline::register_replacer(new VideoDeployReplacer());
-        Pipeline::register_replacer(new DataAttrDeployReplacer());
 
         Pipeline::register_extra_files(static function (array $page_urls): array {
             /** Filters whether sitemap.xml + robots.txt are generated. */
@@ -152,7 +152,6 @@ final class Bootstrap {
         MediaController::register();
         LinksController::register();
         VideosController::register();
-        DataAttrController::register();
         SitemapController::register();
     }
 

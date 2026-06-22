@@ -2,6 +2,7 @@
   import { onMount, untrack } from 'svelte';
   import { api } from '../../../src-svelte/shared/api';
   import type { MediaItem, MediaReplacement, DestinationDisplay } from '../../../src-svelte/shared/types';
+  import { __, __f } from '../../../src-svelte/shared/i18n';
 
   let { destination, onSaved }: { destination: DestinationDisplay; onSaved: () => void } = $props();
 
@@ -10,6 +11,7 @@
   let error = $state('');
   let pageFilter = $state('');
   let search = $state('');
+  let onlyReplacements = $state(false);
 
   // Local swap map (original url → {replacement url, attachment id}), seeded
   // from the destination.
@@ -68,12 +70,12 @@
   function pick(item: MediaItem): void {
     const wp = window.wp;
     if (!wp?.media) {
-      error = 'The WordPress media library is unavailable on this page.';
+      error = __('mediaUnavailable');
       return;
     }
     const frame = wp.media({
-      title: 'Choose a replacement',
-      button: { text: 'Use this media' },
+      title: __('chooseReplacement'),
+      button: { text: __('useThisMedia') },
       multiple: false,
       library: { type: item.type },
     });
@@ -107,6 +109,7 @@
     // page only; a partial string matches any page containing it.
     const exact = page !== '' && pages.some((p) => p.toLowerCase() === page);
     return media.filter((m) => {
+      if (onlyReplacements && !swaps[m.url]) return false;
       if (page) {
         const match = exact
           ? m.pages.some((p) => p.toLowerCase() === page)
@@ -124,35 +127,36 @@
 <div class="bs-media">
   <div class="bs-media__head">
     <span>
-      Media replacer <small>({media.length} item{media.length === 1 ? '' : 's'}{swapCount > 0 ? `, ${swapCount} swapped` : ''})</small>
+      {__('mediaReplacer')} <small>({media.length === 1 ? __f('nItem', media.length) : __f('nItems', media.length)}{swapCount > 0 ? __f('nSwapped', swapCount) : ''})</small>
     </span>
     <div class="bs-media__filters">
-      <input type="search" placeholder="Search name or alt…" bind:value={search} />
+      <input type="search" placeholder={__('phSearchNameAlt')} bind:value={search} />
       <input
         type="search"
         list="bs-media-pages"
-        placeholder="Filter by page…"
+        placeholder={__('filterByPage')}
         bind:value={pageFilter}
-        aria-label="Filter by page"
+        aria-label={__('filterByPageAria')}
       />
       <datalist id="bs-media-pages">
         {#each pages as p}<option value={p}></option>{/each}
       </datalist>
+      <label class="bs-only"><input type="checkbox" bind:checked={onlyReplacements} /> {__('onlyReplacements')}</label>
     </div>
   </div>
 
   {#if loading}
-    <p class="bs-media__note">Loading media…</p>
+    <p class="bs-media__note">{__('loadingMedia')}</p>
   {:else if error}
     <p class="bs-media__note bs-media__note--err">{error}</p>
   {:else if media.length === 0}
-    <p class="bs-media__note">No media found yet — run a Check or Sync first so the pages are rendered.</p>
+    <p class="bs-media__note">{__('noMediaYet')}</p>
   {:else}
     <div class="bs-media__list">
       {#each filtered as item (item.url)}
         <div class="bs-media__row" class:is-swapped={swaps[item.url]}>
           <div class="bs-media__line">
-            <button type="button" class="bs-media__thumbbtn" onclick={() => pick(item)} title="Click to replace">
+            <button type="button" class="bs-media__thumbbtn" onclick={() => pick(item)} title={__('clickToReplace')}>
               {#if item.type === 'video'}
                 <span class="bs-media__thumb bs-media__thumb--video">▶</span>
               {:else}
@@ -161,10 +165,10 @@
             </button>
             <div class="bs-media__meta">
               <span class="bs-media__name" title={item.url}>{basename(item.url)}</span>
-              <span class="bs-media__alt">{item.alt || '— no alt —'}</span>
-              <span class="bs-media__pages">{item.pages.length} page{item.pages.length === 1 ? '' : 's'}: {item.pages.join(', ')}</span>
+              <span class="bs-media__alt">{item.alt || __('noAlt')}</span>
+              <span class="bs-media__pages">{item.pages.length === 1 ? __f('nPagesList', item.pages.length, item.pages.join(', ')) : __f('nPagesListPlural', item.pages.length, item.pages.join(', '))}</span>
             </div>
-            <button type="button" class="bs-media__replace" onclick={() => pick(item)}>Replace…</button>
+            <button type="button" class="bs-media__replace" onclick={() => pick(item)}>{__('btnReplace')}</button>
           </div>
 
           {#if swaps[item.url]}
@@ -175,16 +179,16 @@
                 <img class="bs-media__thumb" src={swaps[item.url].to} alt="" loading="lazy" />
               {/if}
               <div class="bs-media__meta">
-                <span class="bs-media__swaplabel">↳ replaced with</span>
+                <span class="bs-media__swaplabel">{__('replacedWith')}</span>
                 <span class="bs-media__name" title={swaps[item.url].to}>{basename(swaps[item.url].to)}</span>
               </div>
-              <button type="button" class="bs-link bs-link--danger" onclick={() => clearSwap(item.url)}>Remove</button>
+              <button type="button" class="bs-link bs-link--danger" onclick={() => clearSwap(item.url)}>{__('btnRemove')}</button>
             </div>
           {/if}
         </div>
       {/each}
       {#if filtered.length === 0}
-        <p class="bs-media__note">No media match the current filter.</p>
+        <p class="bs-media__note">{__('noMediaMatch')}</p>
       {/if}
     </div>
   {/if}
@@ -210,7 +214,20 @@
 
   .bs-media__filters {
     display: flex;
+    align-items: center;
+    flex-wrap: wrap;
     gap: var(--bs-space--xs);
+  }
+
+  .bs-only {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--bs-space--2xs);
+    font-size: var(--bs-text--sm);
+    font-weight: var(--bs-weight--normal);
+    color: var(--bs-color-text--muted);
+    white-space: nowrap;
+    cursor: pointer;
   }
 
   .bs-media__filters input {

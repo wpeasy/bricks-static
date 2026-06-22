@@ -115,6 +115,15 @@ final class LicenseEnforcer {
      * @return string 'unlicensed', 'valid', 'grace', or 'expired'
      */
     public function getState(): string {
+        // Local dev override: define('BSP_LICENSE_DEV', true) in wp-config.php to
+        // force a valid license on EVERY request (page, plugins_loaded AND REST),
+        // with no current-user or URL-param dependency. Unlike the ?bsp_license_test
+        // page param, this keeps the edition consistent across all hooks, so the Pro
+        // bundle enqueues and the Pro REST routes register. Never true in production.
+        if (defined('BSP_LICENSE_DEV') && BSP_LICENSE_DEV) {
+            return 'valid';
+        }
+
         // Check for test mode override
         $testState = $this->getTestState();
         if ($testState !== null) {

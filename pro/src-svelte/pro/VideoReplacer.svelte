@@ -2,6 +2,7 @@
   import { onMount, untrack } from 'svelte';
   import { api } from '../../../src-svelte/shared/api';
   import type { VideoItem, VideoReplacement, DestinationDisplay } from '../../../src-svelte/shared/types';
+  import { __, __f } from '../../../src-svelte/shared/i18n';
 
   let { destination, onSaved }: { destination: DestinationDisplay; onSaved: () => void } = $props();
 
@@ -10,6 +11,7 @@
   let error = $state('');
   let pageFilter = $state('');
   let search = $state('');
+  let onlyReplacements = $state(false);
 
   // Local swap map (original src → {replacement url, attachment id}).
   let swaps = $state<Record<string, { to: string; toId: number }>>(
@@ -64,10 +66,10 @@
   function pick(item: VideoItem): void {
     const wp = window.wp;
     if (!wp?.media) {
-      error = 'The WordPress media library is unavailable on this page.';
+      error = __('mediaUnavailable');
       return;
     }
-    const frame = wp.media({ title: 'Choose a replacement video', button: { text: 'Use this video' }, multiple: false, library: { type: 'video' } });
+    const frame = wp.media({ title: __('chooseReplacementVideo'), button: { text: __('useThisVideo') }, multiple: false, library: { type: 'video' } });
     frame.on('select', () => {
       const att = frame.state().get('selection').first().toJSON();
       if (att?.url) setSwap(item.url, att.url, att.id ?? 0);
@@ -136,6 +138,7 @@
     const page = pageFilter.trim().toLowerCase();
     const exact = page !== '' && pages.some((p) => p.toLowerCase() === page);
     return videos.filter((v) => {
+      if (onlyReplacements && !swaps[v.url]) return false;
       if (page) {
         const match = exact ? v.pages.some((p) => p.toLowerCase() === page) : v.pages.some((p) => p.toLowerCase().includes(page));
         if (!match) return false;
@@ -151,28 +154,27 @@
 <div class="bs-vids">
   <div class="bs-vids__head">
     <span>
-      Video replacer
-      <small>({videos.length} video{videos.length === 1 ? '' : 's'}{swapCount > 0 ? `, ${swapCount} replaced` : ''})</small>
+      {__('videoReplacer')}
+      <small>({videos.length === 1 ? __f('nVideo', videos.length) : __f('nVideos', videos.length)}{swapCount > 0 ? __f('nReplaced', swapCount) : ''})</small>
     </span>
     <div class="bs-vids__filters">
-      <input type="search" placeholder="Search URL or title…" bind:value={search} />
-      <input type="search" list="bs-video-pages" placeholder="Filter by page…" bind:value={pageFilter} aria-label="Filter by page" />
+      <input type="search" placeholder={__('phSearchUrlTitle')} bind:value={search} />
+      <input type="search" list="bs-video-pages" placeholder={__('filterByPage')} bind:value={pageFilter} aria-label={__('filterByPageAria')} />
       <datalist id="bs-video-pages">
         {#each pages as p}<option value={p}></option>{/each}
       </datalist>
+      <label class="bs-only"><input type="checkbox" bind:checked={onlyReplacements} /> {__('onlyReplacements')}</label>
     </div>
   </div>
-  <p class="bs-vids__hint">
-    Local videos swap via the media library; embeds (YouTube, Vimeo, …) take a URL <em>or</em> a video ID (like Bricks).
-    An embed’s <code>origin=</code> is rewritten to this destination automatically when a Destination URL is set.
-  </p>
+  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+  <p class="bs-vids__hint">{@html __('videosHint')}</p>
 
   {#if loading}
-    <p class="bs-vids__note">Loading videos…</p>
+    <p class="bs-vids__note">{__('loadingVideos')}</p>
   {:else if error}
     <p class="bs-vids__note bs-vids__note--err">{error}</p>
   {:else if videos.length === 0}
-    <p class="bs-vids__note">No videos found yet — run a Check or Sync first so the pages are rendered.</p>
+    <p class="bs-vids__note">{__('noVideosYet')}</p>
   {:else}
     <div class="bs-vids__list">
       {#each filtered as item (item.url)}
@@ -185,23 +187,23 @@
           <div class="bs-vids__meta">
             <span class="bs-vids__title">{item.title || item.provider}</span>
             <span class="bs-vids__url" title={item.url}>{shortUrl(item.url)}</span>
-            <span class="bs-vids__tag">{isLocal(item) ? 'local file' : item.provider}</span>
+            <span class="bs-vids__tag">{isLocal(item) ? __('localFile') : item.provider}</span>
           </div>
 
           {#if isLocal(item)}
             <div class="bs-vids__control">
               {#if swaps[item.url]}
                 <span class="bs-vids__swapped" title={swaps[item.url].to}>↳ {basename(swaps[item.url].to)}</span>
-                <button type="button" class="bs-link bs-link--danger" onclick={() => setSwap(item.url, '', 0)}>Remove</button>
+                <button type="button" class="bs-link bs-link--danger" onclick={() => setSwap(item.url, '', 0)}>{__('btnRemove')}</button>
               {:else}
-                <button type="button" class="bs-vids__btn" onclick={() => pick(item)}>Replace…</button>
+                <button type="button" class="bs-vids__btn" onclick={() => pick(item)}>{__('btnReplace')}</button>
               {/if}
             </div>
           {:else}
             <input
               type="text"
               class="bs-vids__input"
-              placeholder="Replacement URL or video ID…"
+              placeholder={__('phReplUrlOrId')}
               value={swaps[item.url]?.to ?? ''}
               onchange={(e) => commitEmbed(item, e.currentTarget.value)}
               onblur={(e) => commitEmbed(item, e.currentTarget.value)}
@@ -210,7 +212,7 @@
         </div>
       {/each}
       {#if filtered.length === 0}
-        <p class="bs-vids__note">No videos match the current filter.</p>
+        <p class="bs-vids__note">{__('noVideosMatch')}</p>
       {/if}
     </div>
   {/if}
@@ -236,7 +238,20 @@
 
   .bs-vids__filters {
     display: flex;
+    align-items: center;
+    flex-wrap: wrap;
     gap: var(--bs-space--xs);
+  }
+
+  .bs-only {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--bs-space--2xs);
+    font-size: var(--bs-text--sm);
+    font-weight: var(--bs-weight--normal);
+    color: var(--bs-color-text--muted);
+    white-space: nowrap;
+    cursor: pointer;
   }
 
   .bs-vids__filters input {

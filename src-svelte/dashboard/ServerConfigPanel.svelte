@@ -1,6 +1,7 @@
 <script lang="ts">
   import { api } from '../shared/api';
   import type { ServerConfig } from '../shared/types';
+  import { __ } from '../shared/i18n';
 
   let config = $state<ServerConfig | null>(null);
   let open = $state(false);
@@ -30,19 +31,18 @@
 
 <section class="bs-card bs-stack bs-stack--sm">
   <div class="bs-row bs-row--between">
-    <h2>Server config</h2>
-    <button type="button" class="bs-link" onclick={load}>{open ? 'Hide' : 'View'}</button>
+    <h2>{__('serverConfig')}</h2>
+    <button type="button" class="bs-link" onclick={load}>{open ? __('btnHide') : __('btnView')}</button>
   </div>
-  <p class="bs-sc__lead">
-    The <code>.htaccess</code> is uploaded to the destination automatically (Apache/LiteSpeed). On nginx, paste the snippet below into your server block.
-  </p>
+  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+  <p class="bs-sc__lead">{@html __('serverConfigLead')}</p>
 
   {#if open && config}
     <div class="bs-stack bs-stack--xs">
       <div class="bs-row bs-row--between">
         <strong>.htaccess</strong>
         <button type="button" class="bs-link" onclick={() => copy(config!.htaccess, 'htaccess')}>
-          {copied === 'htaccess' ? 'Copied' : 'Copy'}
+          {copied === 'htaccess' ? __('btnCopied') : __('btnCopy')}
         </button>
       </div>
       <pre class="bs-sc__code">{config.htaccess}</pre>
@@ -50,7 +50,7 @@
       <div class="bs-row bs-row--between">
         <strong>nginx</strong>
         <button type="button" class="bs-link" onclick={() => copy(config!.nginx, 'nginx')}>
-          {copied === 'nginx' ? 'Copied' : 'Copy'}
+          {copied === 'nginx' ? __('btnCopied') : __('btnCopy')}
         </button>
       </div>
       <pre class="bs-sc__code">{config.nginx}</pre>

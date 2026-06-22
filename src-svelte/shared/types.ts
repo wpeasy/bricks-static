@@ -79,18 +79,6 @@ export interface VideoReplacement {
   toId?: number;
 }
 
-export interface DataAttrItem {
-  attr: string;
-  value: string;
-  pages: string[];
-}
-
-export interface DataReplacement {
-  attr: string;
-  from: string;
-  to: string;
-}
-
 // Minimal typing for the WordPress media library (wp.media), enqueued by the plugin.
 export interface WpMediaAttachment {
   id: number;
@@ -140,7 +128,6 @@ export interface DestinationDisplay extends SettingsDisplay {
   mediaReplacements: MediaReplacement[];
   linkReplacements: LinkReplacement[];
   videoReplacements: VideoReplacement[];
-  dataReplacements: DataReplacement[];
   status: DestinationStatus;
   deploy: DestinationDeploy;
 }
@@ -265,5 +252,4 @@ export interface ConnectionInput {
   mediaReplacements?: MediaReplacement[];
   linkReplacements?: LinkReplacement[];
   videoReplacements?: VideoReplacement[];
-  dataReplacements?: DataReplacement[];
 }

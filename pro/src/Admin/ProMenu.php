@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace WPEasy\BricksStaticPro\Admin;
 
 use WPEasy\BricksStatic\Admin\Menu;
+use WPEasy\BricksStaticPro\Support\I18n;
 
 defined('ABSPATH') || exit;
 
@@ -59,6 +60,12 @@ final class ProMenu {
 
         // Depends on the Free dashboard handle so it loads AFTER window.BS exists.
         wp_enqueue_script(self::HANDLE, BSP_PLUGIN_URL . 'assets/dist/' . $entry['file'], ['bs-dashboard'], BSP_VERSION, true);
+
+        // Pro UI strings (already translated server-side). The Free shared/i18n.ts
+        // helper merges window.bspData.i18n over window.bsData.i18n.
+        wp_localize_script(self::HANDLE, 'bspData', [
+            'i18n' => I18n::all(),
+        ]);
     }
 
     /**

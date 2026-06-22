@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { __ } from '../shared/i18n';
+
   // A small WYSIWYG with a raw-HTML source view. WYSIWYG edits write the box's
   // innerHTML to `value`; the source view edits that HTML directly. Output is
   // sanitised server-side via wp_kses_post.
   let {
     value = $bindable(''),
     disabled = false,
-    placeholder = 'Replace with…',
+    placeholder = __('rtPlaceholder'),
     rows = 3,
   }: { value: string; disabled?: boolean; placeholder?: string; rows?: number } = $props();
 
@@ -34,7 +36,7 @@
 
   function link(): void {
     if (disabled) return;
-    const url = window.prompt('Link URL');
+    const url = window.prompt(__('rtLinkPrompt'));
     if (url) exec('createLink', url);
   }
 
@@ -53,24 +55,24 @@
 </script>
 
 <div class="bs-rte" class:is-disabled={disabled}>
-  <div class="bs-rte__bar" role="toolbar" tabindex="-1" aria-label="Formatting" onmousedown={keepSelection}>
+  <div class="bs-rte__bar" role="toolbar" tabindex="-1" aria-label={__('rtFormatting')} onmousedown={keepSelection}>
     {#if !source}
-      <button type="button" class="bs-rte__btn" onclick={() => exec('formatBlock', 'P')} {disabled} data-balloon="Paragraph" data-balloon-pos="down">¶</button>
-      <button type="button" class="bs-rte__btn" onclick={() => exec('formatBlock', 'H1')} {disabled} data-balloon="Heading 1" data-balloon-pos="down">H1</button>
-      <button type="button" class="bs-rte__btn" onclick={() => exec('formatBlock', 'H2')} {disabled} data-balloon="Heading 2" data-balloon-pos="down">H2</button>
-      <button type="button" class="bs-rte__btn" onclick={() => exec('formatBlock', 'H3')} {disabled} data-balloon="Heading 3" data-balloon-pos="down">H3</button>
+      <button type="button" class="bs-rte__btn" onclick={() => exec('formatBlock', 'P')} {disabled} data-balloon={__('rtParagraph')} data-balloon-pos="down">¶</button>
+      <button type="button" class="bs-rte__btn" onclick={() => exec('formatBlock', 'H1')} {disabled} data-balloon={__('rtH1')} data-balloon-pos="down">H1</button>
+      <button type="button" class="bs-rte__btn" onclick={() => exec('formatBlock', 'H2')} {disabled} data-balloon={__('rtH2')} data-balloon-pos="down">H2</button>
+      <button type="button" class="bs-rte__btn" onclick={() => exec('formatBlock', 'H3')} {disabled} data-balloon={__('rtH3')} data-balloon-pos="down">H3</button>
       <span class="bs-rte__sep"></span>
-      <button type="button" class="bs-rte__btn" onclick={() => exec('bold')} {disabled} data-balloon="Bold" data-balloon-pos="down"><b>B</b></button>
-      <button type="button" class="bs-rte__btn" onclick={() => exec('italic')} {disabled} data-balloon="Italic" data-balloon-pos="down"><i>I</i></button>
-      <button type="button" class="bs-rte__btn" onclick={() => exec('underline')} {disabled} data-balloon="Underline" data-balloon-pos="down"><u>U</u></button>
+      <button type="button" class="bs-rte__btn" onclick={() => exec('bold')} {disabled} data-balloon={__('rtBold')} data-balloon-pos="down"><b>B</b></button>
+      <button type="button" class="bs-rte__btn" onclick={() => exec('italic')} {disabled} data-balloon={__('rtItalic')} data-balloon-pos="down"><i>I</i></button>
+      <button type="button" class="bs-rte__btn" onclick={() => exec('underline')} {disabled} data-balloon={__('rtUnderline')} data-balloon-pos="down"><u>U</u></button>
       <span class="bs-rte__sep"></span>
-      <button type="button" class="bs-rte__btn" onclick={() => exec('insertUnorderedList')} {disabled} data-balloon="Bullet list" data-balloon-pos="down">•—</button>
-      <button type="button" class="bs-rte__btn" onclick={() => exec('insertOrderedList')} {disabled} data-balloon="Numbered list" data-balloon-pos="down">1.</button>
+      <button type="button" class="bs-rte__btn" onclick={() => exec('insertUnorderedList')} {disabled} data-balloon={__('rtBullet')} data-balloon-pos="down">•—</button>
+      <button type="button" class="bs-rte__btn" onclick={() => exec('insertOrderedList')} {disabled} data-balloon={__('rtNumbered')} data-balloon-pos="down">1.</button>
       <span class="bs-rte__sep"></span>
-      <button type="button" class="bs-rte__btn" onclick={link} {disabled} data-balloon="Link" data-balloon-pos="down">🔗</button>
-      <button type="button" class="bs-rte__btn" onclick={() => exec('removeFormat')} {disabled} data-balloon="Clear formatting" data-balloon-pos="down">✕</button>
+      <button type="button" class="bs-rte__btn" onclick={link} {disabled} data-balloon={__('rtLink')} data-balloon-pos="down">🔗</button>
+      <button type="button" class="bs-rte__btn" onclick={() => exec('removeFormat')} {disabled} data-balloon={__('rtClearFormat')} data-balloon-pos="down">✕</button>
     {:else}
-      <span class="bs-rte__srclabel">HTML source</span>
+      <span class="bs-rte__srclabel">{__('rtHtmlSource')}</span>
     {/if}
     <span class="bs-rte__spacer"></span>
     <button
@@ -79,7 +81,7 @@
       class:is-active={source}
       onclick={toggleSource}
       {disabled}
-      data-balloon={source ? 'Visual editor' : 'Edit HTML'}
+      data-balloon={source ? __('rtVisualEditor') : __('rtEditHtml')}
       data-balloon-pos="down-left"
     >&lt;/&gt;</button>
   </div>

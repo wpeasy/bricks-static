@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { DestinationDisplay } from '../shared/types';
+  import { __, __f } from '../shared/i18n';
 
   let {
     destinations,
@@ -20,23 +21,23 @@
 </script>
 
 <section class="bs-card bs-stack bs-stack--sm">
-  <h2>All destinations</h2>
-  <p class="bs-all__lead">Render once, then push to every enabled destination in turn.</p>
+  <h2>{__('allDestHeading')}</h2>
+  <p class="bs-all__lead">{__('allDestLead')}</p>
 
   <ul class="bs-all__list">
     {#each destinations as d (d.id)}
       <li class="bs-all__item">
         <button type="button" class="bs-all__name" onclick={() => onSelect(d.id)}>
-          {d.name || 'Destination'}
+          {d.name || __('destinationDefault')}
         </button>
         <span class="bs-all__meta">
-          {d.enabled ? (d.host.value || '—') : 'disabled'}
+          {d.enabled ? (d.host.value || '—') : __('stDisabled')}
         </span>
         <span class="bs-all__status bs-all__status--{d.status.inSync ? 'ok' : d.status.hasPushed ? 'warn' : 'off'}">
-          {d.status.inSync ? 'In sync' : d.status.hasPushed ? 'Out of date' : 'Not pushed'}
+          {d.status.inSync ? __('stInSync') : d.status.hasPushed ? __('stOutOfDate') : __('stNotPushed')}
         </span>
         <button type="button" class="bs-btn bs-btn--secondary" onclick={() => onSyncOne(d.id, prune)} disabled={running || !d.enabled}>
-          Sync
+          {__('btnSync')}
         </button>
       </li>
     {/each}
@@ -44,12 +45,12 @@
 
   <label class="bs-all__opt">
     <input type="checkbox" bind:checked={prune} disabled={running} />
-    Remove deleted files from each destination (prune)
+    {__('pruneOption')}
   </label>
 
   <div class="bs-row">
     <button type="button" class="bs-btn bs-btn--primary" onclick={() => onSyncAll(prune)} disabled={running || enabledCount === 0}>
-      {running ? 'Working…' : `Sync all (${enabledCount} enabled)`}
+      {running ? __('btnWorking') : __f('syncAllN', enabledCount)}
     </button>
   </div>
 </section>

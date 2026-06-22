@@ -3,6 +3,7 @@
   import { api } from '../shared/api';
   import { caps } from '../shared/capabilities.svelte';
   import { PURCHASE_URL } from '../shared/upsell';
+  import { __, __f } from '../shared/i18n';
   import type { DestinationsResponse, DiscoveryMode, Status, SyncSnapshot } from '../shared/types';
   import NoticePanel from './NoticePanel.svelte';
   import DiscoveryToggle from './DiscoveryToggle.svelte';
@@ -155,8 +156,8 @@
   }
 
   async function startSync(dest: string, prune: boolean): Promise<void> {
-    const target = dest === 'all' ? 'all enabled destinations' : 'the destination';
-    if (!window.confirm(`This will render the site and push to ${target}. Continue?`)) return;
+    const target = dest === 'all' ? __('syncTargetAll') : __('syncTargetOne');
+    if (!window.confirm(__f('confirmSync', target))) return;
     runCommand = buildRunCommand('sync', dest, prune);
     try {
       sync = await api.syncStart('sync', { dest, prune });
@@ -184,7 +185,7 @@
   }
 
   async function resetSync(): Promise<void> {
-    if (!window.confirm('Reset the push record for all destinations? The next Sync will re-upload everything.')) return;
+    if (!window.confirm(__('confirmReset'))) return;
     try {
       await api.syncReset();
       // Don't wipe the visible progress of the last run — just refresh the
@@ -197,7 +198,7 @@
 
   async function addDestination(): Promise<void> {
     try {
-      dests = await api.addDestination({ name: `Destination ${destinations.length + 1}` });
+      dests = await api.addDestination({ name: __f('destinationNumbered', destinations.length + 1) });
       activeTab = destinations[destinations.length - 1]?.id ?? activeTab;
     } catch (e) {
       loadError = (e as Error).message;
@@ -241,38 +242,40 @@
       <span class="bs-verbadge" class:bs-verbadge--pro={caps.edition === 'pro'}>
         v{freeVersion}{#if caps.proVersion} · Pro v{caps.proVersion}{/if}
       </span>
-      <span class="bs-dash__by">Another plugin by <a href="https://brxprod.com" target="_blank" rel="noopener noreferrer">BRXProd</a></span>
+      <span class="bs-dash__by">{__('byPrefix')} <a href="https://brxprod.com" target="_blank" rel="noopener noreferrer">BRXProd</a></span>
     </h1>
-    <p class="bs-dash__lead">Generate and serve static HTML versions of your site for performance.</p>
+    <p class="bs-dash__lead">{__('appLead')}</p>
   </header>
 
   {#if caps.edition !== 'pro'}
     <div class="bs-freebox">
       <div class="bs-freebox__head">
-        <strong class="bs-freebox__title">You're on the free version of Bricks Static</strong>
-        <a class="bs-freebox__btn" href={PURCHASE_URL} target="_blank" rel="noopener noreferrer">Upgrade to Pro</a>
+        <strong class="bs-freebox__title">{__('freeYouAreOn')}</strong>
+        <a class="bs-freebox__btn" href={PURCHASE_URL} target="_blank" rel="noopener noreferrer">{__('upgradeToPro')}</a>
       </div>
       <div class="bs-freebox__cols">
         <div class="bs-freebox__col">
-          <h3 class="bs-freebox__colhead">Free — this plugin</h3>
+          <h3 class="bs-freebox__colhead">{__('freeThisPlugin')}</h3>
           <ul class="bs-freebox__list">
-            <li>Static generation — up to {caps.maxPages} pages per sync</li>
-            <li>1 destination (SFTP / FTP / FTPS)</li>
-            <li>Text replacements</li>
-            <li>Per-file &amp; package (zip) deploy</li>
-            <li>.htaccess + nginx config, favicon</li>
-            <li>Single-page sync &amp; WP-CLI</li>
+            <li>{__f('freeStaticGen', caps.maxPages)}</li>
+            <li>{__('freeOneDest')}</li>
+            <li>{__('freeTextRepl')}</li>
+            <li>{__('freePerFile')}</li>
+            <li>{__('freeHtaccess')}</li>
+            <li>{__('freeSinglePage')}</li>
           </ul>
         </div>
         <div class="bs-freebox__col bs-freebox__col--pro">
-          <h3 class="bs-freebox__colhead">Pro — add-on</h3>
+          <h3 class="bs-freebox__colhead">{__('proAddon')}</h3>
           <ul class="bs-freebox__list">
-            <li><strong>Unlimited</strong> pages</li>
-            <li><strong>Unlimited</strong> destinations + sync-all</li>
-            <li>Media, Links, Videos &amp; Data replacements</li>
-            <li>Gzip pre-compression (.gz)</li>
-            <li>Remote pruning</li>
-            <li>Sitemap.xml + robots.txt</li>
+            <!-- eslint-disable svelte/no-at-html-tags -->
+            <li>{@html __('proUnlimitedPages')}</li>
+            <li>{@html __('proUnlimitedDests')}</li>
+            <!-- eslint-enable svelte/no-at-html-tags -->
+            <li>{__('proAdvRepl')}</li>
+            <li>{__('proGzip')}</li>
+            <li>{__('proPrune')}</li>
+            <li>{__('proSitemap')}</li>
           </ul>
         </div>
       </div>
@@ -290,7 +293,7 @@
           checked={status.fabEnabled}
           onchange={(e) => setFabEnabled(e.currentTarget.checked)}
         />
-        <span>Enable sync single button</span>
+        <span>{__('enableSyncButton')}</span>
       </label>
       <div class="bs-globalbar__group bs-globalbar__notice">
         <NoticePanel isLocal={status.isLocal} cli={status.cli} wpCli={status.wpCli} inline />
@@ -304,10 +307,10 @@
 
   <div class="bs-toptabs" role="tablist">
     <button type="button" class="bs-toptab" class:bs-toptab--active={topTab === 'destinations'} onclick={() => (topTab = 'destinations')}>
-      Destinations
+      {__('tabDestinations')}
     </button>
     <button type="button" class="bs-toptab" class:bs-toptab--active={topTab === 'server'} onclick={() => (topTab = 'server')}>
-      Destination Server Configuration
+      {__('tabServerConfig')}
     </button>
   </div>
 
@@ -346,12 +349,12 @@
     {/if}
 
     <div class="bs-row bs-row--between bs-controls">
-      <span class="bs-controls__hint">Wiped a remote, or want a full re-upload? Reset clears the push record for every destination.</span>
+      <span class="bs-controls__hint">{__('resetHint')}</span>
       <div class="bs-row">
         {#if syncing}
-          <button type="button" class="bs-link" onclick={cancelSync}>Cancel</button>
+          <button type="button" class="bs-link" onclick={cancelSync}>{__('btnCancel')}</button>
         {/if}
-        <button type="button" class="bs-link" onclick={resetSync}>Reset sync state</button>
+        <button type="button" class="bs-link" onclick={resetSync}>{__('btnResetSync')}</button>
       </div>
     </div>
   {:else}

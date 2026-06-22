@@ -1,6 +1,7 @@
 <script lang="ts">
   import { api } from '../shared/api';
   import type { Preflight, WpCliInfo } from '../shared/types';
+  import { __ } from '../shared/i18n';
 
   let {
     isLocal,
@@ -51,25 +52,22 @@
   <section class="bs-notice bs-notice--ok bs-row" class:bs-notice--inline={inline}>
     <span class="bs-notice__dot"></span>
     <p>
-      <strong>WP-CLI detected{wpCli.version ? ` (${wpCli.version})` : ''}</strong> — pages are rendered
-      by a WP-CLI process, taking the load off your web server.
+      <strong>{__('wpCliDetected')}{wpCli.version ? ` (${wpCli.version})` : ''}</strong> — {__('wpCliBody')}
     </p>
   </section>
 {:else if mode === 'warn'}
   <section class="bs-notice bs-notice--warn bs-stack bs-stack--sm" class:bs-notice--inline={inline}>
-    <strong>Run Sync from the command line on this host</strong>
-    <p>
-      This environment serves PHP requests one at a time, so browser-driven Sync can
-      time out. Run it from a terminal instead:
-    </p>
+    <strong>{__('runFromCli')}</strong>
+    <p>{__('cliWarnBody')}</p>
     <div class="bs-notice__cmd">
       <code>{cli}</code>
-      <button type="button" class="bs-link" onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
+      <button type="button" class="bs-link" onclick={copy}>{copied ? __('btnCopied') : __('btnCopy')}</button>
     </div>
-    <p class="bs-notice__hint">Add <code>--check</code> for a dry run, or <code>--prune</code> to remove deleted files.</p>
+    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+    <p class="bs-notice__hint">{@html __('cliFlagsHint')}</p>
     <div class="bs-row">
       <button type="button" class="bs-btn bs-btn--secondary" onclick={test} disabled={testing}>
-        {testing ? 'Testing…' : 'Test browser rendering'}
+        {testing ? __('btnTesting') : __('testBrowserRender')}
       </button>
       {#if result}
         <span class="bs-notice__result bs-notice__result--{result.ok ? 'ok' : 'err'}">

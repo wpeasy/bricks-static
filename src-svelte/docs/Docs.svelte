@@ -80,7 +80,7 @@
               <tr><td>Pages per sync</td><td>{caps.maxPages}</td><td>Unlimited</td></tr>
               <tr><td>Destinations</td><td>1</td><td>Unlimited + sync&#8209;all</td></tr>
               <tr><td>Text replacements</td><td>Yes</td><td>Yes</td></tr>
-              <tr><td>Media / Links / Videos / Data&#8209;attribute replacements</td><td>—</td><td>Yes</td></tr>
+              <tr><td>Media / Links / Videos replacements</td><td>—</td><td>Yes</td></tr>
               <tr><td>Gzip pre&#8209;compression (.gz)</td><td>—</td><td>Yes</td></tr>
               <tr><td>Remote pruning (delete stale files)</td><td>—</td><td>Yes</td></tr>
               <tr><td>Sitemap.xml + robots.txt</td><td>—</td><td>Yes</td></tr>

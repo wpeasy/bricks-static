@@ -195,27 +195,6 @@ final class Destination {
     }
 
     /**
-     * Per-destination data-* attribute value swaps [{attr, from, to}, …] — match a
-     * `data-{attr}="{from}"` and rewrite the VALUE to {to} (name unchanged).
-     *
-     * @return array<int,array{attr:string,from:string,to:string}>
-     */
-    public function data_replacements(): array {
-        $out = [];
-        foreach ((array) ($this->data['dataReplacements'] ?? []) as $row) {
-            if (is_array($row) && !empty($row['attr']) && isset($row['from'], $row['to'])) {
-                $out[] = [
-                    'attr' => (string) $row['attr'],
-                    'from' => (string) $row['from'],
-                    'to'   => (string) $row['to'],
-                ];
-            }
-        }
-
-        return $out;
-    }
-
-    /**
      * Display payload (no secrets) for the dashboard.
      *
      * @return array<string,mixed>
@@ -230,7 +209,6 @@ final class Destination {
             'mediaReplacements'       => $this->media_replacements(),
             'linkReplacements'        => $this->link_replacements(),
             'videoReplacements'       => $this->video_replacements(),
-            'dataReplacements'        => $this->data_replacements(),
         ];
 
         foreach (Schema::fields() as $key => $field) {
@@ -270,9 +248,6 @@ final class Destination {
         if (array_key_exists('videoReplacements', $input) && is_array($input['videoReplacements'])) {
             // Same shape as media (from/to URLs + optional attachment id).
             $this->data['videoReplacements'] = self::sanitize_media_replacements($input['videoReplacements']);
-        }
-        if (array_key_exists('dataReplacements', $input) && is_array($input['dataReplacements'])) {
-            $this->data['dataReplacements'] = self::sanitize_data_replacements($input['dataReplacements']);
         }
 
         // Connection fields.
@@ -365,31 +340,6 @@ final class Destination {
                 continue;
             }
             $clean[] = ['from' => $from, 'to' => $to];
-        }
-
-        return $clean;
-    }
-
-    /**
-     * Sanitise a data-attribute replacement list. The attribute name is reduced to
-     * data-attribute-safe chars (the `data-` prefix is implied); values are text.
-     * An empty match value drops the row.
-     *
-     * @param array<int,mixed> $rows Raw rows.
-     * @return array<int,array{attr:string,from:string,to:string}>
-     */
-    private static function sanitize_data_replacements(array $rows): array {
-        $clean = [];
-        foreach ($rows as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
-            $attr = strtolower((string) preg_replace('/[^A-Za-z0-9_-]/', '', (string) ($row['attr'] ?? '')));
-            $from = sanitize_text_field((string) ($row['from'] ?? ''));
-            if ($attr === '' || $from === '') {
-                continue;
-            }
-            $clean[] = ['attr' => $attr, 'from' => $from, 'to' => sanitize_text_field((string) ($row['to'] ?? ''))];
         }
 
         return $clean;

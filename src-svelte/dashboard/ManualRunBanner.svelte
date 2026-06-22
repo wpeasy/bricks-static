@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { __ } from '../shared/i18n';
+
   let { command, onDismiss }: { command: string; onDismiss: () => void } = $props();
 
   let copied = $state(false);
@@ -16,22 +18,17 @@
 
 <section class="bs-manual">
   <div class="bs-manual__head">
-    <strong>Run this in your terminal to render &amp; sync</strong>
-    <button type="button" class="bs-link" onclick={onDismiss}>Dismiss</button>
+    <strong>{__('manualRunTitle')}</strong>
+    <button type="button" class="bs-link" onclick={onDismiss}>{__('btnDismiss')}</button>
   </div>
-  <p>
-    This host serves only a couple of PHP requests at once, so the browser can't
-    render reliably here. WP-CLI does it without that limit. In Local, right-click
-    the site → <em>Open site shell</em>, then run:
-  </p>
+  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+  <p>{@html __('manualRunBody')}</p>
   <div class="bs-manual__cmd">
     <code>{command}</code>
-    <button type="button" class="bs-btn bs-btn--secondary" onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
+    <button type="button" class="bs-btn bs-btn--secondary" onclick={copy}>{copied ? __('btnCopied') : __('btnCopy')}</button>
   </div>
-  <p class="bs-manual__hint">
-    Add <code>--check</code> for a dry run, or <code>--prune</code> to remove deleted files.
-    Progress will appear here automatically once it starts.
-  </p>
+  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+  <p class="bs-manual__hint">{@html __('manualRunHint')}</p>
 </section>
 
 <style>

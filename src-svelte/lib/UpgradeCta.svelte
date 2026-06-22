@@ -1,6 +1,7 @@
 <script lang="ts">
   import { caps } from '../shared/capabilities.svelte';
   import { PURCHASE_URL, ACCOUNT_URL } from '../shared/upsell';
+  import { __ } from '../shared/i18n';
 
   // Upsell shown in the body of a locked Pro feature. Switches to "renew" copy
   // when a previously-valid license has expired.
@@ -15,10 +16,10 @@
   {/if}
 
   {#if expired}
-    <p class="bs-upsell__note">Your Bricks Static Pro license has expired — renew to re-enable this feature. Your saved settings are kept.</p>
-    <a class="bs-upsell__btn" href={ACCOUNT_URL} target="_blank" rel="noopener noreferrer">Renew license</a>
+    <p class="bs-upsell__note">{__('upsellExpired')}</p>
+    <a class="bs-upsell__btn" href={ACCOUNT_URL} target="_blank" rel="noopener noreferrer">{__('renewLicense')}</a>
   {:else}
-    <a class="bs-upsell__btn" href={PURCHASE_URL} target="_blank" rel="noopener noreferrer">Upgrade to Pro</a>
+    <a class="bs-upsell__btn" href={PURCHASE_URL} target="_blank" rel="noopener noreferrer">{__('upgradeToPro')}</a>
   {/if}
 </div>
 

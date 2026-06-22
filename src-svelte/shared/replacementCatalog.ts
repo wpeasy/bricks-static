@@ -6,7 +6,7 @@
  * registry; it does not redefine the catalogue.
  */
 
-export type ReplacementKey = 'text' | 'media' | 'links' | 'videos' | 'data';
+export type ReplacementKey = 'text' | 'media' | 'links' | 'videos';
 export type ReplacementTier = 'free' | 'pro';
 
 export interface ReplacementEntry {
@@ -15,7 +15,7 @@ export interface ReplacementEntry {
   description: string;
   tier: ReplacementTier;
   /** Property on a destination holding this replacement's saved rows (for the count badge). */
-  countProp: 'replacements' | 'mediaReplacements' | 'linkReplacements' | 'videoReplacements' | 'dataReplacements';
+  countProp: 'replacements' | 'mediaReplacements' | 'linkReplacements' | 'videoReplacements';
 }
 
 export const REPLACEMENT_CATALOG: ReplacementEntry[] = [
@@ -46,12 +46,5 @@ export const REPLACEMENT_CATALOG: ReplacementEntry[] = [
     tier: 'pro',
     countProp: 'videoReplacements',
     description: 'Swap local or embedded videos and fix embed origins for the destination domain.',
-  },
-  {
-    key: 'data',
-    title: 'Data attributes',
-    tier: 'pro',
-    countProp: 'dataReplacements',
-    description: 'Rewrite the values of data-* attributes per destination.',
   },
 ];

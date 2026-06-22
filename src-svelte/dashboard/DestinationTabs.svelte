@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { DestinationDisplay } from '../shared/types';
   import { canAddDestination } from '../shared/capabilities.svelte';
+  import { __ } from '../shared/i18n';
 
   let {
     destinations,
@@ -45,7 +46,7 @@
 <div class="bs-tabs" role="tablist">
   {#if showAll}
     <button type="button" class="bs-tab" class:bs-tab--active={active === 'all'} onclick={() => onSelect('all')}>
-      All Destinations
+      {__('allDestinations')}
     </button>
   {/if}
   {#each destinations as d (d.id)}
@@ -55,7 +56,7 @@
         bind:value={editValue}
         onblur={commit}
         onkeydown={onKey}
-        aria-label="Destination name"
+        aria-label={__('destNameAria')}
       />
     {:else}
       <button
@@ -64,9 +65,9 @@
         class:bs-tab--active={active === d.id}
         onclick={() => onSelect(d.id)}
         ondblclick={() => startEdit(d)}
-        title="Double-click to rename"
+        title={__('dblClickRename')}
       >
-        {d.name || 'Destination'}{#if !d.enabled}<span class="bs-tab__off">off</span>{/if}
+        {d.name || __('destinationDefault')}{#if !d.enabled}<span class="bs-tab__off">{__('tabOff')}</span>{/if}
       </button>
     {/if}
   {/each}
@@ -75,9 +76,9 @@
     class="bs-tab bs-tab--add"
     onclick={() => canAdd && onAdd()}
     disabled={!canAdd}
-    data-balloon={canAdd ? null : 'Multiple destinations — Requires Pro'}
+    data-balloon={canAdd ? null : __('multiDestReqPro')}
     data-balloon-pos="down"
-    aria-label="Add destination"
+    aria-label={__('addDestAria')}
   >+</button>
 </div>
 

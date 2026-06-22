@@ -7,6 +7,17 @@
   import { REPLACEMENT_CATALOG, type ReplacementEntry } from '../shared/replacementCatalog';
   import { caps } from '../shared/capabilities.svelte';
   import { getPanel } from '../shared/panelRegistry.svelte';
+  import { __ } from '../shared/i18n';
+
+  // Catalogue entries carry English title/description in code; map each to its
+  // translated i18n key for display.
+  const TITLE_KEY: Record<string, string> = { text: 'catText', media: 'catMedia', links: 'catLinks', videos: 'catVideos' };
+  const DESC_KEY: Record<string, string> = {
+    text: 'catTextDesc',
+    media: 'catMediaDesc',
+    links: 'catLinksDesc',
+    videos: 'catVideosDesc',
+  };
 
   let {
     destination,
@@ -44,7 +55,7 @@
 </script>
 
 <section class="bs-card bs-stack bs-stack--sm">
-  <h2 class="bs-rp__title">Replacements <small>(applied to this destination only · saved automatically)</small></h2>
+  <h2 class="bs-rp__title">{__('replacements')} <small>{__('replacementsSub')}</small></h2>
 
   <div class="bs-acc">
     {#each REPLACEMENT_CATALOG as entry (entry.key)}
@@ -56,7 +67,7 @@
           onclick={() => toggle(entry.key)}
         >
           <span class="bs-acc__chev" class:is-open={open === entry.key}>▸</span>
-          <span class="bs-acc__title">{entry.title}</span>
+          <span class="bs-acc__title">{__(TITLE_KEY[entry.key] ?? '') || entry.title}</span>
           {#if count(entry) > 0}<span class="bs-acc__badge">{count(entry)}</span>{/if}
           {#if locked(entry)}<ProBadge />{/if}
         </button>
@@ -68,10 +79,10 @@
               {#if getPanel(entry.key)}
                 <ProPanelMount entryKey={entry.key} {destination} {onSaved} />
               {:else}
-                <p class="bs-acc__loading">Loading…</p>
+                <p class="bs-acc__loading">{__('loading')}</p>
               {/if}
             {:else}
-              <UpgradeCta description={entry.description} />
+              <UpgradeCta description={__(DESC_KEY[entry.key] ?? '') || entry.description} />
             {/if}
           </div>
         {/if}

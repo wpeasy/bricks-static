@@ -2,7 +2,6 @@ import type {
   ConnectionInput,
   ConnectionResponse,
   DestinationsResponse,
-  DataAttrItem,
   DiscoveryMode,
   LinkItem,
   MediaItem,
@@ -88,5 +87,4 @@ export const api = {
   getMedia: () => request<{ media: MediaItem[] }>('/media'),
   getLinks: () => request<{ links: LinkItem[] }>('/links'),
   getVideos: () => request<{ videos: VideoItem[] }>('/videos'),
-  getDataAttributes: () => request<{ attributes: DataAttrItem[] }>('/data-attributes'),
 };

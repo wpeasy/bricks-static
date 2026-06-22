@@ -107,8 +107,8 @@ final class Plugin {
 
         /**
          * Lets add-ons register additional REST controllers under the bs/v1
-         * namespace. The Pro addon registers the media, links, videos,
-         * data-attributes and sitemap controllers from here.
+         * namespace. The Pro addon registers the media, links, videos
+         * and sitemap controllers from here.
          */
         do_action('bs_register_rest_routes');
     }

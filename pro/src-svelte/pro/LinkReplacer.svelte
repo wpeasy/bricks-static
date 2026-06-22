@@ -2,6 +2,7 @@
   import { onMount, untrack } from 'svelte';
   import { api } from '../../../src-svelte/shared/api';
   import type { LinkItem, LinkReplacement, DestinationDisplay } from '../../../src-svelte/shared/types';
+  import { __, __f } from '../../../src-svelte/shared/i18n';
 
   let { destination, onSaved }: { destination: DestinationDisplay; onSaved: () => void } = $props();
 
@@ -10,6 +11,7 @@
   let error = $state('');
   let pageFilter = $state('');
   let search = $state('');
+  let onlyReplacements = $state(false);
 
   // Local swap map (original href → replacement url), seeded from the destination.
   let swaps = $state<Record<string, string>>(
@@ -61,6 +63,7 @@
     const page = pageFilter.trim().toLowerCase();
     const exact = page !== '' && pages.some((p) => p.toLowerCase() === page);
     return links.filter((l) => {
+      if (onlyReplacements && !swaps[l.url]) return false;
       if (page) {
         const match = exact ? l.pages.some((p) => p.toLowerCase() === page) : l.pages.some((p) => p.toLowerCase().includes(page));
         if (!match) return false;
@@ -76,37 +79,39 @@
 <div class="bs-links">
   <div class="bs-links__head">
     <span>
-      Link replacer
-      <small>({links.length} link{links.length === 1 ? '' : 's'}{swapCount > 0 ? `, ${swapCount} replaced` : ''})</small>
+      {__('linkReplacer')}
+      <small>({links.length === 1 ? __f('nLink', links.length) : __f('nLinks', links.length)}{swapCount > 0 ? __f('nReplaced', swapCount) : ''})</small>
     </span>
     <div class="bs-links__filters">
-      <input type="search" placeholder="Search URL or label…" bind:value={search} />
-      <input type="search" list="bs-link-pages" placeholder="Filter by page…" bind:value={pageFilter} aria-label="Filter by page" />
+      <input type="search" placeholder={__('phSearchUrlLabel')} bind:value={search} />
+      <input type="search" list="bs-link-pages" placeholder={__('filterByPage')} bind:value={pageFilter} aria-label={__('filterByPageAria')} />
       <datalist id="bs-link-pages">
         {#each pages as p}<option value={p}></option>{/each}
       </datalist>
+      <label class="bs-only"><input type="checkbox" bind:checked={onlyReplacements} /> {__('onlyReplacements')}</label>
     </div>
   </div>
-  <p class="bs-links__hint">Replace a link target (<code>&lt;a&gt;</code>/button <code>href</code>) with another URL for this destination. Leave blank to keep the original.</p>
+  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+  <p class="bs-links__hint">{@html __('linksHint')}</p>
 
   {#if loading}
-    <p class="bs-links__note">Loading links…</p>
+    <p class="bs-links__note">{__('loadingLinks')}</p>
   {:else if error}
     <p class="bs-links__note bs-links__note--err">{error}</p>
   {:else if links.length === 0}
-    <p class="bs-links__note">No links found yet — run a Check or Sync first so the pages are rendered.</p>
+    <p class="bs-links__note">{__('noLinksYet')}</p>
   {:else}
     <div class="bs-links__list">
       {#each filtered as item (item.url)}
         <div class="bs-links__row" class:is-swapped={swaps[item.url]}>
           <div class="bs-links__meta">
             <span class="bs-links__url" title={item.url}>{item.url}</span>
-            <span class="bs-links__sub">{item.text || '— no label —'} · {item.pages.length} page{item.pages.length === 1 ? '' : 's'}</span>
+            <span class="bs-links__sub">{item.text || __('noLabel')} · {item.pages.length === 1 ? __f('nPage', item.pages.length) : __f('nPages', item.pages.length)}</span>
           </div>
           <input
             type="url"
             class="bs-links__input"
-            placeholder="Replacement URL…"
+            placeholder={__('phReplacementUrl')}
             value={swaps[item.url] ?? ''}
             onchange={(e) => commit(item.url, e.currentTarget.value)}
             onblur={(e) => commit(item.url, e.currentTarget.value)}
@@ -114,7 +119,7 @@
         </div>
       {/each}
       {#if filtered.length === 0}
-        <p class="bs-links__note">No links match the current filter.</p>
+        <p class="bs-links__note">{__('noLinksMatch')}</p>
       {/if}
     </div>
   {/if}
@@ -140,7 +145,20 @@
 
   .bs-links__filters {
     display: flex;
+    align-items: center;
+    flex-wrap: wrap;
     gap: var(--bs-space--xs);
+  }
+
+  .bs-only {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--bs-space--2xs);
+    font-size: var(--bs-text--sm);
+    font-weight: var(--bs-weight--normal);
+    color: var(--bs-color-text--muted);
+    white-space: nowrap;
+    cursor: pointer;
   }
 
   .bs-links__filters input {

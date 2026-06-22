@@ -13,7 +13,6 @@ import type { DestinationDisplay } from '../../../src-svelte/shared/types';
 import MediaReplacer from './MediaReplacer.svelte';
 import LinkReplacer from './LinkReplacer.svelte';
 import VideoReplacer from './VideoReplacer.svelte';
-import DataAttrReplacer from './DataAttrReplacer.svelte';
 
 interface PanelProps {
   destination: DestinationDisplay;
@@ -48,4 +47,3 @@ function register(key: string, Comp: any, badge: (d: DestinationDisplay) => numb
 register('media', MediaReplacer, (d) => d.mediaReplacements?.length ?? 0);
 register('links', LinkReplacer, (d) => d.linkReplacements?.length ?? 0);
 register('videos', VideoReplacer, (d) => d.videoReplacements?.length ?? 0);
-register('data', DataAttrReplacer, (d) => d.dataReplacements?.length ?? 0);

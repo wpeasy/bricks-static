@@ -2,6 +2,7 @@
   import { untrack } from 'svelte';
   import { api } from '../shared/api';
   import type { Capabilities, ConnectionInput, DestinationDisplay, Transport } from '../shared/types';
+  import { __ } from '../shared/i18n';
 
   let {
     destination,
@@ -48,25 +49,23 @@
       return {
         tone: 'ok',
         retest: false,
-        text: dp.hasUrl
-          ? 'Fast deploy: one package, extracted on the destination.'
-          : 'Fast deploy enabled — the URL was guessed from the host. Set a Destination URL above to be sure it keeps working.',
+        text: dp.hasUrl ? __('deployFastOk') : __('deployFastGuessed'),
       };
     }
     if (dp.disabled) {
       return {
         tone: 'muted',
         retest: true,
-        text: 'Per-file upload — package deploy hit an error and was turned off here.',
+        text: __('deployPerFileErr'),
       };
     }
     if (!dp.canBuild) {
-      return { tone: 'muted', retest: false, text: 'Per-file upload — ZipArchive isn’t available on this server.' };
+      return { tone: 'muted', retest: false, text: __('deployNoZip') };
     }
     return {
       tone: 'muted',
       retest: false,
-      text: 'Per-file upload (slower). Set a Destination URL above to enable fast package deploy (needs PHP on the host).',
+      text: __('deployPerFile'),
     };
   });
 
@@ -108,7 +107,7 @@
     try {
       await api.updateDestination(d.id, payload(true));
       password = '';
-      message = 'Saved.';
+      message = __('msgSaved');
       messageOk = true;
       onSaved();
     } catch (e) {
@@ -141,42 +140,42 @@
 <section class="bs-card bs-stack bs-stack--md">
   <div class="bs-grid">
     <div class="bs-field">
-      <label for="bs-transport-{d.id}">Transport</label>
+      <label for="bs-transport-{d.id}">{__('fldTransport')}</label>
       <select id="bs-transport-{d.id}" bind:value={transport} onchange={handleTransportChange} disabled={d.transport.fromConstant || busy}>
-        <option value="sftp" disabled={!capabilities.sftp}>SFTP{capabilities.sftp ? '' : ' (unavailable)'}</option>
-        <option value="ftps" disabled={!capabilities.ftps}>FTPS (FTP over TLS){capabilities.ftps ? '' : ' (unavailable)'}</option>
-        <option value="ftp" disabled={!capabilities.ftp}>FTP (insecure){capabilities.ftp ? '' : ' (unavailable)'}</option>
+        <option value="sftp" disabled={!capabilities.sftp}>SFTP{capabilities.sftp ? '' : __('optUnavailable')}</option>
+        <option value="ftps" disabled={!capabilities.ftps}>{__('optFtps')}{capabilities.ftps ? '' : __('optUnavailable')}</option>
+        <option value="ftp" disabled={!capabilities.ftp}>{__('optFtp')}{capabilities.ftp ? '' : __('optUnavailable')}</option>
       </select>
     </div>
     <div class="bs-field">
-      <label for="bs-port-{d.id}">Port</label>
+      <label for="bs-port-{d.id}">{__('fldPort')}</label>
       <input id="bs-port-{d.id}" type="number" bind:value={port} placeholder={transport === 'sftp' ? '22' : '21'} disabled={d.port.fromConstant || busy} />
     </div>
 
     <div class="bs-field">
-      <label for="bs-host-{d.id}">Host</label>
+      <label for="bs-host-{d.id}">{__('fldHost')}</label>
       <input id="bs-host-{d.id}" type="text" bind:value={host} placeholder="ftp.example.com" disabled={d.host.fromConstant || busy} />
     </div>
     <div class="bs-field">
-      <label for="bs-user-{d.id}">Username</label>
+      <label for="bs-user-{d.id}">{__('fldUsername')}</label>
       <input id="bs-user-{d.id}" type="text" bind:value={username} autocomplete="off" disabled={d.username.fromConstant || busy} />
     </div>
 
     <div class="bs-field">
-      <label for="bs-pass-{d.id}">Password</label>
-      <input id="bs-pass-{d.id}" type="password" bind:value={password} autocomplete="new-password" placeholder={d.password.hasValue ? 'Saved — leave blank to keep' : 'Password'} disabled={d.password.fromConstant || busy} />
+      <label for="bs-pass-{d.id}">{__('fldPassword')}</label>
+      <input id="bs-pass-{d.id}" type="password" bind:value={password} autocomplete="new-password" placeholder={d.password.hasValue ? __('phSavedBlank') : __('fldPassword')} disabled={d.password.fromConstant || busy} />
     </div>
     <div class="bs-field">
-      <label for="bs-remote-{d.id}">Remote path (web root)</label>
-      <input id="bs-remote-{d.id}" type="text" bind:value={remotePath} placeholder="(empty = FTP login dir)" disabled={d.remotePath.fromConstant || busy} />
+      <label for="bs-remote-{d.id}">{__('fldRemotePath')}</label>
+      <input id="bs-remote-{d.id}" type="text" bind:value={remotePath} placeholder={__('phRemoteEmpty')} disabled={d.remotePath.fromConstant || busy} />
     </div>
 
     <div class="bs-field">
-      <label for="bs-url-{d.id}">Destination URL (optional)</label>
+      <label for="bs-url-{d.id}">{__('fldDestUrl')}</label>
       <input id="bs-url-{d.id}" type="url" bind:value={destinationUrl} placeholder="https://www.example.com" disabled={d.destinationUrl.fromConstant || busy} />
     </div>
     <div class="bs-field">
-      <label for="bs-base-{d.id}">Served from sub-path (optional)</label>
+      <label for="bs-base-{d.id}">{__('fldSubPath')}</label>
       <input id="bs-base-{d.id}" type="text" bind:value={basePath} placeholder="/" disabled={d.basePath.fromConstant || busy} />
     </div>
   </div>
@@ -185,7 +184,7 @@
     <p class="bs-deploy bs-deploy--{deployNote.tone}">
       {#if deployNote.tone === 'ok'}⚡ {/if}{deployNote.text}
       {#if deployNote.retest}
-        <button type="button" class="bs-link" onclick={retestPackage} disabled={retesting || busy}>{retesting ? 'Re-testing…' : 'Re-test'}</button>
+        <button type="button" class="bs-link" onclick={retestPackage} disabled={retesting || busy}>{retesting ? __('btnReTesting') : __('btnReTest')}</button>
       {/if}
       {#if retestMsg}<span class="bs-deploy__result"> — {retestMsg}</span>{/if}
     </p>
@@ -197,18 +196,18 @@
 
   <div class="bs-row bs-row--between">
     <div class="bs-row bs-row--wrap">
-      <button type="button" class="bs-btn bs-btn--secondary" onclick={test} disabled={busy || !host}>{testing ? 'Testing…' : 'Test'}</button>
-      <button type="button" class="bs-btn bs-btn--primary" onclick={save} disabled={busy}>{saving ? 'Saving…' : 'Save'}</button>
+      <button type="button" class="bs-btn bs-btn--secondary" onclick={test} disabled={busy || !host}>{testing ? __('btnTesting') : __('btnTest')}</button>
+      <button type="button" class="bs-btn bs-btn--primary" onclick={save} disabled={busy}>{saving ? __('btnSaving') : __('btnSave')}</button>
     </div>
     {#if canRemove}
       {#if confirmRemove}
         <span class="bs-remove">
-          <span class="bs-remove__q">Remove this destination?</span>
-          <button type="button" class="bs-link bs-link--danger" onclick={() => onRemove(d.id)} disabled={busy}>Yes, remove</button>
-          <button type="button" class="bs-link" onclick={() => (confirmRemove = false)}>Cancel</button>
+          <span class="bs-remove__q">{__('confirmRemoveDest')}</span>
+          <button type="button" class="bs-link bs-link--danger" onclick={() => onRemove(d.id)} disabled={busy}>{__('btnYesRemove')}</button>
+          <button type="button" class="bs-link" onclick={() => (confirmRemove = false)}>{__('btnCancel')}</button>
         </span>
       {:else}
-        <button type="button" class="bs-link bs-link--danger" onclick={() => (confirmRemove = true)} disabled={busy}>Remove destination</button>
+        <button type="button" class="bs-link bs-link--danger" onclick={() => (confirmRemove = true)} disabled={busy}>{__('btnRemoveDest')}</button>
       {/if}
     {/if}
   </div>

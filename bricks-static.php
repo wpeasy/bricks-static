@@ -3,7 +3,7 @@
  * Plugin Name:       Bricks Static
  * Plugin URI:        https://alanblair.co/bricks-static
  * Description:       Generate and serve static HTML versions of Bricks-built pages for performance.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 6.5
  * Tested up to:      7.0
  * Requires PHP:      8.0
@@ -28,7 +28,7 @@ defined('ABSPATH') || exit;
 /**
  * Plugin constants.
  */
-define('BS_VERSION', '1.0.0');
+define('BS_VERSION', '1.0.1');
 define('BS_PLUGIN_FILE', __FILE__);
 define('BS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('BS_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -64,6 +64,14 @@ spl_autoload_register(static function (string $class): void {
     if (is_readable($file)) {
         require $file;
     }
+});
+
+/**
+ * Load translations from /languages (bundled .mo files). On `init` per WP 6.7+,
+ * which warns when a textdomain is loaded too early.
+ */
+add_action('init', static function (): void {
+    load_plugin_textdomain('bricks-static', false, dirname(BS_PLUGIN_BASENAME) . '/languages');
 });
 
 /**

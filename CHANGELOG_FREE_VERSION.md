@@ -1,15 +1,6 @@
 # Changelog
 
-## v1.0.0 (2026-06-21)
+## v1.0.1 (2026-06-22)
 
 ### New
-Bricks Static renders the pages you build with Bricks to plain static HTML and deploys them over SFTP, FTP or FTPS. The free plugin exports up to 10 pages to one destination, with text replacements, a generated `.htaccess` plus an nginx snippet, favicon, a "sync this page" button on the front end, and a WP-CLI command for reliable syncs.
-
-### New
-The dashboard now shows a version badge by the title and, on the free version, a short panel summarising what your plan includes and what Bricks Static Pro adds. A sync that reaches the 10-page limit tells you how to render the rest with Pro.
-
-### Fixed
-The "sync this page" menu no longer lists destinations beyond your plan's limit — it now shows only the destinations that will actually be synced.
-
-### Improved
-The advanced features — multiple destinations, Media/Links/Videos/Data-attribute replacements, gzip compression, remote pruning and sitemap generation — are part of the optional Bricks Static Pro add-on, shown clearly marked in the dashboard. If you previously set up extra destinations, they are kept (hidden), not deleted, and return if Pro is active.
+The admin dashboard is now available in French, German, Italian, Spanish and Dutch. WordPress shows the matching language automatically based on your site language — every label, button, tooltip, help text and status message is translated.

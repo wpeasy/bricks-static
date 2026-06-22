@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace WPEasy\BricksStatic\Admin;
 
 use WPEasy\BricksStatic\Support\Edition;
+use WPEasy\BricksStatic\Support\I18n;
 
 defined('ABSPATH') || exit;
 
@@ -153,6 +154,8 @@ final class Menu {
             // truth is /status (re-read on poll), so a license change reflects
             // without a hard reload.
             'capabilities' => Edition::capabilities(),
+            // Translated UI strings for the Svelte bundle (shared/i18n.ts).
+            'i18n'         => I18n::all(),
         ]);
     }
 

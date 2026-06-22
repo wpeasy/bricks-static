@@ -2,6 +2,7 @@
   import type { SyncSnapshot } from '../shared/types';
   import { caps } from '../shared/capabilities.svelte';
   import { PURCHASE_URL } from '../shared/upsell';
+  import { __, __f } from '../shared/i18n';
 
   let {
     snapshot,
@@ -17,16 +18,16 @@
   let canRetry = $derived(failedCount > 0 && !snapshot?.running && !!onRetry);
 
   const PHASE_LABELS: Record<string, string> = {
-    collect: 'Collecting URLs',
-    render: 'Rendering pages',
-    assets: 'Processing assets',
-    finalize: 'Finalising',
-    package: 'Packaging & deploying',
-    upload: 'Uploading',
-    prune: 'Removing old files',
-    done: 'Done',
-    error: 'Error',
-    cancelled: 'Cancelled',
+    collect: __('phCollect'),
+    render: __('phRender'),
+    assets: __('phAssets'),
+    finalize: __('phFinalize'),
+    package: __('phPackage'),
+    upload: __('phUpload'),
+    prune: __('phPrune'),
+    done: __('phDone'),
+    error: __('phError'),
+    cancelled: __('phCancelled'),
   };
 
   // Dismissal: once a run has finished it can be closed. Keyed to the run's
@@ -105,11 +106,11 @@
 {#if visible && snapshot}
   <section class="bs-card bs-stack bs-stack--sm bs-progress--{tone}">
     <div class="bs-row bs-row--between">
-      <h2>Progress{#if destLabel}<span class="bs-progress__dest"> · {destLabel}</span>{/if}</h2>
+      <h2>{__('progress')}{#if destLabel}<span class="bs-progress__dest"> · {destLabel}</span>{/if}</h2>
       <div class="bs-progress__head-right">
         <span class="bs-progress__phase">{phaseLabel}</span>
         {#if finished}
-          <button type="button" class="bs-progress__close" onclick={dismiss} aria-label="Dismiss" data-balloon="Dismiss" data-balloon-pos="down-left">×</button>
+          <button type="button" class="bs-progress__close" onclick={dismiss} aria-label={__('btnDismiss')} data-balloon={__('btnDismiss')} data-balloon-pos="down-left">×</button>
         {/if}
       </div>
     </div>
@@ -120,14 +121,14 @@
 
     <div class="bs-progress__bar-group">
       <div class="bs-progress__row">
-        <span class="bs-progress__label">Pages</span>
+        <span class="bs-progress__label">{__('lblPages')}</span>
         <div class="bs-progress__track">
           <div class="bs-progress__fill" style="width: {pct(pagesDone, pagesTotal)}%"></div>
         </div>
         <span class="bs-progress__num">{pagesDone}/{pagesTotal}</span>
       </div>
       <div class="bs-progress__row">
-        <span class="bs-progress__label">Assets</span>
+        <span class="bs-progress__label">{__('lblAssets')}</span>
         <div class="bs-progress__track">
           <div class="bs-progress__fill" style="width: {pct(assetsDone, assetsTotal)}%"></div>
         </div>
@@ -135,15 +136,15 @@
       </div>
       {#if isPackaging}
         <div class="bs-progress__row">
-          <span class="bs-progress__label">Deploy</span>
+          <span class="bs-progress__label">{__('lblDeploy')}</span>
           <div class="bs-progress__track">
             <div class="bs-progress__fill bs-progress__fill--indeterminate"></div>
           </div>
-          <span class="bs-progress__num">{uploadsTotal} files</span>
+          <span class="bs-progress__num">{__f('nFiles', uploadsTotal)}</span>
         </div>
       {:else if showUploads}
         <div class="bs-progress__row">
-          <span class="bs-progress__label">Uploads</span>
+          <span class="bs-progress__label">{__('lblUploads')}</span>
           <div class="bs-progress__track">
             <div class="bs-progress__fill" style="width: {pct(uploaded, uploadsTotal)}%"></div>
           </div>
@@ -153,27 +154,28 @@
     </div>
 
     <div class="bs-progress__stats">
-      <span>Site: {snapshot.counts?.files ?? 0} files · {humanBytes(snapshot.counts?.bytes ?? 0)}</span>
-      {#if (snapshot.counts?.pruned ?? 0) > 0}<span>{snapshot.counts?.pruned} removed</span>{/if}
-      {#if (snapshot.skippedCount ?? 0) > 0}<span>{snapshot.skippedCount} skipped</span>{/if}
-      {#if (snapshot.compatCount ?? 0) > 0}<span class="bs-progress__warn">{snapshot.compatCount} not static-friendly</span>{/if}
-      {#if (snapshot.errorCount ?? 0) > 0}<span class="bs-progress__err">{snapshot.errorCount} errors</span>{/if}
-      {#if failedCount > 0}<span class="bs-progress__err">{failedCount} failed upload{failedCount === 1 ? '' : 's'}</span>{/if}
+      <span>{__f('statsSite', snapshot.counts?.files ?? 0, humanBytes(snapshot.counts?.bytes ?? 0))}</span>
+      {#if (snapshot.counts?.pruned ?? 0) > 0}<span>{__f('nRemoved', snapshot.counts?.pruned ?? 0)}</span>{/if}
+      {#if (snapshot.skippedCount ?? 0) > 0}<span>{__f('nSkipped', snapshot.skippedCount ?? 0)}</span>{/if}
+      {#if (snapshot.compatCount ?? 0) > 0}<span class="bs-progress__warn">{__f('nNotStatic', snapshot.compatCount ?? 0)}</span>{/if}
+      {#if (snapshot.errorCount ?? 0) > 0}<span class="bs-progress__err">{__f('nErrors', snapshot.errorCount ?? 0)}</span>{/if}
+      {#if failedCount > 0}<span class="bs-progress__err">{failedCount === 1 ? __f('nFailedUpload', failedCount) : __f('nFailedUploads', failedCount)}</span>{/if}
     </div>
 
     {#if snapshot.pageLimitHit}
       <div class="bs-progress__limit">
-        <span><strong>Free plan renders up to {caps.maxPages} pages.</strong> Additional pages weren't synced.</span>
-        <a class="bs-btn bs-btn--primary" href={PURCHASE_URL} target="_blank" rel="noopener noreferrer">Upgrade to Pro</a>
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        <span>{@html __f('freePlanLimit', caps.maxPages)}</span>
+        <a class="bs-btn bs-btn--primary" href={PURCHASE_URL} target="_blank" rel="noopener noreferrer">{__('upgradeToPro')}</a>
       </div>
     {/if}
 
     {#if failedCount > 0}
       <div class="bs-progress__retry">
-        <span>{failedCount} file{failedCount === 1 ? '' : 's'} failed to upload.</span>
+        <span>{failedCount === 1 ? __f('nFileFailed', failedCount) : __f('nFilesFailed', failedCount)}</span>
         {#if canRetry}
           <button type="button" class="bs-btn bs-btn--primary" onclick={onRetry} disabled={retrying}>
-            {retrying ? 'Retrying…' : `Retry ${failedCount} upload${failedCount === 1 ? '' : 's'}`}
+            {retrying ? __('btnRetrying') : failedCount === 1 ? __f('btnRetryUpload', failedCount) : __f('btnRetryUploads', failedCount)}
           </button>
         {/if}
       </div>
@@ -181,7 +183,7 @@
 
     {#if snapshot.errors && snapshot.errors.length > 0}
       <details>
-        <summary>Errors ({snapshot.errorCount})</summary>
+        <summary>{__f('summaryErrors', snapshot.errorCount ?? 0)}</summary>
         <ul class="bs-progress__list">
           {#each snapshot.errors as e}
             <li><code>{e.url}</code> — {e.error}</li>
@@ -192,7 +194,7 @@
 
     {#if snapshot.skipped && snapshot.skipped.length > 0}
       <details>
-        <summary>Skipped ({snapshot.skippedCount})</summary>
+        <summary>{__f('summarySkipped', snapshot.skippedCount ?? 0)}</summary>
         <ul class="bs-progress__list">
           {#each snapshot.skipped as s}
             <li><code>{s.url}</code> — {s.reason}</li>
@@ -203,7 +205,7 @@
 
     {#if snapshot.compat && snapshot.compat.length > 0}
       <details>
-        <summary>Won't work on static ({snapshot.compatCount}) — forms / dynamic endpoints (notice only; pages are still uploaded)</summary>
+        <summary>{__f('summaryCompat', snapshot.compatCount ?? 0)}</summary>
         <ul class="bs-progress__list">
           {#each snapshot.compat as c}
             <li>

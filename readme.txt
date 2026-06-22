@@ -33,7 +33,7 @@ The optional [Bricks Static Pro](https://brxprod.com/bricks-static/) add-on remo
 
 * **Unlimited pages** per sync
 * **Unlimited destinations** + sync-all
-* **Advanced replacements** — Media, Links, Videos and Data-attribute swaps per destination
+* **Advanced replacements** — Media, Links and Videos swaps per destination
 * **Gzip pre-compression** (`.gz`) for faster delivery
 * **Remote pruning** — delete files that no longer exist locally
 * **Sitemap.xml + robots.txt** generation
@@ -81,7 +81,7 @@ No — the free version is fully functional for small sites. Pro is for larger s
 == Screenshots ==
 
 1. The Bricks Static dashboard — destinations, status and sync controls.
-2. Per-destination replacements (Text is free; Media, Links, Videos and Data-attributes are Pro).
+2. Per-destination replacements (Text is free; Media, Links and Videos are Pro).
 3. The "sync this page" button on the front end.
 
 == Changelog ==

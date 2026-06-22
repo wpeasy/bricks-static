@@ -243,11 +243,11 @@ Add new diagnostic data to `/health/diagnostics` (admin-only), never `/health`. 
 
 ## Per-Destination Replacement Subsystems
 
-Replacements (Text, Media, Links, Videos, Data attributes) all follow ONE pattern — copy it for any new one:
+Replacements (Text, Media, Links, Videos) all follow ONE pattern — copy it for any new one:
 
 1. **Collector** (`src/Media/*Collector.php`) scans the last render's cached HTML (`Manifest::RENDER_OPTION`) and returns deduped items with the page(s) they appear on, for the dashboard list.
 2. **Replacer** (`src/Render/*Replacer.php`) rewrites the matched thing in the per-destination deploy copy. Two non-negotiable rules, learned from real bugs:
-   - **Tag-scoped, never global** — match the specific element/attribute (or, for text, only the runs between tags). A blanket `str_replace`/regex across the whole document corrupts attributes, scripts, JSON-LD, or body text. `TextReplacer` and `DataAttrReplacer` split out `<script>/<style>/<!-- -->` and operate on the right side only.
+   - **Tag-scoped, never global** — match the specific element/attribute (or, for text, only the runs between tags). A blanket `str_replace`/regex across the whole document corrupts attributes, scripts, JSON-LD, or body text. `TextReplacer` splits out `<script>/<style>/<!-- -->` and operates on the right side only.
    - **Entity-decode before matching** — attribute/`url()` values carry `&amp;`, `&quot;`, percent-encoding, etc. Decode the captured value (`html_entity_decode(..., ENT_QUOTES | ENT_HTML5)`) before comparing to the stored key; `esc_attr()` the replacement on write.
 3. **Storage** on `Destination` (`*_replacements()` + a `sanitize_*` ); included in `Destination::for_display()` and `apply()`.
 4. **Deploy**: applied in `Runner::build_deploy_manifest()` (only writes a per-destination page copy when the page actually changed) and folded into `Runner::sync_signature()` so a replacement change flips "in sync".
@@ -256,6 +256,15 @@ Replacements (Text, Media, Links, Videos, Data attributes) all follow ONE patter
 Media/Videos that swap to a library attachment must also add the new file (and image variants) to the deploy manifest so it uploads. The Videos replacer additionally rewrites an embed's source `origin=` (incl. percent-encoded) to the destination.
 
 ---
+
+## Internationalization (i18n) — PHP dictionary, NOT `@wordpress/i18n`
+
+UI strings are localized with a **PHP-dictionary** pattern, deliberately not `@wordpress/i18n` + `wp_set_script_translations()` (whose md5-of-source-path `.json` matching is brittle with Vite's hashed/code-split bundles — translations silently vanish). This mirrors the sibling `ab-bricks-productivity` plugin.
+
+- **Strings live in PHP:** `src/Support/I18n.php` (`I18n::all()`, domain `bricks-static`) and `pro/src/Support/I18n.php` (domain `bricks-static-pro`), each `'jsKey' => __('English', 'domain')`. One `.mo` translates both PHP and JS.
+- **Bridge:** `Admin\Menu` localizes `I18n::all()` → `window.bsData.i18n`; `Admin\ProMenu` → `window.bspData.i18n`. The Svelte helper `src-svelte/shared/i18n.ts` exposes `__()` / `__f()` (sprintf `%s`/`%d` + positional `%1$s`) reading the merged dict; components call `__('jsKey')`. Strings with inline markup use `{@html __(...)}` (trusted dictionary only).
+- **Loading:** `load_plugin_textdomain` on `init` in both plugins; `.mo` in `languages/` (Free) and `pro/languages/` (Pro). Every JS-consuming bundle is `type="module"`, so the helper's ES `import` is fine (no IIFE concern — that rule is only for a non-module `shared.js`, which this plugin doesn't ship).
+- **Regenerate:** `wp i18n make-pot` → `python scripts/i18n_build.py extract` → translate into `scripts/i18n/<locale>.json` → `python scripts/i18n_build.py assemble` (writes `.po` + `.mo`). Shipped: fr_FR, de_DE, it_IT, es_ES, nl_NL. Scope so far: dashboard + Pro panels (Docs prose left English).
 
 ## Description
 

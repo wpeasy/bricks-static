@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { __ } from '../shared/i18n';
 
   let {
     open = $bindable(false),
@@ -28,7 +29,7 @@
     <div class="bs-modal__box" role="dialog" aria-modal="true" aria-label={title} tabindex="-1" onclick={(e) => e.stopPropagation()}>
       <div class="bs-modal__head">
         <h2 class="bs-modal__title">{title}</h2>
-        <button type="button" class="bs-modal__close" aria-label="Close" onclick={close}>×</button>
+        <button type="button" class="bs-modal__close" aria-label={__('close')} onclick={close}>×</button>
       </div>
       <div class="bs-modal__body">
         {@render children()}

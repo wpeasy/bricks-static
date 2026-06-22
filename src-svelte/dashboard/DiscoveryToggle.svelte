@@ -1,6 +1,7 @@
 <script lang="ts">
   import Modal from '../lib/Modal.svelte';
   import type { DiscoveryMode } from '../shared/types';
+  import { __ } from '../shared/i18n';
 
   let {
     mode,
@@ -20,45 +21,37 @@
 </script>
 
 <div class="bs-disc">
-  <span class="bs-disc__label">Pages to include</span>
-  <div class="bs-seg" role="group" aria-label="Pages to include">
+  <span class="bs-disc__label">{__('pagesToInclude')}</span>
+  <div class="bs-seg" role="group" aria-label={__('pagesToInclude')}>
     <button
       type="button"
       class="bs-seg__btn"
       class:is-active={mode === 'linked'}
       onclick={() => set('linked')}
       {disabled}
-    >Only linked pages</button>
+    >{__('onlyLinkedPages')}</button>
     <button
       type="button"
       class="bs-seg__btn"
       class:is-active={mode === 'all'}
       onclick={() => set('all')}
       {disabled}
-    >All published</button>
+    >{__('allPublished')}</button>
   </div>
-  <button type="button" class="bs-disc__help" aria-label="What's the difference?" onclick={() => (helpOpen = true)}>?</button>
+  <button type="button" class="bs-disc__help" aria-label={__('whatsDifference')} onclick={() => (helpOpen = true)}>?</button>
 </div>
 
-<Modal bind:open={helpOpen} title="Pages to include">
+<Modal bind:open={helpOpen} title={__('pagesToInclude')}>
   <div class="bs-help">
-    <p>Controls which pages are discovered and exported.</p>
+    <p>{__('discControls')}</p>
     <dl>
-      <dt>Only linked pages <span class="bs-help__tag">default</span></dt>
-      <dd>
-        Starts at your home page and follows internal links from page to page. A page
-        that nothing links to isn't reachable by a visitor, so it's left out — this also
-        keeps builder-only URLs (such as Bricks <code>/template/…</code> previews) out of
-        the static site.
-      </dd>
-      <dt>All published</dt>
-      <dd>
-        Also includes every published page, post and taxonomy archive — even ones nothing
-        links to (orphaned content). Use this if you rely on pages reached only through
-        JavaScript navigation, or deliberately keep unlinked landing pages.
-      </dd>
+      <dt>{__('onlyLinkedPages')} <span class="bs-help__tag">{__('tagDefault')}</span></dt>
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+      <dd>{@html __('discLinkedBody')}</dd>
+      <dt>{__('allPublished')}</dt>
+      <dd>{__('discAllBody')}</dd>
     </dl>
-    <p class="bs-help__note">Either way, builder/preview post types are never exported.</p>
+    <p class="bs-help__note">{__('discNote')}</p>
   </div>
 </Modal>
 

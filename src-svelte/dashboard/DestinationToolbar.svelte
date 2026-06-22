@@ -2,6 +2,7 @@
   import { untrack } from 'svelte';
   import { api } from '../shared/api';
   import type { DestinationDisplay } from '../shared/types';
+  import { __ } from '../shared/i18n';
 
   let {
     destination,
@@ -26,7 +27,7 @@
   let busy = $derived(saving || running);
 
   // Why the run buttons are off (a disabled destination is never synced).
-  let blockedReason = $derived(!enabled ? 'Enable this destination first' : !connected ? 'Test the connection first' : '');
+  let blockedReason = $derived(!enabled ? __('enableFirst') : !connected ? __('testConnFirst') : '');
   let canRun = $derived(enabled && connected && !busy);
 
   let url = $derived.by(() => {
@@ -51,13 +52,13 @@
 
 <div class="bs-dtoolbar">
   <div class="bs-dstatus">
-    <span class="bs-dstatus__item bs-dstatus__item--{connected ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>Connected</span>
-    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.hasPushed ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>Pushed</span>
-    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.inSync ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>In sync</span>
+    <span class="bs-dstatus__item bs-dstatus__item--{connected ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>{__('stConnected')}</span>
+    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.hasPushed ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>{__('stPushed')}</span>
+    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.inSync ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>{__('stInSync')}</span>
   </div>
 
   <div class="bs-dtoolbar__switches">
-    <label class="bs-switch"><input type="checkbox" bind:checked={enabled} disabled={busy} onchange={() => toggle(enabled)} /> Enabled</label>
+    <label class="bs-switch"><input type="checkbox" bind:checked={enabled} disabled={busy} onchange={() => toggle(enabled)} /> {__('swEnabled')}</label>
   </div>
 
   <div class="bs-dtoolbar__actions">
@@ -68,7 +69,7 @@
       disabled={!canRun}
       data-balloon={blockedReason || undefined}
       data-balloon-pos="down"
-    >Check</button>
+    >{__('btnCheck')}</button>
     <button
       type="button"
       class="bs-btn bs-btn--primary"
@@ -76,9 +77,9 @@
       disabled={!canRun}
       data-balloon={blockedReason || undefined}
       data-balloon-pos="down"
-    >Sync</button>
+    >{__('btnSync')}</button>
     {#if url}
-      <a class="bs-dtoolbar__link" href={url} target="_blank" rel="noopener noreferrer">Visit site ↗</a>
+      <a class="bs-dtoolbar__link" href={url} target="_blank" rel="noopener noreferrer">{__('visitSite')}</a>
     {/if}
   </div>
 </div>
