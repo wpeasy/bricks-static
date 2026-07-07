@@ -31,7 +31,6 @@ const FREE = {
     'uninstall.php',
     'readme.txt',
     'src',
-    'assets/css',
     'assets/dist',
     'templates',
     'languages',

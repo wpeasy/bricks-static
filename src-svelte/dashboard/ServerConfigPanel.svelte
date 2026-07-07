@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@wpeasy/ab-ui';
   import { api } from '../shared/api';
   import type { ServerConfig } from '../shared/types';
   import { __ } from '../shared/i18n';
@@ -32,7 +33,7 @@
 <section class="bs-card bs-stack bs-stack--sm">
   <div class="bs-row bs-row--between">
     <h2>{__('serverConfig')}</h2>
-    <button type="button" class="bs-link" onclick={load}>{open ? __('btnHide') : __('btnView')}</button>
+    <Button variant="ghost" size="sm" onclick={load}>{open ? __('btnHide') : __('btnView')}</Button>
   </div>
   <!-- eslint-disable-next-line svelte/no-at-html-tags -->
   <p class="bs-sc__lead">{@html __('serverConfigLead')}</p>
@@ -41,17 +42,17 @@
     <div class="bs-stack bs-stack--xs">
       <div class="bs-row bs-row--between">
         <strong>.htaccess</strong>
-        <button type="button" class="bs-link" onclick={() => copy(config!.htaccess, 'htaccess')}>
+        <Button variant="ghost" size="sm" onclick={() => copy(config!.htaccess, 'htaccess')}>
           {copied === 'htaccess' ? __('btnCopied') : __('btnCopy')}
-        </button>
+        </Button>
       </div>
       <pre class="bs-sc__code">{config.htaccess}</pre>
 
       <div class="bs-row bs-row--between">
         <strong>nginx</strong>
-        <button type="button" class="bs-link" onclick={() => copy(config!.nginx, 'nginx')}>
+        <Button variant="ghost" size="sm" onclick={() => copy(config!.nginx, 'nginx')}>
           {copied === 'nginx' ? __('btnCopied') : __('btnCopy')}
-        </button>
+        </Button>
       </div>
       <pre class="bs-sc__code">{config.nginx}</pre>
     </div>
@@ -60,42 +61,29 @@
 
 <style>
   .bs-card {
-    padding: var(--bs-space--lg);
-    background: var(--bs-color-surface--raised);
-    border: var(--bs-border--1) solid var(--bs-color-border);
-    border-radius: var(--bs-radius--lg);
-    box-shadow: var(--bs-shadow--sm);
+    padding: var(--ab-space-5);
+    background: var(--ab-color-surface);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-lg);
+    box-shadow: var(--ab-shadow-sm);
   }
 
   .bs-sc__lead {
-    color: var(--bs-color-text--muted);
-    font-size: var(--bs-text--sm);
+    color: var(--ab-color-text-muted);
+    font-size: var(--ab-text-sm);
   }
 
   .bs-sc__code {
     margin: 0;
-    padding: var(--bs-space--sm);
-    background: var(--bs-color-surface--sunken);
-    border: var(--bs-border--1) solid var(--bs-color-border--subtle);
-    border-radius: var(--bs-radius--md);
-    font-size: var(--bs-text--xs);
+    padding: var(--ab-space-3);
+    background: var(--ab-color-bg);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-md);
+    font-size: var(--ab-text-xs);
     line-height: 1.5;
     max-height: 16rem;
     overflow: auto;
     white-space: pre;
   }
 
-  .bs-link {
-    background: none;
-    border: 0;
-    padding: 0;
-    color: var(--bs-color-primary);
-    font: inherit;
-    font-size: var(--bs-text--sm);
-    cursor: pointer;
-  }
-
-  .bs-link:hover {
-    text-decoration: underline;
-  }
 </style>

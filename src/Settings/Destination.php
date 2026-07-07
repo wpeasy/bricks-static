@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace WPEasy\BricksStatic\Settings;
 
 use WPEasy\BricksStatic\Support\Crypto;
+use WPEasy\BricksStatic\Support\Edition;
 
 defined('ABSPATH') || exit;
 
@@ -133,16 +134,18 @@ final class Destination {
     }
 
     /**
-     * Per-destination media swaps [{from, to}, …] — original media URL → its
-     * replacement (a WordPress media-library URL).
+     * Per-destination, PER-PAGE media swaps [{page, from, to, toId}, …] — replace
+     * `from` (original media URL) with `to` (a WordPress media-library URL) ONLY on
+     * the page whose export-relative path is `page` (e.g. 'about/index.html').
      *
-     * @return array<int,array{from:string,to:string}>
+     * @return array<int,array{page:string,from:string,to:string,toId:int}>
      */
     public function media_replacements(): array {
         $out = [];
         foreach ((array) ($this->data['mediaReplacements'] ?? []) as $row) {
-            if (is_array($row) && !empty($row['from']) && !empty($row['to'])) {
+            if (is_array($row) && !empty($row['page']) && !empty($row['from']) && !empty($row['to'])) {
                 $out[] = [
+                    'page' => (string) $row['page'],
                     'from' => (string) $row['from'],
                     'to'   => (string) $row['to'],
                     // Attachment id of the replacement, so its size variants
@@ -173,17 +176,19 @@ final class Destination {
     }
 
     /**
-     * Per-destination video swaps [{from, to, toId}, …] — original embed/video src
-     * → its replacement. `toId` is the attachment id for a local-video swap (so its
-     * file can be uploaded); 0 for an external embed URL.
+     * Per-destination, PER-PAGE video swaps [{page, from, to, toId}, …] — original
+     * embed/video src → its replacement, applied only on the page `page`. `toId` is
+     * the attachment id for a local-video swap (so its file can be uploaded); 0 for
+     * an external embed URL.
      *
-     * @return array<int,array{from:string,to:string,toId:int}>
+     * @return array<int,array{page:string,from:string,to:string,toId:int}>
      */
     public function video_replacements(): array {
         $out = [];
         foreach ((array) ($this->data['videoReplacements'] ?? []) as $row) {
-            if (is_array($row) && !empty($row['from']) && !empty($row['to'])) {
+            if (is_array($row) && !empty($row['page']) && !empty($row['from']) && !empty($row['to'])) {
                 $out[] = [
+                    'page' => (string) $row['page'],
                     'from' => (string) $row['from'],
                     'to'   => (string) $row['to'],
                     'toId' => (int) ($row['toId'] ?? 0),
@@ -240,14 +245,21 @@ final class Destination {
             $this->data['replacements'] = self::sanitize_replacements($input['replacements']);
         }
         if (array_key_exists('mediaReplacements', $input) && is_array($input['mediaReplacements'])) {
-            $this->data['mediaReplacements'] = self::sanitize_media_replacements($input['mediaReplacements']);
+            // Media is a Free feature capped per page (Pro lifts the cap).
+            $this->data['mediaReplacements'] = self::sanitize_page_replacements(
+                $input['mediaReplacements'],
+                Edition::max_media_per_page()
+            );
         }
         if (array_key_exists('linkReplacements', $input) && is_array($input['linkReplacements'])) {
             $this->data['linkReplacements'] = self::sanitize_link_replacements($input['linkReplacements']);
         }
         if (array_key_exists('videoReplacements', $input) && is_array($input['videoReplacements'])) {
-            // Same shape as media (from/to URLs + optional attachment id).
-            $this->data['videoReplacements'] = self::sanitize_media_replacements($input['videoReplacements']);
+            // Same per-page shape as media; Pro-only, so no per-page cap.
+            $this->data['videoReplacements'] = self::sanitize_page_replacements(
+                $input['videoReplacements'],
+                PHP_INT_MAX
+            );
         }
 
         // Connection fields.
@@ -300,23 +312,32 @@ final class Destination {
     }
 
     /**
-     * Sanitise a media-replacement list (both sides are URLs; empties dropped).
+     * Sanitise a PER-PAGE replacement list ([{page, from, to, toId}, …]; both sides
+     * are URLs, empties dropped) and enforce a per-page cap. Shared by media and
+     * video; the cap is what makes media a Free-with-limit feature.
      *
-     * @param array<int,mixed> $rows Raw rows.
-     * @return array<int,array{from:string,to:string}>
+     * @param array<int,mixed> $rows        Raw rows.
+     * @param int              $cap_per_page Max entries allowed per page (PHP_INT_MAX = unlimited).
+     * @return array<int,array{page:string,from:string,to:string,toId:int}>
      */
-    private static function sanitize_media_replacements(array $rows): array {
-        $clean = [];
+    private static function sanitize_page_replacements(array $rows, int $cap_per_page): array {
+        $clean    = [];
+        $per_page = []; // page => count kept, for the cap
         foreach ($rows as $row) {
             if (!is_array($row)) {
                 continue;
             }
+            $page = sanitize_text_field((string) ($row['page'] ?? ''));
             $from = esc_url_raw((string) ($row['from'] ?? ''));
             $to   = esc_url_raw((string) ($row['to'] ?? ''));
-            if ($from === '' || $to === '') {
+            if ($page === '' || $from === '' || $to === '') {
                 continue;
             }
-            $clean[] = ['from' => $from, 'to' => $to, 'toId' => absint($row['toId'] ?? 0)];
+            if (($per_page[$page] ?? 0) >= $cap_per_page) {
+                continue; // Over the per-page cap (Free tier) — drop the extra.
+            }
+            $per_page[$page] = ($per_page[$page] ?? 0) + 1;
+            $clean[] = ['page' => $page, 'from' => $from, 'to' => $to, 'toId' => absint($row['toId'] ?? 0)];
         }
 
         return $clean;

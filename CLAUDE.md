@@ -37,9 +37,28 @@ Rules:
 | **SECURITY_PATTERNS.md** | Non-negotiable security rules (admin-only REST model, `Support\UrlSafety` SSRF guard, TLS/`sslverify` rule, `UnzipScript` hardening, SFTP host-key, `{@html}`/`wp_kses_post`). Read before touching any REST controller, the deploy/transport layer, URL fetching, or stored-HTML rendering. |
 | **WORDPRESS.md** | Plugin header template and WordPress configuration |
 | **SVELTE5_IMPLEMENTATION.md** | Svelte 5 runes and patterns (avoid Svelte 4 syntax) |
-| **assets/css/bs-framework.css** | Base framework: design tokens (fluid spacing/type, borders, admin colors) and base styles. Scope admin UI in a `.bs` container and reference `--bs-*` tokens. |
+| **src-svelte/shared/app.css** | The only project stylesheet: heading sizes + `.bs-stack`/`.bs-row` flex helpers, scoped under `.ab-ui` and powered by **ab-ui `--ab-*` tokens**. (Replaced the old `bs-framework.css`, which is deleted — there are no `--bs-*` tokens left.) |
 
 > These files are **references**, not includes — read the relevant one before working in its area. Do not inline or duplicate their content into this file.
+
+---
+
+## UI Component Library — ab-ui (`import { … } from '@wpeasy/ab-ui'`)
+
+The UI is built **entirely** on **[ab-ui](https://github.com/wpeasy/ab-ui)** (npm package **`@wpeasy/ab-ui`** — it was the unscoped `ab-ui` before v0.2.0; import from the scoped name), a Svelte 5 + native-CSS component lib, consumed as a **pinned git dependency** (`package.json` → `"@wpeasy/ab-ui": "github:wpeasy/ab-ui#<sha>"`, currently the **v0.18.0** commit; its `prepare` builds `dist/` on `npm install`). There is **one** design system — ab-ui. **Upgrade gotcha:** npm caches git tag→commit resolutions, so `npm install github:wpeasy/ab-ui#vX` after a bump often keeps the old version — pin the new tag's **commit SHA** in `package.json`, `rm -rf node_modules/@wpeasy/ab-ui`, then `npm install`.
+
+> **v0.2.0 API note — `Switch`/`Checkbox`/`ToggleButton` use `1`/`0` numbers, not booleans** (`checked`/`pressed` props + `onchange(n)` take/give a number, so state round-trips through WP options). Our app state is boolean, so convert at the boundary: `checked={x ? 1 : 0}` + `onchange={(n) => set(n === 1)}` (one-way `checked`/`pressed`, no `bind:`). `TriStateButton` stays string-valued.
+
+The old `bs-framework.css` + `--bs-*` token system is **deleted**; all component CSS uses ab-ui `--ab-*` tokens, and the only project CSS is `shared/app.css` (headings + `.bs-stack`/`.bs-row` helpers, `--ab-*`-powered). Use ab-ui for every control — `Button`, `Input`, `Select`, `Switch`, `Checkbox`, `Status`, `Alert`, `Badge`, `Tag`, `Modal`, etc. **Never edit the library** — override via tokens / the `class` prop / snippet props / a wrapper component (e.g. `lib/Select.svelte`, `lib/Modal.svelte`, `lib/IncludeToggle.svelte` wrap ab-ui while preserving our prop API).
+
+Rules:
+- **Wrap every ab-ui region in `class="ab-ui"`** — required for styling AND for `--ab-*` tokens to resolve; `--ab-rem` defaults to 16px (correct for WP admin). Components mounted into WP DOM (editor metabox, etc.) each need their own `.ab-ui` wrapper.
+- **Each entry that renders UI imports, in order:** `@wpeasy/ab-ui/styles` → `@wpeasy/ab-ui/styles/wp-admin.css` → `shared/app.css`. `wp-admin.css` is ab-ui's **official WP-admin preset** (REQUIRED in wp-admin): it lifts the `--ab-z-*` tokens above WP chrome (`#wpadminbar` 99999) so overlays aren't buried. (The old hand-written `shared/ab-ui-wp.css` shim — which also re-asserted input/select colours over wp-admin's `forms.css` — is **deleted**: v0.2.0's core CSS scopes controls under `.ab-ui .ab-input__control`/`.ab-select__control` at (0,2,0), already out-specifying `forms.css` (0,1,1), so typed inputs/selects no longer render white.)
+- **Transitive CSS:** when ≥2 entries import `@wpeasy/ab-ui/styles`, Vite splits it into a SHARED chunk. PHP enqueue MUST walk transitive imports — use `Support\Assets::css_files()` / `enqueue_css()`, never just `$entry['css']` (this is the documented CSS-chunk gotcha; it once broke the dashboard).
+- **Iframe rule still applies:** ab-ui CSS is fully `.ab-ui`-scoped (sets `color-scheme` on `.ab-ui`, never `:root`), so it's iframe-safe — but only mount it in the main window, never the Bricks preview iframe.
+- **Framework-free by design (do NOT convert):** `frontend/Fab.svelte` (the FAB button itself) and the server-rendered `.bs-static-cell` list cells use hardcoded colours so they look identical on any front-end/theme. **`lib/SyncPanel.svelte` (the "Sync this page" modal) IS ab-ui-themed** (2026-07-04): it's wrapped in `.ab-ui` with the dashboard theme from `uiPrefs` (`data-theme`/`data-accent`/custom seeds + `use:autoContrast`), its colours are `--ab-*` tokens **with hardcoded fallbacks** (so it still renders if ab-ui CSS is absent). The admin/editor entry already loads ab-ui; the **frontend** FAB now enqueues the shared ab-ui base CSS via `Support\Assets::enqueue_ab_ui_css()` (the `app-*.css` common to the dashboard+editor entries — Vite won't attribute it to the separate frontend entry, so we recover it by intersection). ab-ui CSS is `.ab-ui`-scoped, so loading it on the front end can't affect visitor page content.
+- **Justified-bespoke (ab-ui can't model the interaction):** `DestinationTabs` — inline double-click-to-rename needs an `<input>` *inside* a tab, which ab-ui `Tabs` can't host; it stays a hand-rolled (but `--ab-*`-tokened) tab strip with the "+" right after the last tab. `MethodPanel` is a pure-data `<dl>`. Everything else is ab-ui: ProgressPanel→`Progress`, App top-tabs + pages tabs→`Tabs`, Replacements→`Accordion`, Plain/Rich→`ToggleButton`, pages list→`Table`, all confirms→`ConfirmButton`, tooltips→`Tooltip`. Settings live in a right-side `Drawer` (gear ⚙ trigger top-right of the header → `SettingsDrawer.svelte`, `portal={false}` so it inherits the root's theme; panel width doubled to 40rem via a scoped `:global(.ab-ui .ab-drawer--right .ab-drawer__panel)` override since the lib default is 20rem and the `size` prop only applies when resized). Grouped sections: **Style** (colour-scheme switcher = three small `Button`s Auto/Light/Dark — active `secondary` / others `ghost`, Light/Dark carry `Sun`/`Moon` icons from `@wpeasy/ab-ui/icons`, matching the ab-ui showcase — + `Select` accent, driving `data-theme`/`data-accent` via `shared/uiPrefs.svelte.ts`), **Pages to include** (`DiscoveryToggle section="mode"` — the mode select + help only), **Enable sync single button** (`Switch`), **AI tools (MCP)** (`AiToolsPanel`). `DiscoveryToggle` takes a `section` prop (`mode` | `actions` | `all`): the drawer renders `mode`, while the **toolbar** (`bs-globalbar` in `App.svelte`) renders `section="actions"` — Process / View processed list / "N not in export" chip + the pages-overview Table modal.
+- **Motion & loading:** ab-ui exports transitions — `import { fadeUp, scaleFade, slideScale } from '@wpeasy/ab-ui'`. `fadeUp` is the standard **content-swap** transition: `{#key state}<div in:fadeUp>…</div>{/key}`. `Tabs` only transitions its panel via the **`panel` snippet** (not external `{#if}`) — we use it for App top-tabs + the pages Included/Excluded tabs; the destination swap, Check result, and ProgressPanel use `{#key}`/`in:fadeUp` too. For **loading** placeholders use `lib/ListSkeleton.svelte` (ab-ui `Skeleton`) instead of "Loading…" text — content areas only, NOT button busy states. ab-ui's own docs live in its `README.md` + the showcase (https://marvelous-zuccutto-daea5b.netlify.app/), and its golden rule (never modify the lib — use props/tokens/snippets/wrappers) matches our override policy.
 
 ---
 
@@ -47,7 +66,7 @@ Rules:
 
 **CRITICAL:** The Bricks Builder preview iframe renders the user's frontend content. Plugin code must NEVER inject styles, CSS variables, or run feature code inside this iframe — doing so breaks user content (e.g. form styling, color schemes).
 
-- The base framework CSS (`bs-framework.css`, which sets `color-scheme` + `light-dark()`) breaks native form controls — never load it in the iframe.
+- ab-ui's stylesheet sets `color-scheme` + `light-dark()` on `.ab-ui` — never mount an `.ab-ui` region (or load `@wpeasy/ab-ui/styles`) inside the preview iframe.
 - Never set `color-scheme` on the iframe body or inject `:root` variables meant for our UI.
 
 **PHP guard pattern:**
@@ -243,9 +262,13 @@ Add new diagnostic data to `/health/diagnostics` (admin-only), never `/health`. 
 
 ## Per-Destination Replacement Subsystems
 
+**Edition:** **Text + Media are Free** (Media is capped per page — see below); **Links + Videos are Pro** (gated by `advancedReplacements`). Media's collector/replacer/deploy-replacer/REST live in Free `src/` (moved out of `pro/`); Links/Videos stay in `pro/src/`.
+
+**Per-page model (Media + Videos):** a replacement is scoped to ONE exported page — stored as `{page, from, to, toId}` where `page` is the export-relative path (e.g. `about/index.html`). The dashboard picks a page first (a `Select`), then lists that page's media/videos; nothing shows until a page is chosen. Free allows **`Edition::max_media_per_page()`** (1) media swaps per page (`Destination::sanitize_page_replacements($rows, $cap)` enforces it; Pro = unlimited). Text + Links stay global (whole-export). This is why `DeployReplacer::apply($html, $ctx, $relative)` takes the page path — page-scoped replacers key their prepared `ctx` by page and apply only `$ctx[$relative]`; global ones ignore `$relative`.
+
 Replacements (Text, Media, Links, Videos) all follow ONE pattern — copy it for any new one:
 
-1. **Collector** (`src/Media/*Collector.php`) scans the last render's cached HTML (`Manifest::RENDER_OPTION`) and returns deduped items with the page(s) they appear on, for the dashboard list.
+1. **Collector** (`src/Media/*Collector.php` Free, `pro/src/Media/*Collector.php` Pro) — `pages()` lists exported pages for the selector; `collect($page_rel)` scans that ONE page's cached HTML (`Manifest::RENDER_OPTION`) for its items.
 2. **Replacer** (`src/Render/*Replacer.php`) rewrites the matched thing in the per-destination deploy copy. Two non-negotiable rules, learned from real bugs:
    - **Tag-scoped, never global** — match the specific element/attribute (or, for text, only the runs between tags). A blanket `str_replace`/regex across the whole document corrupts attributes, scripts, JSON-LD, or body text. `TextReplacer` splits out `<script>/<style>/<!-- -->` and operates on the right side only.
    - **Entity-decode before matching** — attribute/`url()` values carry `&amp;`, `&quot;`, percent-encoding, etc. Decode the captured value (`html_entity_decode(..., ENT_QUOTES | ENT_HTML5)`) before comparing to the stored key; `esc_attr()` the replacement on write.
@@ -254,6 +277,37 @@ Replacements (Text, Media, Links, Videos) all follow ONE pattern — copy it for
 5. **REST** `GET /bs/v1/<thing>` (admin-only) + a Svelte panel in the Replacements **accordion** (one section open at a time), auto-saving and pruning stale entries.
 
 Media/Videos that swap to a library attachment must also add the new file (and image variants) to the deploy manifest so it uploads. The Videos replacer additionally rewrites an embed's source `origin=` (incl. percent-encoded) to the destination.
+
+The Media subsystem groups by **source attachment**, not by URL: `MediaCollector::resolve_attachment()` strips a `-WxH` suffix and resolves any variant (src, `srcset` entry, or CSS `url()` background) to its attachment, so one dashboard row = one image and one swap covers the whole responsive set. `MediaReplacer` matches `<img>` on `src` **or** `data-src` (lazy images), regenerates the entire `srcset`/`data-srcset` from the new attachment (never collapses to one URL), aligns `width`/`height`, and only then literal-swaps remaining (background) references. Non-library images fall back to single-URL swap (flagged in the panel).
+
+---
+
+## Render Lifecycle & Dashboard Flow
+
+The render manifest (`Manifest::RENDER_OPTION`) is **only** rebuilt by a render run — nothing renders on post save. The dashboard flow is **Pages-to-include → Process → Check → Sync**:
+
+- **Discovery mode** (`UrlCollector::mode()`): `linked` (home + link crawl, default), `all` (every published page/term), `manual` (per-post `_bs_manual_include`, via `Admin\Editor`'s metabox + list "Static" column + bulk + front-end panel).
+- **Process** = a `check`-type run (`Runner::start('check')`): renders for the current mode, refreshes the manifest, clears the dirty flag. The UI shows **Process** when the render is stale/missing and **View list** when current (`Status.renderCurrent`). View list = `GET /pages-overview` → Included (with `CompatibilityScanner` notices) / Excluded (with reason tags).
+- **Check** = `GET /sync/check?dest=…` → `Runner::preview()`: a **synchronous, no-render** diff of the current render against the destination's pushed manifest. Returns `needsProcess` when the render is stale/missing (it never renders — that's Process's job). Shares `compute_check_preview()` with the in-job `finalize_check_preview()`.
+- **Sync** = `Runner::start('sync')`: deploy + upload (see the deploy section above). A full multi-destination sync renders ONCE then deploys per destination; when eligible (>1 target, `bs_concurrent_syncs`>1, WP-CLI spawn available) the deploy phase **fans out across N `deploy-worker` processes** (`Sync\DeployPool` + `Runner::run_deploy_worker`/`tick_deploy_monitor`) — see the [[concurrent-deploy-pool]] memory. The sequential per-target path is the untouched fallback. Free allows up to **2 destinations** (`Edition::FREE_MAX_DESTINATIONS`).
+
+**Content-change tracking** (`Sync\ChangeTracker`, init on `init`): hooks `save_post`/`transition_post_status`/`deleted|trashed|untrashed_post`/`updated|added_post_meta` (only `_bricks*` keys) **and `wp_update_nav_menu`** (a menu edit changes the link graph + every page's chrome). It sets a dirty flag (`mark_dirty`) that `Runner::in_sync()` treats as out-of-sync and that flips `renderCurrent`; `mark_rendered($mode)` clears it at the end of a full render and records the mode. `UrlCollector::published_excluded_count()` powers the "*N not in export*" hint (published pages absent from the render). **Never auto-render on save** — flag-and-prompt only.
+
+**Head cleaning** (`Render\HeadCleaner::clean()`, gated by `bs_clean_head`) runs in `Runner::tick_render` on the rendered HTML: strips WordPress-only `<head>` links (feeds, oEmbed, RSD, WLW, shortlink, `wp-json`) and all generator metas, then injects one `Bricks Sync <ver> by BRXProd` generator. SEO/social meta is preserved. Operate on the HTML string at this choke point — render-time `remove_action`/output-buffering is unreliable.
+
+**Timeouts** are filterable so a bump can't trip the watchdog: `bs_render_timeout` (page, 60s), `bs_asset_timeout` (dynamic asset fetch, 60s), `bs_package_timeout` (remote extract, 120s), `bs_stale_seconds` (`Runner` no-progress reaper, 90s). These bound *fetch/render during caching*, not upload (package mode bundles to one zip).
+
+---
+
+## AI / MCP — Abilities API (`src/Abilities/`)
+
+When the host exposes the WordPress Abilities API (`function_exists('wp_register_ability')`, WP 6.9+), `Abilities\AbilityRegistry` registers `bs/*` abilities on `bs_register_abilities`. Three tiers, gated by two opt-in options (both default off, surfaced as `aiAllowChanges`/`aiAllowSync` and saved via `POST /settings`):
+
+- **Read-only** (always on): sync status, sync method, list pages, page sync status, link integrity, list destinations, sync progress.
+- **`OPT_CHANGES` (`bs_ai_allow_changes`)**: set discovery mode, include/exclude page(s).
+- **`OPT_SYNC` (`bs_ai_allow_sync`)**: scan (dry run), sync, single-page sync, cancel, reset.
+
+Abilities are thin wrappers over the same `Runner`/`UrlCollector`/`Destinations` seams the REST controllers use — never duplicate logic; add an ability by wrapping an existing seam and gating it on the right tier.
 
 ---
 

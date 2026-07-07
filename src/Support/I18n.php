@@ -39,6 +39,7 @@ final class I18n {
             self::tabs(),
             self::toolbar(),
             self::replacements(),
+            self::media(),
             self::catalog(),
             self::allDestinations(),
             self::progress(),
@@ -46,8 +47,62 @@ final class I18n {
             self::serverConfig(),
             self::textReplacements(),
             self::richText(),
+            self::editor(),
+            self::ai(),
             self::common()
         );
+    }
+
+    /**
+     * AI tools (MCP) panel.
+     *
+     * @return array<string,string>
+     */
+    private static function ai(): array {
+        return [
+            'aiTitle'        => __('AI tools (MCP)', 'bricks-static'),
+            'aiIntro'        => __('Expose Bricks Static to AI assistants through the WordPress Abilities API. Read-only abilities (status, page list, link checks) are always available to administrators; the actions below are off by default.', 'bricks-static'),
+            'aiUnavailable'  => __('Requires WordPress 6.9 or newer (the Abilities API). Read-only and action abilities are unavailable on this site.', 'bricks-static'),
+            'aiConsumerNote' => __('An MCP client (e.g. the WordPress MCP plugin) is needed to actually reach these abilities.', 'bricks-static'),
+            'aiAllowChanges' => __('Allow AI to change settings', 'bricks-static'),
+            'aiAllowChangesHint' => __('Discovery mode and the per-page Include switch. Respects your plan limits.', 'bricks-static'),
+            'aiAllowSync'    => __('Allow AI to run syncs', 'bricks-static'),
+            'aiAllowSyncHint'=> __('Scan, sync, single-page sync, cancel and reset. These render pages and push to your destinations.', 'bricks-static'),
+        ];
+    }
+
+    /**
+     * Manual-mode post editor metabox + FAB include panel.
+     *
+     * @return array<string,string>
+     */
+    private static function editor(): array {
+        return [
+            'editorInclude'      => __('Include in static export', 'bricks-static'),
+            'editorIncludeHint'  => __('When off, this page is left out of the static export.', 'bricks-static'),
+            'editorSyncThisPage' => __('Sync this page', 'bricks-static'),
+            'editorSyncing'      => __('Syncing…', 'bricks-static'),
+            'editorPublishFirst' => __('Publish this page to sync it.', 'bricks-static'),
+            'editorNoTargets'    => __('Enable a destination to sync this page.', 'bricks-static'),
+            'editorNotPushed'    => __('Not pushed', 'bricks-static'),
+            /* translators: %1$d included pages, %2$d the plan limit. */
+            'editorIncludedCount'     => __('%1$d of %2$d pages included', 'bricks-static'),
+            /* translators: %d is the number of included pages. */
+            'editorIncludedUnlimited' => __('%d pages included', 'bricks-static'),
+            'editorLimitHint'         => __('Free plan page limit reached — exclude another page, or upgrade to Pro to add more.', 'bricks-static'),
+            /* translators: %d is a count of saved-but-not-exported pages. */
+            'editorSavedOver'         => __('%d more saved — over your Free limit.', 'bricks-static'),
+            'editorOverLimit'         => __('This page is saved but over your Free limit — it won’t export until you upgrade or free up room.', 'bricks-static'),
+            /* translators: %d is a count of linked pages. */
+            'editorLinksOut'   => __('This page links to %d page(s) not included:', 'bricks-static'),
+            /* translators: %d is a count of pages that link here. */
+            'editorLinksIn'    => __('%d included page(s) link here — they will have dead links:', 'bricks-static'),
+            'editorLinksInNote'=> __('Based on the last check/sync — run a check to refresh.', 'bricks-static'),
+            'editorIncludeAll' => __('Include all', 'bricks-static'),
+            'editorIncluding'  => __('Including…', 'bricks-static'),
+            /* translators: %d is a count that could not be included. */
+            'editorLinkSkipped'=> __('%d couldn’t be included (Free limit reached).', 'bricks-static'),
+        ];
     }
 
     /**
@@ -59,14 +114,28 @@ final class I18n {
         return [
             'appLead'           => __('Generate and serve static HTML versions of your site for performance.', 'bricks-static'),
             'byPrefix'          => __('Another plugin by', 'bricks-static'),
+            'settings'          => __('Settings', 'bricks-static'),
+            'styleGroup'        => __('Style', 'bricks-static'),
+            'compactMode'       => __('Compact', 'bricks-static'),
+            'colorScheme'       => __('Colour scheme', 'bricks-static'),
+            'csAuto'            => __('Auto', 'bricks-static'),
+            'csLight'           => __('Light', 'bricks-static'),
+            'csDark'            => __('Dark', 'bricks-static'),
+            'themeAccent'       => __('Theme', 'bricks-static'),
+            'accentBlue'        => __('Blue', 'bricks-static'),
+            'accentGreen'       => __('Green', 'bricks-static'),
+            'accentYellow'      => __('Yellow', 'bricks-static'),
+            'accentPurple'      => __('Purple', 'bricks-static'),
+            'accentCustom'      => __('Custom', 'bricks-static'),
             'freeYouAreOn'      => __("You're on the free version of Bricks Static", 'bricks-static'),
             'upgradeToPro'      => __('Upgrade to Pro', 'bricks-static'),
             'freeThisPlugin'    => __('Free — this plugin', 'bricks-static'),
             'proAddon'          => __('Pro — add-on', 'bricks-static'),
             /* translators: %d is the page limit. */
             'freeStaticGen'     => __('Static generation — up to %d pages per sync', 'bricks-static'),
-            'freeOneDest'       => __('1 destination (SFTP / FTP / FTPS)', 'bricks-static'),
+            'freeOneDest'       => __('Up to 2 destinations (SFTP / FTP / FTPS)', 'bricks-static'),
             'freeTextRepl'      => __('Text replacements', 'bricks-static'),
+            'freeMediaRepl'     => __('Media replacements — 1 per page', 'bricks-static'),
             'freePerFile'       => __('Per-file & package (zip) deploy', 'bricks-static'),
             'freeHtaccess'      => __('.htaccess + nginx config, favicon', 'bricks-static'),
             'freeSinglePage'    => __('Single-page sync & WP-CLI', 'bricks-static'),
@@ -87,6 +156,9 @@ final class I18n {
     private static function globalbar(): array {
         return [
             'enableSyncButton' => __('Enable sync single button', 'bricks-static'),
+            'syncGroup'        => __('Sync', 'bricks-static'),
+            'concurrentSyncs'  => __('Concurrent syncs', 'bricks-static'),
+            'concurrentSyncsHelp' => __('How many destinations to upload to at the same time during a multi-destination sync. Higher is faster but uses more connections. Requires WP-CLI; otherwise syncs run one at a time.', 'bricks-static'),
             'tabDestinations'  => __('Destinations', 'bricks-static'),
             'tabServerConfig'  => __('Destination Server Configuration', 'bricks-static'),
         ];
@@ -101,11 +173,9 @@ final class I18n {
         return [
             'resetHint'         => __('Wiped a remote, or want a full re-upload? Reset clears the push record for every destination.', 'bricks-static'),
             'btnResetSync'      => __('Reset sync state', 'bricks-static'),
-            /* translators: %s is the sync target (e.g. "the destination"). */
-            'confirmSync'       => __('This will render the site and push to %s. Continue?', 'bricks-static'),
-            'syncTargetAll'     => __('all enabled destinations', 'bricks-static'),
-            'syncTargetOne'     => __('the destination', 'bricks-static'),
-            'confirmReset'      => __('Reset the push record for all destinations? The next Sync will re-upload everything.', 'bricks-static'),
+            'btnConfirmReset'   => __('Confirm reset?', 'bricks-static'),
+            'btnConfirmSync'    => __('Confirm sync?', 'bricks-static'),
+            'btnConfirmSyncAll' => __('Sync all destinations?', 'bricks-static'),
             'destinationDefault'=> __('Destination', 'bricks-static'),
             /* translators: %d is the new destination's number. */
             'destinationNumbered' => __('Destination %d', 'bricks-static'),
@@ -122,12 +192,31 @@ final class I18n {
             'pagesToInclude'  => __('Pages to include', 'bricks-static'),
             'onlyLinkedPages' => __('Only linked pages', 'bricks-static'),
             'allPublished'    => __('All published', 'bricks-static'),
+            'manualSelection' => __('Manual selection', 'bricks-static'),
             'whatsDifference' => __("What's the difference?", 'bricks-static'),
             'discControls'    => __('Controls which pages are discovered and exported.', 'bricks-static'),
             'tagDefault'      => __('default', 'bricks-static'),
+            'discManualBody'  => __('Export only the pages you choose. Each Page, Post and custom post type gets an "Include" switch — off by default, except the home page — in its editor, the Pages/Posts list and the front-end Sync panel. Nothing else is crawled in, so the export is exactly your selection.', 'bricks-static'),
             'discLinkedBody'  => __('Starts at your home page and follows internal links from page to page. A page that nothing links to isn\'t reachable by a visitor, so it\'s left out — this also keeps builder-only URLs (such as Bricks <code>/template/…</code> previews) out of the static site.', 'bricks-static'),
             'discAllBody'     => __('Also includes every published page, post and taxonomy archive — even ones nothing links to (orphaned content). Use this if you rely on pages reached only through JavaScript navigation, or deliberately keep unlinked landing pages.', 'bricks-static'),
             'discNote'        => __('Either way, builder/preview post types are never exported.', 'bricks-static'),
+            'viewPagesList'   => __('View included/excluded pages', 'bricks-static'),
+            'btnProcess'      => __('Process', 'bricks-static'),
+            'btnProcessHint'  => __('Render the site for the current mode so the page list is accurate.', 'bricks-static'),
+            'btnViewList'     => __('View processed list', 'bricks-static'),
+            /* translators: %d: number of published pages not in the static export. */
+            'excludedHint'    => __('%d not in export', 'bricks-static'),
+            'excludedHintTip' => __('Published pages that aren’t in the static export. Click to view them.', 'bricks-static'),
+            'pagesOverviewTitle' => __('Pages in the static export', 'bricks-static'),
+            'tabIncluded'     => __('Included', 'bricks-static'),
+            'tabExcluded'     => __('Excluded', 'bricks-static'),
+            'pagesLoading'    => __('Loading…', 'bricks-static'),
+            'noIncludedPages' => __('No pages are in the export yet.', 'bricks-static'),
+            'noExcludedPages' => __('Every published page is in the export.', 'bricks-static'),
+            'colPage'         => __('Page', 'bricks-static'),
+            'colPath'         => __('Path', 'bricks-static'),
+            'colNotices'      => __('Notices', 'bricks-static'),
+            'colReason'       => __('Reason', 'bricks-static'),
         ];
     }
 
@@ -157,6 +246,9 @@ final class I18n {
             'method'         => __('Method', 'bricks-static'),
             'methodLead'     => __('How the next sync will run, resolved for this site:', 'bricks-static'),
             'mDiscovery'     => __('Discovery', 'bricks-static'),
+            'methodDiscLinked' => __('Internal-link crawl from the home page — only pages reachable by following links.', 'bricks-static'),
+            'methodDiscAll'    => __('Every published page, post and taxonomy archive — including content nothing links to.', 'bricks-static'),
+            'methodDiscManual' => __('Only the pages you mark “Include” (per-post).', 'bricks-static'),
             'mTransport'     => __('Transport', 'bricks-static'),
             'mCompression'   => __('Compression', 'bricks-static'),
             'mServerTarget'  => __('Server target', 'bricks-static'),
@@ -229,6 +321,8 @@ final class I18n {
             'stInSync'      => __('In sync', 'bricks-static'),
             'swEnabled'     => __('Enabled', 'bricks-static'),
             'btnCheck'      => __('Check', 'bricks-static'),
+            'btnChecking'   => __('Checking…', 'bricks-static'),
+            'btnCheckHint'  => __('Preview what a sync would change on this destination — compares the last render, uploads nothing.', 'bricks-static'),
             'btnSync'       => __('Sync', 'bricks-static'),
             'visitSite'     => __('Visit site ↗', 'bricks-static'),
         ];
@@ -247,6 +341,41 @@ final class I18n {
     }
 
     /**
+     * Media replacer panel (Free, per page). Shared UI keys here are also read by
+     * the Pro Video/Link panels via the merged dictionary.
+     *
+     * @return array<string,string>
+     */
+    private static function media(): array {
+        return [
+            'mediaReplacer'        => __('Media replacer', 'bricks-static'),
+            /* translators: %d is the per-page limit. */
+            'mediaPerPageLimit'    => __('Free: %d per page', 'bricks-static'),
+            'mediaSelectPage'      => __('Page', 'bricks-static'),
+            'mediaSelectPagePh'    => __('Select a page…', 'bricks-static'),
+            'mediaPickPageFirst'   => __('Select a page above to replace its media.', 'bricks-static'),
+            'noRenderForMedia'     => __('Process the site first, then choose a page to replace its media.', 'bricks-static'),
+            'noMediaOnPage'        => __('No replaceable images on this page.', 'bricks-static'),
+            /* translators: %d is the per-page limit. */
+            'mediaCapReached'      => __('Free allows %d media replacement per page. Upgrade to Pro for unlimited.', 'bricks-static'),
+            'loadingMedia'         => __('Loading media…', 'bricks-static'),
+            'chooseReplacement'    => __('Choose a replacement', 'bricks-static'),
+            'useThisMedia'         => __('Use this media', 'bricks-static'),
+            'clickToReplace'       => __('Click to replace', 'bricks-static'),
+            'noAlt'                => __('— no alt —', 'bricks-static'),
+            'replacedWith'         => __('↳ replaced with', 'bricks-static'),
+            'noMediaMatch'         => __('No media match the current filter.', 'bricks-static'),
+            /* translators: %d is the number of image sizes. */
+            'nSizes'               => __('%d sizes', 'bricks-static'),
+            'mediaNotInLibrary'    => __('not in library', 'bricks-static'),
+            'mediaNotInLibraryTip' => __('This image isn’t in the media library, so only this exact URL is swapped — other responsive sizes may remain.', 'bricks-static'),
+            'mediaUnavailable'     => __('The WordPress media library is unavailable on this page.', 'bricks-static'),
+            'btnReplace'           => __('Replace…', 'bricks-static'),
+            'btnRemove'            => __('Remove', 'bricks-static'),
+        ];
+    }
+
+    /**
      * Replacement catalogue entries (accordion titles + locked-row descriptions).
      *
      * @return array<string,string>
@@ -258,7 +387,7 @@ final class I18n {
             'catLinks'      => __('Links', 'bricks-static'),
             'catVideos'     => __('Videos', 'bricks-static'),
             'catTextDesc'   => __('Find and replace visible text on this destination only.', 'bricks-static'),
-            'catMediaDesc'  => __('Swap images and media for other library items per destination — responsive variants are rebuilt automatically.', 'bricks-static'),
+            'catMediaDesc'  => __('Pick a page, then swap one of its images for another library item — responsive variants are rebuilt automatically. Free allows one per page; Pro is unlimited.', 'bricks-static'),
             'catLinksDesc'  => __('Rewrite link and button targets per destination, without touching body text.', 'bricks-static'),
             'catVideosDesc' => __('Swap local or embedded videos and fix embed origins for the destination domain.', 'bricks-static'),
         ];
@@ -297,8 +426,17 @@ final class I18n {
             'phFinalize'    => __('Finalising', 'bricks-static'),
             'phPackage'     => __('Packaging & deploying', 'bricks-static'),
             'phUpload'      => __('Uploading', 'bricks-static'),
+            'phDeploy'      => __('Deploying', 'bricks-static'),
             'phPrune'       => __('Removing old files', 'bricks-static'),
             'phDone'        => __('Done', 'bricks-static'),
+            'tgt_done'      => __('Done', 'bricks-static'),
+            'tgt_error'     => __('Failed', 'bricks-static'),
+            'tgt_cancelled' => __('Cancelled', 'bricks-static'),
+            'tgt_active'    => __('Uploading…', 'bricks-static'),
+            'tgtPackaging'  => __('Packaging…', 'bricks-static'),
+            'zipFallbackNotice' => __('Uploaded file-by-file: the PHP runtime running this sync has no Zip (ZipArchive) extension, so the faster single-package deploy wasn’t available. The result is identical, just slower. This is common with Local’s bundled WP-CLI PHP — most production hosts include Zip and will package automatically.', 'bricks-static'),
+            /* translators: %s is the reason package deploy failed. */
+            'pkgFallbackNotice' => __('The faster one-shot package deploy didn’t complete — %s. Files were uploaded individually instead: same result, just slower.', 'bricks-static'),
             'phError'       => __('Error', 'bricks-static'),
             'phCancelled'   => __('Cancelled', 'bricks-static'),
             'lblPages'      => __('Pages', 'bricks-static'),

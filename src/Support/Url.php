@@ -151,6 +151,36 @@ final class Url {
     }
 
     /**
+     * Resolve an internal URL to its WordPress post id.
+     *
+     * Wraps `url_to_postid()`, but also resolves the static front page and the
+     * "Posts page" — both serve archives, so `url_to_postid()` returns 0 for them
+     * even though each is a real, toggleable Page. Returns 0 when no post matches.
+     *
+     * @param string $url Internal URL.
+     */
+    public static function to_post_id(string $url): int {
+        $id = (int) url_to_postid($url);
+        if ($id > 0) {
+            return $id;
+        }
+
+        $rel = self::to_relative_path($url);
+        if ($rel === null) {
+            return 0;
+        }
+
+        foreach (['page_on_front', 'page_for_posts'] as $option) {
+            $pid = (int) get_option($option);
+            if ($pid > 0 && self::to_relative_path((string) get_permalink($pid)) === $rel) {
+                return $pid;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
      * Lower-case a host with any leading "www." removed.
      *
      * @param string $host Hostname.

@@ -17,6 +17,7 @@ use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Sync\HtaccessBuilder;
 use WPEasy\BricksStatic\Sync\Job;
+use WPEasy\BricksStatic\Sync\ChangeTracker;
 use WPEasy\BricksStatic\Sync\Manifest;
 use WPEasy\BricksStatic\Sync\Runner;
 use WPEasy\BricksStatic\Support\Url;
@@ -69,6 +70,12 @@ final class SyncController {
             'permission_callback' => [self::class, 'can_manage'],
         ]);
 
+        register_rest_route(self::NS, '/sync/check', [
+            'methods'             => 'GET',
+            'callback'            => [self::class, 'check'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
+
         register_rest_route(self::NS, '/sync/cancel', [
             'methods'             => 'POST',
             'callback'            => [self::class, 'cancel'],
@@ -84,6 +91,12 @@ final class SyncController {
         register_rest_route(self::NS, '/sync/claim', [
             'methods'             => 'POST',
             'callback'            => [self::class, 'claim'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
+
+        register_rest_route(self::NS, '/sync/deploy-dispatch', [
+            'methods'             => 'POST',
+            'callback'            => [self::class, 'deploy_dispatch'],
             'permission_callback' => [self::class, 'can_manage'],
         ]);
 
@@ -134,6 +147,10 @@ final class SyncController {
             } elseif ($dest !== '') {
                 $options['targets'] = [$dest];
             }
+        } elseif ($dest !== '') {
+            // A "check" previews what would sync to this destination (diff only,
+            // no upload), so it needs to know which destination to diff against.
+            $options['checkDest'] = $dest;
         }
 
         try {
@@ -190,25 +207,55 @@ final class SyncController {
         $url = esc_url_raw((string) $request->get_param('url'));
         $rel = $url !== '' && Url::is_internal($url) ? Url::to_relative_path($url) : null;
 
-        $targets = [];
+        // Resolve the page so single-page sync can be gated to published content.
+        // Prefer the caller's post id hint (the FAB/list cell knows it); fall back
+        // to a reverse URL lookup. URLs that don't map to a post (home, archives)
+        // are real live pages, so they count as publishable.
+        $post_id = (int) $request->get_param('postId');
+        if ($post_id <= 0 && $rel !== null) {
+            $post_id = (int) url_to_postid($url);
+        }
+        $published = $post_id <= 0 || get_post_status($post_id) === 'publish';
+
+        // Whether the page is even in the current render (else never "up to date").
+        $render   = Manifest::load(Manifest::RENDER_OPTION);
+        $rendered = $rel !== null && isset($render[$rel]);
+
+        $targets     = [];
+        $all_in_sync = $rendered;
         // Only destinations visible under the edition cap — a destination hidden
         // by a downgrade is preserved in storage but never offered for sync.
         foreach (Destinations::visible_objects() as $dest) {
             if (!(bool) $dest->get('enabled')) {
                 continue;
             }
-            $pushed    = Manifest::load(Destinations::pushed_option($dest->id()));
+            $pushed  = Manifest::load(Destinations::pushed_option($dest->id()));
+            $is_push = $rel !== null && isset($pushed[$rel]);
+            // In sync = pushed AND the pushed copy's hash matches what THIS
+            // destination would deploy — i.e. the render with its OWN replacers
+            // applied (a plain render-hash comparison is wrong for a destination
+            // that transforms the page: it would look out of sync forever).
+            $deploy_hash = $rendered && $rel !== null ? Runner::page_deploy_hash($rel, $dest->id()) : '';
+            $in_sync     = $is_push && $deploy_hash !== '' && (string) ($pushed[$rel]['hash'] ?? '') === $deploy_hash;
+            if (!$in_sync) {
+                $all_in_sync = false;
+            }
             $targets[] = [
                 'id'     => $dest->id(),
                 'name'   => (string) $dest->get('name'),
-                'pushed' => $rel !== null && isset($pushed[$rel]),
+                'pushed' => $is_push,
+                'inSync' => $in_sync,
             ];
         }
 
         return new WP_REST_Response([
-            'rel'     => $rel,
-            'targets' => $targets,
-            'canSync' => !empty($targets),
+            'rel'       => $rel,
+            'targets'   => $targets,
+            'canSync'   => !empty($targets),
+            'published' => $published,
+            // Nothing to sync: rendered, matches every target, and content hasn't
+            // changed since that render. A stale render (dirty) is never up to date.
+            'upToDate'  => !empty($targets) && $all_in_sync && !ChangeTracker::is_dirty(),
         ]);
     }
 
@@ -255,6 +302,28 @@ final class SyncController {
     }
 
     /**
+     * POST /sync/deploy-dispatch — launch the parallel deploy worker pool from
+     * this (web-request) context. The detached CLI coordinator can't spawn the
+     * workers itself on Windows, so the dashboard calls this when a run reaches
+     * the deploy phase with `needsDispatch` set. Idempotent.
+     */
+    public static function deploy_dispatch(): WP_REST_Response {
+        return new WP_REST_Response(Runner::dispatch_workers());
+    }
+
+    /**
+     * GET /sync/check — synchronous sync preview for a destination, with NO
+     * render. Diffs the current render against what was last pushed and reports
+     * what a Sync would change, or `needsProcess` when the render is stale/missing
+     * (rendering is owned by Process + content tracking, not by Check).
+     *
+     * @param WP_REST_Request $request Request.
+     */
+    public static function check(WP_REST_Request $request): WP_REST_Response {
+        return new WP_REST_Response(Runner::preview((string) $request->get_param('dest')));
+    }
+
+    /**
      * POST /sync/cancel — request cancellation.
      */
     public static function cancel(): WP_REST_Response {
@@ -281,6 +350,7 @@ final class SyncController {
         }
 
         delete_option(Manifest::RENDER_OPTION);
+        \WPEasy\BricksStatic\Sync\ChangeTracker::forget();
 
         // Escape hatch for a legitimate host-key change (server rebuild/migration):
         // clearing trusted SFTP host keys lets the next connection re-establish trust.

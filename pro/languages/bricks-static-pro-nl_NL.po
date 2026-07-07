@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: bricks-static-pro\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pro\n"
-"POT-Creation-Date: 2026-06-22T13:10:34+00:00\n"
+"POT-Creation-Date: 2026-06-25T23:26:28+00:00\n"
 "PO-Revision-Date: 2026-06-22 00:00+0000\n"
 "Last-Translator: Claude Code (machine translation)\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -370,33 +370,51 @@ msgstr "↳ vervangen door"
 msgid "No media match the current filter."
 msgstr "Geen media komen overeen met het huidige filter."
 
-#: src/Support/I18n.php:91
+#. translators: %d is the number of size variants covered by one swap.
+#: src/Support/I18n.php:82
+#, php-format
+msgid "%d sizes"
+msgstr "%d formaten"
+
+#: src/Support/I18n.php:83
+msgid "not in library"
+msgstr "niet in bibliotheek"
+
+#: src/Support/I18n.php:84
+msgid ""
+"This image isn’t in the media library, so only this exact URL is swapped — "
+"other responsive sizes may remain."
+msgstr ""
+"Deze afbeelding staat niet in de mediabibliotheek, dus alleen deze exacte "
+"URL wordt vervangen — andere responsieve formaten kunnen blijven staan."
+
+#: src/Support/I18n.php:95
 msgid "Link replacer"
 msgstr "Koppelingvervanging"
 
 #. translators: %d is a link count (singular).
-#: src/Support/I18n.php:93
+#: src/Support/I18n.php:97
 #, php-format
 msgid "%d link"
 msgstr "%d koppeling"
 
 #. translators: %d is a link count (plural).
-#: src/Support/I18n.php:95
+#: src/Support/I18n.php:99
 #, php-format
 msgid "%d links"
 msgstr "%d koppelingen"
 
 #. translators: %d is a count of replaced links.
-#: src/Support/I18n.php:97
+#: src/Support/I18n.php:101
 #, php-format
 msgid ", %d replaced"
 msgstr ", %d vervangen"
 
-#: src/Support/I18n.php:98
+#: src/Support/I18n.php:102
 msgid "Search URL or label…"
 msgstr "URL of label zoeken…"
 
-#: src/Support/I18n.php:99
+#: src/Support/I18n.php:103
 msgid ""
 "Replace a link target (<code>&lt;a&gt;</code>/button <code>href</code>) with"
 " another URL for this destination. Leave blank to keep the original."
@@ -405,62 +423,62 @@ msgstr ""
 "door een andere URL voor deze bestemming. Laat leeg om het origineel te "
 "behouden."
 
-#: src/Support/I18n.php:100
+#: src/Support/I18n.php:104
 msgid "Loading links…"
 msgstr "Koppelingen laden…"
 
-#: src/Support/I18n.php:101
+#: src/Support/I18n.php:105
 msgid ""
 "No links found yet — run a Check or Sync first so the pages are rendered."
 msgstr ""
 "Nog geen koppelingen gevonden — voer eerst een Controle of Synchronisatie "
 "uit zodat de pagina's worden gerenderd."
 
-#: src/Support/I18n.php:102
+#: src/Support/I18n.php:106
 msgid "— no label —"
 msgstr "— geen label —"
 
 #. translators: %d is a page count (singular).
-#: src/Support/I18n.php:104
+#: src/Support/I18n.php:108
 #, php-format
 msgid "%d page"
 msgstr "%d pagina"
 
 #. translators: %d is a page count (plural).
-#: src/Support/I18n.php:106
+#: src/Support/I18n.php:110
 #, php-format
 msgid "%d pages"
 msgstr "%d pagina's"
 
-#: src/Support/I18n.php:107
+#: src/Support/I18n.php:111
 msgid "Replacement URL…"
 msgstr "Vervangende URL…"
 
-#: src/Support/I18n.php:108
+#: src/Support/I18n.php:112
 msgid "No links match the current filter."
 msgstr "Geen koppelingen komen overeen met het huidige filter."
 
-#: src/Support/I18n.php:119
+#: src/Support/I18n.php:123
 msgid "Video replacer"
 msgstr "Videovervanging"
 
 #. translators: %d is a video count (singular).
-#: src/Support/I18n.php:121
+#: src/Support/I18n.php:125
 #, php-format
 msgid "%d video"
 msgstr "%d video"
 
 #. translators: %d is a video count (plural).
-#: src/Support/I18n.php:123
+#: src/Support/I18n.php:127
 #, php-format
 msgid "%d videos"
 msgstr "%d video's"
 
-#: src/Support/I18n.php:124
+#: src/Support/I18n.php:128
 msgid "Search URL or title…"
 msgstr "URL of titel zoeken…"
 
-#: src/Support/I18n.php:125
+#: src/Support/I18n.php:129
 msgid ""
 "Local videos swap via the media library; embeds (YouTube, Vimeo, …) take a "
 "URL <em>or</em> a video ID (like Bricks). An embed’s <code>origin=</code> is"
@@ -471,33 +489,33 @@ msgstr ""
 "Bricks). De <code>origin=</code> van een insluitcode wordt automatisch "
 "herschreven naar deze bestemming wanneer een bestemmings-URL is ingesteld."
 
-#: src/Support/I18n.php:126
+#: src/Support/I18n.php:130
 msgid "Loading videos…"
 msgstr "Video's laden…"
 
-#: src/Support/I18n.php:127
+#: src/Support/I18n.php:131
 msgid ""
 "No videos found yet — run a Check or Sync first so the pages are rendered."
 msgstr ""
 "Nog geen video's gevonden — voer eerst een Controle of Synchronisatie uit "
 "zodat de pagina's worden gerenderd."
 
-#: src/Support/I18n.php:128
+#: src/Support/I18n.php:132
 msgid "local file"
 msgstr "lokaal bestand"
 
-#: src/Support/I18n.php:129
+#: src/Support/I18n.php:133
 msgid "Choose a replacement video"
 msgstr "Kies een vervangende video"
 
-#: src/Support/I18n.php:130
+#: src/Support/I18n.php:134
 msgid "Use this video"
 msgstr "Deze video gebruiken"
 
-#: src/Support/I18n.php:131
+#: src/Support/I18n.php:135
 msgid "Replacement URL or video ID…"
 msgstr "Vervangende URL of video-ID…"
 
-#: src/Support/I18n.php:132
+#: src/Support/I18n.php:136
 msgid "No videos match the current filter."
 msgstr "Geen video's komen overeen met het huidige filter."

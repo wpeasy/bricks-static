@@ -87,8 +87,21 @@ final class PackageDeployer {
      * @param \WPEasy\BricksStatic\Settings\Destination|null  $dest    Destination.
      */
     public static function available_for(string $dest_id, $dest): bool {
-        return self::can_build()
-            && self::base_url($dest) !== ''
+        return self::can_build() && self::would_package($dest_id, $dest);
+    }
+
+    /**
+     * Whether a destination is CONFIGURED for package deploy (callable URL, not
+     * already disabled) — ignoring whether THIS PHP runtime can build a zip. Used
+     * to tell "the runtime has no ZipArchive, so we fell back to file-by-file"
+     * (a notice worth surfacing) apart from "this destination just uploads
+     * file-by-file anyway".
+     *
+     * @param string                                          $dest_id Destination id.
+     * @param \WPEasy\BricksStatic\Settings\Destination|null  $dest    Destination.
+     */
+    public static function would_package(string $dest_id, $dest): bool {
+        return self::base_url($dest) !== ''
             && !get_option(self::OFF_PREFIX . $dest_id);
     }
 
@@ -130,6 +143,15 @@ final class PackageDeployer {
             return $fail('A destination URL is required for package deploy.');
         }
 
+        // Nothing to upload AND nothing to delete → already in sync, no package
+        // needed. IMPORTANT: an empty ZipArchive is NOT written to disk, so
+        // building/uploading one here would fail on a non-existent .zip and look
+        // like an "FTP upload failed" error (the common single-page case where the
+        // page hasn't changed since the last push).
+        if (empty($files) && empty($deletes)) {
+            return ['ok' => true, 'retryable' => false, 'extracted' => 0, 'deleted' => 0, 'errors' => [], 'message' => 'Already up to date — nothing to deploy.'];
+        }
+
         $token    = bin2hex(random_bytes(16));
         $zip_name = 'bs-pkg-' . $token . '.zip';
         $php_name = 'bs-unzip-' . $token . '.php';
@@ -151,6 +173,15 @@ final class PackageDeployer {
         }
         $zip->close();
 
+        // A ZipArchive with no entries isn't written to disk, so the upload below
+        // would fail on a missing file. If we got here with nothing packaged (all
+        // sources missing, or a deletes-only run), fall back to file-by-file — the
+        // per-file path handles any pending deletes via the prune phase.
+        if ($added === 0 || !is_file($zip_path)) {
+            self::cleanup_local($zip_path, $php_path);
+            return $fail('No changed files to package.');
+        }
+
         file_put_contents($php_path, UnzipScript::generate($token, $zip_name, time() + self::TTL, Compressor::extensions(), Compressor::min_bytes()));
 
         // Upload package + helper, then trigger extraction.
@@ -169,7 +200,14 @@ final class PackageDeployer {
         // SSRF guard: the destination URL is user-supplied, so validate it resolves
         // to a public (or loopback-for-dev) address and don't follow redirects.
         $response = UrlSafety::guarded_post(rtrim($base_url, '/') . '/' . $php_name, [
-            'timeout'   => 120,
+            /**
+             * Filters how long (seconds) to wait for the destination to extract
+             * the deploy package. Raise it for very large sites or slow remote
+             * hosts where server-side unzip + file writes take a while.
+             *
+             * @param int $timeout Seconds.
+             */
+            'timeout'   => max(10, (int) apply_filters('bs_package_timeout', 120)),
             'sslverify' => $sslverify,
             'body'      => ['token' => $token, 'deletes' => wp_json_encode(array_values($deletes))],
         ]);

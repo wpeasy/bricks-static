@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: bricks-static-pro\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pro\n"
-"POT-Creation-Date: 2026-06-22T13:10:34+00:00\n"
+"POT-Creation-Date: 2026-06-25T23:26:28+00:00\n"
 "PO-Revision-Date: 2026-06-22 00:00+0000\n"
 "Last-Translator: Claude Code (machine translation)\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -369,33 +369,51 @@ msgstr "↳ ersetzt durch"
 msgid "No media match the current filter."
 msgstr "Keine Medien entsprechen dem aktuellen Filter."
 
-#: src/Support/I18n.php:91
+#. translators: %d is the number of size variants covered by one swap.
+#: src/Support/I18n.php:82
+#, php-format
+msgid "%d sizes"
+msgstr "%d Größen"
+
+#: src/Support/I18n.php:83
+msgid "not in library"
+msgstr "nicht in der Mediathek"
+
+#: src/Support/I18n.php:84
+msgid ""
+"This image isn’t in the media library, so only this exact URL is swapped — "
+"other responsive sizes may remain."
+msgstr ""
+"Dieses Bild ist nicht in der Mediathek, daher wird nur diese exakte URL "
+"ausgetauscht — andere responsive Größen können bestehen bleiben."
+
+#: src/Support/I18n.php:95
 msgid "Link replacer"
 msgstr "Link-Ersetzer"
 
 #. translators: %d is a link count (singular).
-#: src/Support/I18n.php:93
+#: src/Support/I18n.php:97
 #, php-format
 msgid "%d link"
 msgstr "%d Link"
 
 #. translators: %d is a link count (plural).
-#: src/Support/I18n.php:95
+#: src/Support/I18n.php:99
 #, php-format
 msgid "%d links"
 msgstr "%d Links"
 
 #. translators: %d is a count of replaced links.
-#: src/Support/I18n.php:97
+#: src/Support/I18n.php:101
 #, php-format
 msgid ", %d replaced"
 msgstr ", %d ersetzt"
 
-#: src/Support/I18n.php:98
+#: src/Support/I18n.php:102
 msgid "Search URL or label…"
 msgstr "URL oder Bezeichnung suchen…"
 
-#: src/Support/I18n.php:99
+#: src/Support/I18n.php:103
 msgid ""
 "Replace a link target (<code>&lt;a&gt;</code>/button <code>href</code>) with"
 " another URL for this destination. Leave blank to keep the original."
@@ -404,62 +422,62 @@ msgstr ""
 "dieses Ziel durch eine andere URL ersetzen. Leer lassen, um das Original "
 "beizubehalten."
 
-#: src/Support/I18n.php:100
+#: src/Support/I18n.php:104
 msgid "Loading links…"
 msgstr "Links werden geladen…"
 
-#: src/Support/I18n.php:101
+#: src/Support/I18n.php:105
 msgid ""
 "No links found yet — run a Check or Sync first so the pages are rendered."
 msgstr ""
 "Noch keine Links gefunden — zunächst eine Prüfung oder Synchronisation "
 "durchführen, damit die Seiten gerendert werden."
 
-#: src/Support/I18n.php:102
+#: src/Support/I18n.php:106
 msgid "— no label —"
 msgstr "— keine Bezeichnung —"
 
 #. translators: %d is a page count (singular).
-#: src/Support/I18n.php:104
+#: src/Support/I18n.php:108
 #, php-format
 msgid "%d page"
 msgstr "%d Seite"
 
 #. translators: %d is a page count (plural).
-#: src/Support/I18n.php:106
+#: src/Support/I18n.php:110
 #, php-format
 msgid "%d pages"
 msgstr "%d Seiten"
 
-#: src/Support/I18n.php:107
+#: src/Support/I18n.php:111
 msgid "Replacement URL…"
 msgstr "Ersatz-URL…"
 
-#: src/Support/I18n.php:108
+#: src/Support/I18n.php:112
 msgid "No links match the current filter."
 msgstr "Keine Links entsprechen dem aktuellen Filter."
 
-#: src/Support/I18n.php:119
+#: src/Support/I18n.php:123
 msgid "Video replacer"
 msgstr "Video-Ersetzer"
 
 #. translators: %d is a video count (singular).
-#: src/Support/I18n.php:121
+#: src/Support/I18n.php:125
 #, php-format
 msgid "%d video"
 msgstr "%d Video"
 
 #. translators: %d is a video count (plural).
-#: src/Support/I18n.php:123
+#: src/Support/I18n.php:127
 #, php-format
 msgid "%d videos"
 msgstr "%d Videos"
 
-#: src/Support/I18n.php:124
+#: src/Support/I18n.php:128
 msgid "Search URL or title…"
 msgstr "URL oder Titel suchen…"
 
-#: src/Support/I18n.php:125
+#: src/Support/I18n.php:129
 msgid ""
 "Local videos swap via the media library; embeds (YouTube, Vimeo, …) take a "
 "URL <em>or</em> a video ID (like Bricks). An embed’s <code>origin=</code> is"
@@ -470,33 +488,33 @@ msgstr ""
 "Der <code>origin=</code>-Parameter einer Einbettung wird automatisch auf "
 "dieses Ziel umgeschrieben, wenn eine Ziel-URL festgelegt ist."
 
-#: src/Support/I18n.php:126
+#: src/Support/I18n.php:130
 msgid "Loading videos…"
 msgstr "Videos werden geladen…"
 
-#: src/Support/I18n.php:127
+#: src/Support/I18n.php:131
 msgid ""
 "No videos found yet — run a Check or Sync first so the pages are rendered."
 msgstr ""
 "Noch keine Videos gefunden — zunächst eine Prüfung oder Synchronisation "
 "durchführen, damit die Seiten gerendert werden."
 
-#: src/Support/I18n.php:128
+#: src/Support/I18n.php:132
 msgid "local file"
 msgstr "lokale Datei"
 
-#: src/Support/I18n.php:129
+#: src/Support/I18n.php:133
 msgid "Choose a replacement video"
 msgstr "Ersatzvideo auswählen"
 
-#: src/Support/I18n.php:130
+#: src/Support/I18n.php:134
 msgid "Use this video"
 msgstr "Dieses Video verwenden"
 
-#: src/Support/I18n.php:131
+#: src/Support/I18n.php:135
 msgid "Replacement URL or video ID…"
 msgstr "Ersatz-URL oder Video-ID…"
 
-#: src/Support/I18n.php:132
+#: src/Support/I18n.php:136
 msgid "No videos match the current filter."
 msgstr "Keine Videos entsprechen dem aktuellen Filter."

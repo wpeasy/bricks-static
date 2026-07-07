@@ -31,7 +31,7 @@
     },
     {
       title: 'Per-destination replacements',
-      body: 'Text (plain or rich HTML), Media (swap an image/video — including its responsive srcset variants — via the media library), and Links (rewrite <a>/button targets). Each destination gets its own set; grouped in a one-open-at-a-time accordion.',
+      body: 'Text (plain or rich HTML) and Media (pick a page, then swap one of its images — responsive srcset variants rebuilt automatically) are included free; Links (rewrite <a>/button targets) and Videos (swap embeds/local files) are Pro. Media and Videos are per-page; each destination gets its own set, grouped in a one-open-at-a-time accordion.',
     },
     {
       title: 'Sitemaps, robots.txt & favicon',
@@ -48,7 +48,7 @@
   ];
 </script>
 
-<div class="bs-docs bs-stack bs-stack--lg">
+<div class="ab-ui bs-docs bs-stack bs-stack--lg">
   <header class="bs-stack bs-stack--xs">
     <h1>Documentation{#if version}<span class="bs-docs__ver">v{version}</span>{/if}</h1>
     <p class="bs-docs__lead">How Bricks Static works, plus fixes for the issues you’re most likely to hit.</p>
@@ -77,10 +77,11 @@
               <tr><th>Feature</th><th>Free</th><th>Pro</th></tr>
             </thead>
             <tbody>
-              <tr><td>Pages per sync</td><td>{caps.maxPages}</td><td>Unlimited</td></tr>
-              <tr><td>Destinations</td><td>1</td><td>Unlimited + sync&#8209;all</td></tr>
+              <tr><td>Pages per sync</td><td>{caps.freeMaxPages}</td><td>Unlimited</td></tr>
+              <tr><td>Destinations</td><td>{caps.freeMaxDestinations}</td><td>Unlimited + sync&#8209;all</td></tr>
               <tr><td>Text replacements</td><td>Yes</td><td>Yes</td></tr>
-              <tr><td>Media / Links / Videos replacements</td><td>—</td><td>Yes</td></tr>
+              <tr><td>Media replacements (per page)</td><td>1 per page</td><td>Unlimited</td></tr>
+              <tr><td>Link / Video replacements</td><td>—</td><td>Yes</td></tr>
               <tr><td>Gzip pre&#8209;compression (.gz)</td><td>—</td><td>Yes</td></tr>
               <tr><td>Remote pruning (delete stale files)</td><td>—</td><td>Yes</td></tr>
               <tr><td>Sitemap.xml + robots.txt</td><td>—</td><td>Yes</td></tr>
@@ -210,26 +211,28 @@ wp bricks-static sync --prune    # also remove remote files no longer present</p
 
 <style>
   .bs-docs {
-    padding: var(--bs-space--lg) 0;
+    padding: var(--ab-space-5);
+    background: var(--ab-color-bg);
+    border-radius: var(--ab-radius-lg);
     max-width: 72rem;
   }
 
   .bs-docs__ver {
-    margin-left: var(--bs-space--sm);
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--normal);
-    color: var(--bs-color-text--muted);
+    margin-left: var(--ab-space-3);
+    font-size: var(--ab-text-sm);
+    font-weight: var(--ab-weight-normal);
+    color: var(--ab-color-text-muted);
   }
 
   .bs-docs__lead {
-    color: var(--bs-color-text--muted);
-    font-size: var(--bs-text--lg);
+    color: var(--ab-color-text-muted);
+    font-size: var(--ab-text-lg);
   }
 
   .bs-docs__layout {
     display: grid;
     grid-template-columns: 12rem 1fr;
-    gap: var(--bs-space--xl, 2rem);
+    gap: var(--ab-space-6, 2rem);
     align-items: start;
   }
 
@@ -247,47 +250,47 @@ wp bricks-static sync --prune    # also remove remote files no longer present</p
     top: 2rem;
     display: flex;
     flex-direction: column;
-    gap: var(--bs-space--2xs);
+    gap: var(--ab-space-1);
   }
 
   .bs-docs__toc-title {
-    font-size: var(--bs-text--xs);
+    font-size: var(--ab-text-xs);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--bs-color-text--subtle);
-    margin-bottom: var(--bs-space--2xs);
+    color: var(--ab-color-text-muted);
+    margin-bottom: var(--ab-space-1);
   }
 
   .bs-docs__toc a {
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-text--muted);
+    font-size: var(--ab-text-sm);
+    color: var(--ab-color-text-muted);
     text-decoration: none;
-    padding: var(--bs-space--2xs) 0;
+    padding: var(--ab-space-1) 0;
   }
 
   .bs-docs__toc a:hover {
-    color: var(--bs-color-primary);
+    color: var(--ab-color-primary);
   }
 
   .bs-docs__section {
     scroll-margin-top: 2rem;
-    padding: var(--bs-space--lg);
-    background: var(--bs-color-surface--raised);
-    border: var(--bs-border--1) solid var(--bs-color-border);
-    border-radius: var(--bs-radius--lg);
-    box-shadow: var(--bs-shadow--sm);
+    padding: var(--ab-space-5);
+    background: var(--ab-color-surface);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-lg);
+    box-shadow: var(--ab-shadow-sm);
   }
 
   .bs-docs__section h2 {
-    margin: 0 0 var(--bs-space--md);
-    font-size: var(--bs-text--lg);
-    font-weight: var(--bs-weight--semibold);
+    margin: 0 0 var(--ab-space-4);
+    font-size: var(--ab-text-lg);
+    font-weight: var(--ab-weight-semibold);
   }
 
   .bs-docs__grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: var(--bs-space--md);
+    gap: var(--ab-space-4);
   }
 
   .bs-docs__tablewrap {
@@ -297,20 +300,20 @@ wp bricks-static sync --prune    # also remove remote files no longer present</p
   .bs-docs__table {
     width: 100%;
     border-collapse: collapse;
-    font-size: var(--bs-text--sm);
+    font-size: var(--ab-text-sm);
   }
 
   .bs-docs__table th,
   .bs-docs__table td {
-    padding: var(--bs-space--xs) var(--bs-space--sm);
-    border: var(--bs-border--1) solid var(--bs-color-border);
+    padding: var(--ab-space-2) var(--ab-space-3);
+    border: 1px solid var(--ab-color-border);
     text-align: left;
     vertical-align: top;
   }
 
   .bs-docs__table thead th {
-    background: var(--bs-color-surface--sunken);
-    font-weight: var(--bs-weight--semibold);
+    background: var(--ab-color-bg);
+    font-weight: var(--ab-weight-semibold);
   }
 
   .bs-docs__table td:nth-child(2),
@@ -324,90 +327,90 @@ wp bricks-static sync --prune    # also remove remote files no longer present</p
   .bs-docs__feature {
     display: flex;
     flex-direction: column;
-    gap: var(--bs-space--2xs);
-    padding: var(--bs-space--md);
-    border: var(--bs-border--1) solid var(--bs-color-border);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface);
+    gap: var(--ab-space-1);
+    padding: var(--ab-space-4);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-md);
+    background: var(--ab-color-surface);
   }
 
   .bs-docs__feature h3 {
     margin: 0;
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--semibold);
-    color: var(--bs-color-text);
+    font-size: var(--ab-text-sm);
+    font-weight: var(--ab-weight-semibold);
+    color: var(--ab-color-text);
   }
 
   .bs-docs__feature p {
     margin: 0;
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-text--secondary);
+    font-size: var(--ab-text-sm);
+    color: var(--ab-color-text-muted);
     line-height: 1.55;
   }
 
   .bs-docs__steps,
   .bs-docs__list {
     margin: 0;
-    padding-left: var(--bs-space--lg);
+    padding-left: var(--ab-space-5);
     display: flex;
     flex-direction: column;
-    gap: var(--bs-space--xs);
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-text--secondary);
+    gap: var(--ab-space-2);
+    font-size: var(--ab-text-sm);
+    color: var(--ab-color-text-muted);
     line-height: 1.55;
   }
 
   .bs-docs__muted {
     margin: 0;
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-text--muted);
+    font-size: var(--ab-text-sm);
+    color: var(--ab-color-text-muted);
     line-height: 1.55;
   }
 
   .bs-docs__faq {
-    border: var(--bs-border--1) solid var(--bs-color-border);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface);
-    padding: var(--bs-space--xs) var(--bs-space--md);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-md);
+    background: var(--ab-color-surface);
+    padding: var(--ab-space-2) var(--ab-space-4);
   }
 
   .bs-docs__faq summary {
     cursor: pointer;
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--medium);
-    color: var(--bs-color-text);
-    padding: var(--bs-space--2xs) 0;
+    font-size: var(--ab-text-sm);
+    font-weight: var(--ab-weight-medium);
+    color: var(--ab-color-text);
+    padding: var(--ab-space-1) 0;
   }
 
   .bs-docs__faq[open] summary {
-    margin-bottom: var(--bs-space--xs);
+    margin-bottom: var(--ab-space-2);
   }
 
   .bs-docs__faq p {
     margin: 0;
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-text--secondary);
+    font-size: var(--ab-text-sm);
+    color: var(--ab-color-text-muted);
     line-height: 1.6;
   }
 
   .bs-docs__code {
     margin: 0;
-    padding: var(--bs-space--md);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface--sunken);
-    color: var(--bs-color-text);
-    font-family: var(--bs-font-mono, ui-monospace, monospace);
-    font-size: var(--bs-text--xs);
+    padding: var(--ab-space-4);
+    border-radius: var(--ab-radius-md);
+    background: var(--ab-color-bg);
+    color: var(--ab-color-text);
+    font-family: var(--ab-font-mono, ui-monospace, monospace);
+    font-size: var(--ab-text-xs);
     line-height: 1.7;
     overflow-x: auto;
     white-space: pre;
   }
 
   code {
-    font-family: var(--bs-font-mono, ui-monospace, monospace);
+    font-family: var(--ab-font-mono, ui-monospace, monospace);
     font-size: 0.92em;
     padding: 0.05em 0.35em;
-    border-radius: var(--bs-radius--sm);
-    background: var(--bs-color-surface--sunken);
+    border-radius: var(--ab-radius-sm);
+    background: var(--ab-color-bg);
   }
 </style>

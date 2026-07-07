@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Sync;
 
+use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Settings\Settings;
 
 defined('ABSPATH') || exit;
@@ -30,10 +31,18 @@ final class MethodResolver {
      * @return array<string,mixed>
      */
     public static function resolve(): array {
+        $mode = UrlCollector::mode();
+
+        $description = match ($mode) {
+            'all'    => 'Every published page, post and taxonomy archive — including content nothing links to.',
+            'manual' => 'Only the pages you mark “Include” (per-post, in the editor / Pages list / Sync panel).',
+            default  => 'Internal-link crawl from the home page — only pages reachable by following links.',
+        };
+
         return [
             'discovery'    => [
-                'mode'        => 'auto',
-                'description' => 'Internal-link crawl from the homepage, augmented by the generated sitemap; sitemap.xml, robots.txt and favicon are emitted and uploaded',
+                'mode'        => $mode,
+                'description' => $description,
             ],
             'transport'    => (string) Settings::get('transport'),
             'compression'  => ['gzip' => function_exists('gzencode')],

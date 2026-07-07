@@ -1,53 +1,78 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
+  import { Button, Input, Select } from '@wpeasy/ab-ui';
   import { api } from '../../../src-svelte/shared/api';
-  import type { VideoItem, VideoReplacement, DestinationDisplay } from '../../../src-svelte/shared/types';
-  import { __, __f } from '../../../src-svelte/shared/i18n';
+  import type { VideoItem, VideoReplacement, DestinationDisplay, ReplacementPage } from '../../../src-svelte/shared/types';
+  import { __ } from '../../../src-svelte/shared/i18n';
+  import ListSkeleton from '../../../src-svelte/lib/ListSkeleton.svelte';
 
   let { destination, onSaved }: { destination: DestinationDisplay; onSaved: () => void } = $props();
 
-  let videos = $state<VideoItem[]>([]);
-  let loading = $state(true);
-  let error = $state('');
-  let pageFilter = $state('');
-  let search = $state('');
-  let onlyReplacements = $state(false);
-
-  // Local swap map (original src → {replacement url, attachment id}).
-  let swaps = $state<Record<string, { to: string; toId: number }>>(
-    untrack(() =>
-      Object.fromEntries((destination.videoReplacements ?? []).map((r) => [r.from, { to: r.to, toId: r.toId ?? 0 }])),
-    ),
+  // Full per-page replacement list = source of truth for persistence.
+  let replacements = $state<VideoReplacement[]>(
+    untrack(() => (destination.videoReplacements ?? []).map((r) => ({ ...r }))),
   );
+
+  let pages = $state<ReplacementPage[]>([]);
+  let selectedPage = $state('');
+  let videos = $state<VideoItem[]>([]);
+  let loadingPages = $state(true);
+  let loadingVideos = $state(false);
+  let error = $state('');
+  let search = $state('');
 
   onMount(async () => {
     try {
-      videos = (await api.getVideos()).videos;
-      pruneStale();
+      pages = (await api.getVideos('')).pages;
     } catch (e) {
       error = (e as Error).message;
     } finally {
-      loading = false;
+      loadingPages = false;
     }
   });
 
-  function pruneStale(): void {
+  let loadedFor = '';
+  $effect(() => {
+    const page = selectedPage;
+    if (page === '' || page === loadedFor) return;
+    loadedFor = page;
+    loadingVideos = true;
+    error = '';
+    api
+      .getVideos(page)
+      .then((r) => {
+        videos = r.videos;
+        untrack(() => pruneStaleForPage(page));
+      })
+      .catch((e) => (error = (e as Error).message))
+      .finally(() => (loadingVideos = false));
+  });
+
+  function pruneStaleForPage(page: string): void {
     if (videos.length === 0) return;
     const present = new Set(videos.map((v) => v.url));
-    const stale = Object.keys(swaps).filter((from) => !present.has(from));
-    if (stale.length === 0) return;
-    const next = { ...swaps };
-    for (const k of stale) delete next[k];
-    swaps = next;
-    void persist();
+    const before = replacements.length;
+    replacements = replacements.filter((r) => r.page !== page || present.has(r.from));
+    if (replacements.length !== before) void persist();
   }
+
+  const pageOptions = $derived(pages.map((p) => ({ value: p.value, label: p.label })));
+
+  const pageSwaps = $derived.by(() => {
+    const map: Record<string, VideoReplacement> = {};
+    for (const r of replacements) if (r.page === selectedPage) map[r.from] = r;
+    return map;
+  });
+
+  let filtered = $derived.by(() => {
+    const term = search.trim().toLowerCase();
+    if (term === '') return videos;
+    return videos.filter((v) => v.url.toLowerCase().includes(term) || v.title.toLowerCase().includes(term));
+  });
 
   async function persist(): Promise<void> {
     try {
-      const videoReplacements: VideoReplacement[] = Object.entries(swaps)
-        .filter(([, s]) => s.to.trim() !== '')
-        .map(([from, s]) => ({ from, to: s.to.trim(), toId: s.toId }));
-      await api.updateDestination(destination.id, { videoReplacements });
+      await api.updateDestination(destination.id, { videoReplacements: replacements });
       onSaved();
     } catch (e) {
       error = (e as Error).message;
@@ -55,10 +80,9 @@
   }
 
   function setSwap(from: string, to: string, toId: number): void {
-    const next = { ...swaps };
-    if (to.trim() === '') delete next[from];
-    else next[from] = { to: to.trim(), toId };
-    swaps = next;
+    const next = replacements.filter((r) => !(r.page === selectedPage && r.from === from));
+    if (to.trim() !== '') next.push({ page: selectedPage, from, to: to.trim(), toId });
+    replacements = next;
     void persist();
   }
 
@@ -100,14 +124,12 @@
     return m ? m[1] : value;
   }
 
-  // A bare YouTube id, or one pulled from any YouTube URL / embed code.
   function youtubeId(v: string): string {
     if (/^[A-Za-z0-9_-]{6,15}$/.test(v)) return v;
     const m = v.match(/(?:youtube(?:-nocookie)?\.com\/embed\/|youtu\.be\/|[?&]v=)([A-Za-z0-9_-]{6,})/i);
     return m ? m[1] : '';
   }
 
-  // A bare numeric Vimeo id, or one pulled from any Vimeo URL.
   function vimeoId(v: string): string {
     if (/^\d+$/.test(v)) return v;
     const m = v.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
@@ -126,95 +148,80 @@
     const path = url.split('?')[0];
     return path.substring(path.lastIndexOf('/') + 1) || url;
   }
-
-  let pages = $derived.by(() => {
-    const set = new Set<string>();
-    for (const v of videos) for (const p of v.pages) set.add(p);
-    return [...set].sort();
-  });
-
-  let filtered = $derived.by(() => {
-    const term = search.trim().toLowerCase();
-    const page = pageFilter.trim().toLowerCase();
-    const exact = page !== '' && pages.some((p) => p.toLowerCase() === page);
-    return videos.filter((v) => {
-      if (onlyReplacements && !swaps[v.url]) return false;
-      if (page) {
-        const match = exact ? v.pages.some((p) => p.toLowerCase() === page) : v.pages.some((p) => p.toLowerCase().includes(page));
-        if (!match) return false;
-      }
-      if (term && !v.url.toLowerCase().includes(term) && !v.title.toLowerCase().includes(term)) return false;
-      return true;
-    });
-  });
-
-  let swapCount = $derived(Object.values(swaps).filter((s) => s.to.trim() !== '').length);
 </script>
 
 <div class="bs-vids">
   <div class="bs-vids__head">
-    <span>
-      {__('videoReplacer')}
-      <small>({videos.length === 1 ? __f('nVideo', videos.length) : __f('nVideos', videos.length)}{swapCount > 0 ? __f('nReplaced', swapCount) : ''})</small>
-    </span>
-    <div class="bs-vids__filters">
-      <input type="search" placeholder={__('phSearchUrlTitle')} bind:value={search} />
-      <input type="search" list="bs-video-pages" placeholder={__('filterByPage')} bind:value={pageFilter} aria-label={__('filterByPageAria')} />
-      <datalist id="bs-video-pages">
-        {#each pages as p}<option value={p}></option>{/each}
-      </datalist>
-      <label class="bs-only"><input type="checkbox" bind:checked={onlyReplacements} /> {__('onlyReplacements')}</label>
-    </div>
+    <span>{__('videoReplacer')}</span>
   </div>
   <!-- eslint-disable-next-line svelte/no-at-html-tags -->
   <p class="bs-vids__hint">{@html __('videosHint')}</p>
 
-  {#if loading}
-    <p class="bs-vids__note">{__('loadingVideos')}</p>
-  {:else if error}
-    <p class="bs-vids__note bs-vids__note--err">{error}</p>
-  {:else if videos.length === 0}
-    <p class="bs-vids__note">{__('noVideosYet')}</p>
+  {#if loadingPages}
+    <ListSkeleton rows={3} label={__('loadingVideos')} />
+  {:else if pages.length === 0}
+    <p class="bs-vids__note">{__('noRenderForMedia')}</p>
   {:else}
-    <div class="bs-vids__list">
-      {#each filtered as item (item.url)}
-        <div class="bs-vids__row" class:is-swapped={swaps[item.url]}>
-          {#if item.thumb}
-            <img class="bs-vids__thumb" src={item.thumb} alt="" loading="lazy" />
-          {:else}
-            <span class="bs-vids__thumb bs-vids__thumb--placeholder">▶</span>
-          {/if}
-          <div class="bs-vids__meta">
-            <span class="bs-vids__title">{item.title || item.provider}</span>
-            <span class="bs-vids__url" title={item.url}>{shortUrl(item.url)}</span>
-            <span class="bs-vids__tag">{isLocal(item) ? __('localFile') : item.provider}</span>
-          </div>
-
-          {#if isLocal(item)}
-            <div class="bs-vids__control">
-              {#if swaps[item.url]}
-                <span class="bs-vids__swapped" title={swaps[item.url].to}>↳ {basename(swaps[item.url].to)}</span>
-                <button type="button" class="bs-link bs-link--danger" onclick={() => setSwap(item.url, '', 0)}>{__('btnRemove')}</button>
-              {:else}
-                <button type="button" class="bs-vids__btn" onclick={() => pick(item)}>{__('btnReplace')}</button>
-              {/if}
-            </div>
-          {:else}
-            <input
-              type="text"
-              class="bs-vids__input"
-              placeholder={__('phReplUrlOrId')}
-              value={swaps[item.url]?.to ?? ''}
-              onchange={(e) => commitEmbed(item, e.currentTarget.value)}
-              onblur={(e) => commitEmbed(item, e.currentTarget.value)}
-            />
-          {/if}
-        </div>
-      {/each}
-      {#if filtered.length === 0}
-        <p class="bs-vids__note">{__('noVideosMatch')}</p>
-      {/if}
+    <div class="bs-vids__picker">
+      <Select
+        label={__('videoSelectPage')}
+        placeholder={__('mediaSelectPagePh')}
+        options={pageOptions}
+        value={selectedPage}
+        onchange={(v) => (selectedPage = v as string)}
+      />
     </div>
+
+    {#if selectedPage === ''}
+      <p class="bs-vids__note">{__('videoPickPageFirst')}</p>
+    {:else if loadingVideos}
+      <ListSkeleton rows={4} label={__('loadingVideos')} />
+    {:else if error}
+      <p class="bs-vids__note bs-vids__note--err">{error}</p>
+    {:else if videos.length === 0}
+      <p class="bs-vids__note">{__('noVideosOnPage')}</p>
+    {:else}
+      <div class="bs-vids__list">
+        {#each filtered as item (item.url)}
+          {@const swap = pageSwaps[item.url]}
+          <div class="bs-vids__row" class:is-swapped={swap}>
+            {#if item.thumb}
+              <img class="bs-vids__thumb" src={item.thumb} alt="" loading="lazy" />
+            {:else}
+              <span class="bs-vids__thumb bs-vids__thumb--placeholder">▶</span>
+            {/if}
+            <div class="bs-vids__meta">
+              <span class="bs-vids__title">{item.title || item.provider}</span>
+              <span class="bs-vids__url" title={item.url}>{shortUrl(item.url)}</span>
+              <span class="bs-vids__tag">{isLocal(item) ? __('localFile') : item.provider}</span>
+            </div>
+
+            {#if isLocal(item)}
+              <div class="bs-vids__control">
+                {#if swap}
+                  <span class="bs-vids__swapped" title={swap.to}>↳ {basename(swap.to)}</span>
+                  <Button variant="ghost" size="sm" onclick={() => setSwap(item.url, '', 0)}>{__('btnRemove')}</Button>
+                {:else}
+                  <Button variant="secondary" size="sm" onclick={() => pick(item)}>{__('btnReplace')}</Button>
+                {/if}
+              </div>
+            {:else}
+              <Input
+                type="text"
+                class="bs-vids__input"
+                placeholder={__('phReplUrlOrId')}
+                value={swap?.to ?? ''}
+                onchange={(e: Event) => commitEmbed(item, (e.currentTarget as HTMLInputElement).value)}
+                onblur={(e: FocusEvent) => commitEmbed(item, (e.currentTarget as HTMLInputElement).value)}
+              />
+            {/if}
+          </div>
+        {/each}
+        {#if filtered.length === 0}
+          <p class="bs-vids__note">{__('noVideosMatch')}</p>
+        {/if}
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -222,7 +229,7 @@
   .bs-vids {
     display: flex;
     flex-direction: column;
-    gap: var(--bs-space--sm);
+    gap: var(--ab-space-3);
   }
 
   .bs-vids__head {
@@ -230,50 +237,26 @@
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: var(--bs-space--sm);
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--medium);
-    color: var(--bs-color-text--muted);
-  }
-
-  .bs-vids__filters {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--bs-space--xs);
-  }
-
-  .bs-only {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--bs-space--2xs);
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--normal);
-    color: var(--bs-color-text--muted);
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  .bs-vids__filters input {
-    padding: var(--bs-space--2xs) var(--bs-space--sm);
-    border: var(--bs-border--1) solid var(--bs-color-border--strong);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface);
-    color: var(--bs-color-text);
-    font: inherit;
-    font-size: var(--bs-text--sm);
+    gap: var(--ab-space-3);
+    font-size: var(--ab-text-sm);
+    font-weight: var(--ab-weight-medium);
+    color: var(--ab-color-text-muted);
   }
 
   .bs-vids__hint {
     margin: 0;
-    font-size: var(--bs-text--xs);
-    color: var(--bs-color-text--muted);
+    font-size: var(--ab-text-xs);
+    color: var(--ab-color-text-muted);
+  }
+
+  .bs-vids__picker {
+    max-width: 22rem;
   }
 
   .bs-vids__list {
     display: flex;
     flex-direction: column;
-    gap: var(--bs-space--xs);
+    gap: var(--ab-space-2);
     max-height: 32rem;
     overflow: auto;
   }
@@ -281,15 +264,15 @@
   .bs-vids__row {
     display: flex;
     align-items: center;
-    gap: var(--bs-space--sm);
-    padding: var(--bs-space--xs) var(--bs-space--sm);
-    border: var(--bs-border--1) solid var(--bs-color-border);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface);
+    gap: var(--ab-space-3);
+    padding: var(--ab-space-2) var(--ab-space-3);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-md);
+    background: var(--ab-color-surface);
   }
 
   .bs-vids__row.is-swapped {
-    border-color: var(--bs-color-primary);
+    border-color: var(--ab-color-primary);
   }
 
   .bs-vids__thumb {
@@ -297,108 +280,76 @@
     height: 2.5rem;
     flex: 0 0 auto;
     object-fit: cover;
-    border-radius: var(--bs-radius--sm);
-    background: var(--bs-color-surface--sunken);
+    border-radius: var(--ab-radius-sm);
+    background: var(--ab-color-bg);
   }
 
   .bs-vids__thumb--placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--bs-color-text--muted);
+    color: var(--ab-color-text-muted);
   }
 
   .bs-vids__meta {
     display: flex;
     flex-direction: column;
-    gap: var(--bs-space--3xs);
+    gap: var(--ab-space-1);
     min-width: 0;
     flex: 1;
   }
 
   .bs-vids__title {
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--medium);
-    color: var(--bs-color-text);
+    font-size: var(--ab-text-sm);
+    font-weight: var(--ab-weight-medium);
+    color: var(--ab-color-text);
     text-transform: capitalize;
   }
 
   .bs-vids__url {
-    font-size: var(--bs-text--xs);
-    color: var(--bs-color-text--secondary);
+    font-size: var(--ab-text-xs);
+    color: var(--ab-color-text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .bs-vids__tag {
-    font-size: var(--bs-text--xs);
-    color: var(--bs-color-text--muted);
+    font-size: var(--ab-text-xs);
+    color: var(--ab-color-text-muted);
     text-transform: capitalize;
   }
 
   .bs-vids__control {
     display: flex;
     align-items: center;
-    gap: var(--bs-space--xs);
+    gap: var(--ab-space-2);
     flex: 0 0 auto;
   }
 
   .bs-vids__swapped {
-    font-size: var(--bs-text--xs);
-    color: var(--bs-color-primary);
+    font-size: var(--ab-text-xs);
+    color: var(--ab-color-primary);
     max-width: 10rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .bs-vids__input {
+  /* Layout only — the field itself is styled by ab-ui. The class is passed to the
+     ab-ui Input child, so it needs :global to match (it carries no scope). */
+  :global(.bs-vids__input) {
     flex: 0 0 16rem;
     max-width: 48%;
-    padding: var(--bs-space--xs) var(--bs-space--sm);
-    border: var(--bs-border--1) solid var(--bs-color-border--strong);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface);
-    color: var(--bs-color-text);
-    font: inherit;
-    font-size: var(--bs-text--sm);
-  }
-
-  .bs-vids__btn {
-    flex: 0 0 auto;
-    padding: var(--bs-space--2xs) var(--bs-space--sm);
-    border: var(--bs-border--1) solid var(--bs-color-border--strong);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface);
-    color: var(--bs-color-text);
-    font: inherit;
-    font-size: var(--bs-text--xs);
-    cursor: pointer;
-  }
-
-  .bs-link {
-    flex: 0 0 auto;
-    background: none;
-    border: 0;
-    padding: 0;
-    color: var(--bs-color-primary);
-    font: inherit;
-    font-size: var(--bs-text--sm);
-    cursor: pointer;
-  }
-
-  .bs-link--danger {
-    color: var(--bs-color-danger);
   }
 
   .bs-vids__note {
     margin: 0;
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-text--muted);
+    font-size: var(--ab-text-sm);
+    color: var(--ab-color-text-muted);
   }
 
   .bs-vids__note--err {
-    color: var(--bs-color-danger);
+    color: var(--ab-color-danger);
   }
 </style>

@@ -121,6 +121,41 @@ If you add `error_log()` for diagnostics, gate any **user/site content** (URLs w
 
 ---
 
+## 9. AI / MCP abilities — same capability bar + opt-in gating (`Abilities\AbilityRegistry`)
+
+The Abilities API exposes `bs/*` abilities to AI agents / MCP clients. An ability is **another authenticated entry point into the same engine** the REST controllers drive, so it carries the **same `manage_options` bar** — never a lower one.
+
+Every ability registers a `permission_callback` that:
+
+```php
+'permission_callback' => static function () use ($permission) {
+    if (!current_user_can('manage_options')) {
+        return false;                       // same bar as every REST route
+    }
+    if ($permission === 'changes' && !self::changes_enabled()) {
+        return false;                       // opt-in: bs_ai_allow_changes
+    }
+    if ($permission === 'sync' && !self::sync_enabled()) {
+        return false;                       // opt-in: bs_ai_allow_sync
+    }
+    return true;
+},
+```
+
+**Three tiers, two opt-ins (both default OFF):**
+- **Read-only** (always registered): status, method, list pages, page status, link integrity, list destinations, progress. `manage_options` only; no state change.
+- **Changes** (`bs_ai_allow_changes`): set discovery mode, include/exclude page(s).
+- **Sync** (`bs_ai_allow_sync`): scan, sync, single-page sync, cancel, reset.
+
+**Rules for new abilities:**
+- Gate on `manage_options` via the shared `register()` helper — never write a bare `'permission_callback' => '__return_true'` or a lower capability. An ability is not "more trusted" than REST.
+- A new ability that **changes local state** takes `'permission' => 'changes'`; one that **renders/pushes/cancels/resets** takes `'permission' => 'sync'`. The action group is **registered only while its toggle is on AND** the `permission_callback` re-checks the toggle (defence in depth — registration and execution are two separate gates; keep both).
+- Abilities are thin wrappers over existing `Runner`/`UrlCollector`/`Destinations`/`Editor` seams — they inherit those seams' validation (e.g. `UrlSafety` on deploy, the Free page cap). Never duplicate engine logic in an ability or bypass a seam's checks.
+- Never return credentials or secrets from an ability (`list-destinations` returns name/type/enabled only — mirror that). The same "secrets never leave the server" rule as `Destination::for_display()` applies.
+- Mark annotations honestly (`readonly`/`destructive`/`idempotent`) — clients use them to decide what to auto-run; a mislabelled `destructive` ability is a safety regression, not just cosmetic.
+
+---
+
 ## Audit checklist for new code
 
 - New REST route → `manage_options` unless justified; nonce intact; ownership check if it touches a request-supplied object id.
@@ -130,3 +165,4 @@ If you add `error_log()` for diagnostics, gate any **user/site content** (URLs w
 - New `{@html}` / `innerHTML` → server-sanitise the source with `wp_kses_post`, or escape client-side.
 - New `$wpdb` query → `prepare()` with placeholders.
 - New `error_log` of content → gate behind `WP_DEBUG`.
+- New AI ability → `manage_options` via `register()`; `'permission' => 'changes'|'sync'` for any state change (registered *and* re-checked behind its opt-in); no secrets returned; annotations honest.

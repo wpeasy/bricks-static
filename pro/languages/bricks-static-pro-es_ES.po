@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: bricks-static-pro\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pro\n"
-"POT-Creation-Date: 2026-06-22T13:10:34+00:00\n"
+"POT-Creation-Date: 2026-06-25T23:26:28+00:00\n"
 "PO-Revision-Date: 2026-06-22 00:00+0000\n"
 "Last-Translator: Claude Code (machine translation)\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -373,33 +373,51 @@ msgstr "↳ reemplazado con"
 msgid "No media match the current filter."
 msgstr "Ningún medio coincide con el filtro actual."
 
-#: src/Support/I18n.php:91
+#. translators: %d is the number of size variants covered by one swap.
+#: src/Support/I18n.php:82
+#, php-format
+msgid "%d sizes"
+msgstr "%d tamaños"
+
+#: src/Support/I18n.php:83
+msgid "not in library"
+msgstr "no está en la biblioteca"
+
+#: src/Support/I18n.php:84
+msgid ""
+"This image isn’t in the media library, so only this exact URL is swapped — "
+"other responsive sizes may remain."
+msgstr ""
+"Esta imagen no está en la biblioteca de medios, por lo que solo se "
+"intercambia esta URL exacta — otros tamaños responsivos pueden permanecer."
+
+#: src/Support/I18n.php:95
 msgid "Link replacer"
 msgstr "Sustitución de enlaces"
 
 #. translators: %d is a link count (singular).
-#: src/Support/I18n.php:93
+#: src/Support/I18n.php:97
 #, php-format
 msgid "%d link"
 msgstr "%d enlace"
 
 #. translators: %d is a link count (plural).
-#: src/Support/I18n.php:95
+#: src/Support/I18n.php:99
 #, php-format
 msgid "%d links"
 msgstr "%d enlaces"
 
 #. translators: %d is a count of replaced links.
-#: src/Support/I18n.php:97
+#: src/Support/I18n.php:101
 #, php-format
 msgid ", %d replaced"
 msgstr ", %d reemplazados"
 
-#: src/Support/I18n.php:98
+#: src/Support/I18n.php:102
 msgid "Search URL or label…"
 msgstr "Buscar por URL o etiqueta…"
 
-#: src/Support/I18n.php:99
+#: src/Support/I18n.php:103
 msgid ""
 "Replace a link target (<code>&lt;a&gt;</code>/button <code>href</code>) with"
 " another URL for this destination. Leave blank to keep the original."
@@ -408,62 +426,62 @@ msgstr ""
 "<code>href</code>) con otra URL para este destino. Déjalo en blanco para "
 "conservar el original."
 
-#: src/Support/I18n.php:100
+#: src/Support/I18n.php:104
 msgid "Loading links…"
 msgstr "Cargando enlaces…"
 
-#: src/Support/I18n.php:101
+#: src/Support/I18n.php:105
 msgid ""
 "No links found yet — run a Check or Sync first so the pages are rendered."
 msgstr ""
 "Aún no se han encontrado enlaces — ejecuta primero una Verificación o "
 "Sincronización para que las páginas se rendericen."
 
-#: src/Support/I18n.php:102
+#: src/Support/I18n.php:106
 msgid "— no label —"
 msgstr "— sin etiqueta —"
 
 #. translators: %d is a page count (singular).
-#: src/Support/I18n.php:104
+#: src/Support/I18n.php:108
 #, php-format
 msgid "%d page"
 msgstr "%d página"
 
 #. translators: %d is a page count (plural).
-#: src/Support/I18n.php:106
+#: src/Support/I18n.php:110
 #, php-format
 msgid "%d pages"
 msgstr "%d páginas"
 
-#: src/Support/I18n.php:107
+#: src/Support/I18n.php:111
 msgid "Replacement URL…"
 msgstr "URL de reemplazo…"
 
-#: src/Support/I18n.php:108
+#: src/Support/I18n.php:112
 msgid "No links match the current filter."
 msgstr "Ningún enlace coincide con el filtro actual."
 
-#: src/Support/I18n.php:119
+#: src/Support/I18n.php:123
 msgid "Video replacer"
 msgstr "Sustitución de vídeos"
 
 #. translators: %d is a video count (singular).
-#: src/Support/I18n.php:121
+#: src/Support/I18n.php:125
 #, php-format
 msgid "%d video"
 msgstr "%d vídeo"
 
 #. translators: %d is a video count (plural).
-#: src/Support/I18n.php:123
+#: src/Support/I18n.php:127
 #, php-format
 msgid "%d videos"
 msgstr "%d vídeos"
 
-#: src/Support/I18n.php:124
+#: src/Support/I18n.php:128
 msgid "Search URL or title…"
 msgstr "Buscar por URL o título…"
 
-#: src/Support/I18n.php:125
+#: src/Support/I18n.php:129
 msgid ""
 "Local videos swap via the media library; embeds (YouTube, Vimeo, …) take a "
 "URL <em>or</em> a video ID (like Bricks). An embed’s <code>origin=</code> is"
@@ -474,33 +492,33 @@ msgstr ""
 "(como Bricks). El <code>origin=</code> de un incrustado se reescribe "
 "automáticamente a este destino cuando se establece una URL de destino."
 
-#: src/Support/I18n.php:126
+#: src/Support/I18n.php:130
 msgid "Loading videos…"
 msgstr "Cargando vídeos…"
 
-#: src/Support/I18n.php:127
+#: src/Support/I18n.php:131
 msgid ""
 "No videos found yet — run a Check or Sync first so the pages are rendered."
 msgstr ""
 "Aún no se han encontrado vídeos — ejecuta primero una Verificación o "
 "Sincronización para que las páginas se rendericen."
 
-#: src/Support/I18n.php:128
+#: src/Support/I18n.php:132
 msgid "local file"
 msgstr "archivo local"
 
-#: src/Support/I18n.php:129
+#: src/Support/I18n.php:133
 msgid "Choose a replacement video"
 msgstr "Elige un vídeo de reemplazo"
 
-#: src/Support/I18n.php:130
+#: src/Support/I18n.php:134
 msgid "Use this video"
 msgstr "Usar este vídeo"
 
-#: src/Support/I18n.php:131
+#: src/Support/I18n.php:135
 msgid "Replacement URL or video ID…"
 msgstr "URL de reemplazo o ID de vídeo…"
 
-#: src/Support/I18n.php:132
+#: src/Support/I18n.php:136
 msgid "No videos match the current filter."
 msgstr "Ningún vídeo coincide con el filtro actual."

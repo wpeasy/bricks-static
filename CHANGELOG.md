@@ -5,6 +5,29 @@ All notable changes to **Bricks Static** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-07-07
+
+### Added
+- **Media replacements are now a Free feature.** The Media panel (swap an image for another library item, scoped per page) has moved out of Pro — Free allows one swap per page; Pro removes the cap. Swaps are scoped per page with a page selector in the panel, group every responsive size variant under its source attachment (one swap covers the whole set, including lazy `data-src`/`data-srcset` images), and detect CSS background images set via inline `<style>`/`style=""` attributes alongside `<img>` elements. Images not in the media library fall back to an exact-URL swap, flagged in the panel.
+- **Free now allows 2 destinations** (up from 1) before the Pro cap applies.
+- **Concurrent destination deploys.** A new "Concurrent syncs" setting (1–10, default 2) lets a multi-destination sync upload to several destinations at once via detached WP-CLI worker processes, instead of one after another. Falls back automatically to the sequential per-destination path on hosts that can't spawn WP-CLI.
+- **AI / MCP integration.** When the host exposes the WordPress Abilities API (WP 6.9+), the plugin registers abilities so an AI agent or MCP client can read status and operate sync. Two opt-in toggles (both off by default) gate it: **Allow changes** (set discovery mode, include/exclude pages) and **Allow sync** (scan, sync, single-page sync, cancel, reset). Read-only abilities (status, method, page list, link integrity, destinations, progress) are always available.
+- **Manual discovery mode.** A third "Pages to include" mode that exports only the pages you choose: a per-post **Include** switch in the editor (metabox), the Pages/Posts list (new **Static** column, with bulk include/exclude), and the front-end Sync panel. Off by default except the static front page.
+- **Pages overview + Process / View list.** A "Pages to include" control now renders the site on demand (**Process**) and, once current, shows **View list** — an Included / Excluded overview. Included pages carry compatibility notices (e.g. forms that post back to this site); excluded pages carry the reason (Not linked / Not included / Over plan limit / Not published).
+- **Content-change tracking.** Post saves, status changes, Bricks meta writes and **menu edits** now flag the render stale: the **In sync** dot flips, and the control offers **Process** again. Published pages missing from the export surface as an "*N not in export*" chip that opens the Excluded tab.
+- **Check as a no-render sync preview.** The per-destination **Check** button now diffs the existing render against what was last pushed and reports what a Sync would change — without re-rendering. If the render is stale/missing it points you to **Process** first.
+- **Head cleaning.** Rendered pages drop WordPress-only `<head>` links (feeds, oEmbed, RSD, WLW, shortlink, `wp-json`) and emit a single `Bricks Sync … by BRXProd` generator tag. SEO/social meta (canonical, Open Graph, Twitter, robots) is preserved. Filterable via `bs_clean_head`.
+- **Configurable timeouts.** New filters tune the loopback render (`bs_render_timeout`), dynamic-asset fetch (`bs_asset_timeout`, default raised 30→60s), remote package extract (`bs_package_timeout`), and the stalled-job watchdog (`bs_stale_seconds`) for slow hosts.
+
+### Changed
+- **Redesigned dashboard chrome.** The dashboard is rebuilt on the `ab-ui` component/theme library: a new gear-icon **Settings drawer** now holds discovery mode, the sync-button toggle, AI/MCP toggles and the new Concurrent syncs slider (moved out of the main toolbar), plus a light/dark/auto theme switcher, an accent-colour picker (with a custom colour option) and a compact-density switch.
+- **Single-page sync is published-only.** The front-end button shows a notice on draft/pending pages instead of sync controls.
+- **Custom dropdowns.** "Pages to include" and the transport selector use a custom dropdown so hover colours render correctly in the dark admin.
+
+### Fixed
+- **Stuck "Rendering Pages…" recovery.** Cancelling a run whose driver has gone away (e.g. the tab was refreshed during a WP-CLI prompt) now finalises immediately instead of leaving an un-closable progress card.
+- **Package-deploy false failure on a no-op sync.** A package deploy with nothing changed and nothing to prune no longer attempts to build/upload an empty zip (which failed with a missing-file error); it now reports "Already up to date" instead.
+
 ## [1.0.1] - 2026-06-22
 
 ### Added

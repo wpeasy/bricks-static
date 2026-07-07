@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Badge, Checkbox, ConfirmButton } from '@wpeasy/ab-ui';
   import type { DestinationDisplay } from '../shared/types';
   import { __, __f } from '../shared/i18n';
 
@@ -33,25 +34,31 @@
         <span class="bs-all__meta">
           {d.enabled ? (d.host.value || '—') : __('stDisabled')}
         </span>
-        <span class="bs-all__status bs-all__status--{d.status.inSync ? 'ok' : d.status.hasPushed ? 'warn' : 'off'}">
+        <Badge tone={d.status.inSync ? 'success' : d.status.hasPushed ? 'warning' : 'neutral'} variant="soft">
           {d.status.inSync ? __('stInSync') : d.status.hasPushed ? __('stOutOfDate') : __('stNotPushed')}
-        </span>
-        <button type="button" class="bs-btn bs-btn--secondary" onclick={() => onSyncOne(d.id, prune)} disabled={running || !d.enabled}>
-          {__('btnSync')}
-        </button>
+        </Badge>
+        <ConfirmButton
+          variant="secondary"
+          size="sm"
+          label={__('btnSync')}
+          confirmLabel={__('btnConfirmSync')}
+          onconfirm={() => onSyncOne(d.id, prune)}
+          disabled={running || !d.enabled}
+        />
       </li>
     {/each}
   </ul>
 
-  <label class="bs-all__opt">
-    <input type="checkbox" bind:checked={prune} disabled={running} />
-    {__('pruneOption')}
-  </label>
+  <Checkbox label={__('pruneOption')} checked={prune ? 1 : 0} disabled={running} onchange={(c) => (prune = c === 1)} />
 
   <div class="bs-row">
-    <button type="button" class="bs-btn bs-btn--primary" onclick={() => onSyncAll(prune)} disabled={running || enabledCount === 0}>
-      {running ? __('btnWorking') : __f('syncAllN', enabledCount)}
-    </button>
+    <ConfirmButton
+      variant="primary"
+      label={running ? __('btnWorking') : __f('syncAllN', enabledCount)}
+      confirmLabel={__('btnConfirmSyncAll')}
+      onconfirm={() => onSyncAll(prune)}
+      disabled={running || enabledCount === 0}
+    />
   </div>
 </section>
 
@@ -59,16 +66,16 @@
   .bs-card {
     /* Span two columns of the auto-fit panels grid (falls back to 1 when narrow). */
     grid-column: span 2;
-    padding: var(--bs-space--lg);
-    background: var(--bs-color-surface--raised);
-    border: var(--bs-border--1) solid var(--bs-color-border);
-    border-radius: var(--bs-radius--lg);
-    box-shadow: var(--bs-shadow--sm);
+    padding: var(--ab-space-5);
+    background: var(--ab-color-surface);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-lg);
+    box-shadow: var(--ab-shadow-sm);
   }
 
   .bs-all__lead {
-    color: var(--bs-color-text--muted);
-    font-size: var(--bs-text--sm);
+    color: var(--ab-color-text-muted);
+    font-size: var(--ab-text-sm);
   }
 
   .bs-all__list {
@@ -77,17 +84,17 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--bs-space--xs);
+    gap: var(--ab-space-2);
   }
 
   .bs-all__item {
     display: grid;
     grid-template-columns: 1fr auto auto auto;
     align-items: center;
-    gap: var(--bs-space--sm);
-    padding: var(--bs-space--xs) var(--bs-space--sm);
-    border: var(--bs-border--1) solid var(--bs-color-border--subtle);
-    border-radius: var(--bs-radius--md);
+    gap: var(--ab-space-3);
+    padding: var(--ab-space-2) var(--ab-space-3);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-md);
   }
 
   .bs-all__name {
@@ -96,59 +103,14 @@
     padding: 0;
     text-align: left;
     font: inherit;
-    font-weight: var(--bs-weight--medium);
-    color: var(--bs-color-primary);
+    font-weight: var(--ab-weight-medium);
+    color: var(--ab-color-primary);
     cursor: pointer;
   }
 
   .bs-all__meta {
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-text--muted);
-    font-family: var(--bs-font--mono);
-  }
-
-  .bs-all__status {
-    font-size: var(--bs-text--xs);
-    padding: var(--bs-space--3xs) var(--bs-space--xs);
-    border-radius: var(--bs-radius--pill);
-    background: var(--bs-color-surface--sunken);
-    color: var(--bs-color-text--muted);
-  }
-
-  .bs-all__status--ok {
-    color: var(--bs-color-success);
-    background: color-mix(in srgb, var(--bs-color-success) 14%, transparent);
-  }
-
-  .bs-all__status--warn {
-    color: var(--bs-color-warning);
-    background: color-mix(in srgb, var(--bs-color-warning) 14%, transparent);
-  }
-
-  .bs-btn {
-    padding: var(--bs-space--xs) var(--bs-space--md);
-    border: var(--bs-border--1) solid var(--bs-color-border--strong);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface);
-    color: var(--bs-color-text);
-    font: inherit;
-    font-weight: var(--bs-weight--medium);
-    cursor: pointer;
-  }
-
-  .bs-btn--primary {
-    background: var(--bs-color-primary);
-    border-color: transparent;
-    color: var(--bs-color-primary--contrast);
-  }
-
-  .bs-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .bs-all__opt {
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-text--muted);
+    font-size: var(--ab-text-sm);
+    color: var(--ab-color-text-muted);
+    font-family: var(--ab-font-mono);
   }
 </style>

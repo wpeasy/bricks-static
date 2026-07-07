@@ -1,10 +1,17 @@
 <script lang="ts">
-  import type { Method } from '../shared/types';
+  import type { DiscoveryMode, Method } from '../shared/types';
   import { __ } from '../shared/i18n';
 
-  let { method }: { method: Method | null } = $props();
+  let { method, mode }: { method: Method | null; mode?: DiscoveryMode } = $props();
 
-  let discovery = $derived(method?.discovery.description ?? '…');
+  // Derived from the (reactive, optimistic) discovery mode — updates instantly
+  // when the mode changes, no server round-trip. Falls back to the server text.
+  const DISC_KEY: Record<DiscoveryMode, string> = {
+    linked: 'methodDiscLinked',
+    all: 'methodDiscAll',
+    manual: 'methodDiscManual',
+  };
+  let discovery = $derived(mode ? __(DISC_KEY[mode]) : (method?.discovery.description ?? '…'));
 
   let transportLabel = $derived.by(() => {
     if (!method) {
@@ -56,40 +63,40 @@
 
 <style>
   .bs-card {
-    padding: var(--bs-space--lg);
-    background: var(--bs-color-surface--raised);
-    border: var(--bs-border--1) solid var(--bs-color-border);
-    border-radius: var(--bs-radius--lg);
-    box-shadow: var(--bs-shadow--sm);
+    padding: var(--ab-space-5);
+    background: var(--ab-color-surface);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-lg);
+    box-shadow: var(--ab-shadow-sm);
   }
 
   .bs-method__lead {
-    color: var(--bs-color-text--muted);
-    font-size: var(--bs-text--sm);
+    color: var(--ab-color-text-muted);
+    font-size: var(--ab-text-sm);
   }
 
   .bs-method {
     display: grid;
-    gap: var(--bs-space--xs);
+    gap: var(--ab-space-2);
     margin: 0;
   }
 
   .bs-method__row {
     display: grid;
     grid-template-columns: 9rem 1fr;
-    gap: var(--bs-space--sm);
+    gap: var(--ab-space-3);
     align-items: baseline;
   }
 
   .bs-method__row dt {
-    color: var(--bs-color-text--muted);
-    font-size: var(--bs-text--sm);
+    color: var(--ab-color-text-muted);
+    font-size: var(--ab-text-sm);
   }
 
   .bs-method__row dd {
     margin: 0;
-    font-family: var(--bs-font--mono);
-    font-size: var(--bs-text--sm);
+    font-family: var(--ab-font-mono);
+    font-size: var(--ab-text-sm);
     word-break: break-word;
   }
 </style>

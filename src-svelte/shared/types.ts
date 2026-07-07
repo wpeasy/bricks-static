@@ -40,15 +40,28 @@ export interface Replacement {
   rich?: boolean;
 }
 
+/** A page available for per-page media/video replacement (selector option). */
+export interface ReplacementPage {
+  /** Export-relative path (the stored `page` key), e.g. 'about/index.html'. */
+  value: string;
+  /** Friendly display path, e.g. '/about/'. */
+  label: string;
+}
+
 export interface MediaItem {
   url: string;
   thumb: string;
   alt: string;
   type: 'image' | 'video';
-  pages: string[];
+  /** Resolves to a media-library attachment, so a swap covers all size variants. */
+  inLibrary?: boolean;
+  /** How many size variants (src + srcset + backgrounds) this image group covers. */
+  variants?: number;
 }
 
 export interface MediaReplacement {
+  /** Export-relative page path this swap applies to (per-page model). */
+  page: string;
   from: string;
   to: string;
   toId?: number;
@@ -70,10 +83,11 @@ export interface VideoItem {
   thumb: string;
   provider: string;
   title: string;
-  pages: string[];
 }
 
 export interface VideoReplacement {
+  /** Export-relative page path this swap applies to (per-page model). */
+  page: string;
   from: string;
   to: string;
   toId?: number;
@@ -158,7 +172,7 @@ export interface LastTest {
   message: string;
 }
 
-export type DiscoveryMode = 'linked' | 'all';
+export type DiscoveryMode = 'linked' | 'all' | 'manual';
 
 export interface Status {
   connected: boolean;
@@ -170,7 +184,34 @@ export interface Status {
   cli: string;
   wpCli: WpCliInfo;
   discoveryMode: DiscoveryMode;
+  /** Whether a render exists yet. */
+  hasRendered: boolean;
+  /** Whether the render reflects the current mode + content (list is accurate). */
+  renderCurrent: boolean;
+  /** Published pages not in the current export (orphans in linked mode, etc.). */
+  excludedPublished: number;
   fabEnabled: boolean;
+  /** Max destinations deployed at once during a multi-destination sync (1–10). */
+  concurrentSyncs: number;
+  /** Whether the host WordPress exposes the Abilities API (WP 6.9+). */
+  aiAvailable: boolean;
+  /** Opt-in: AI/MCP may change local settings (discovery mode, include). */
+  aiAllowChanges: boolean;
+  /** Opt-in: AI/MCP may run the engine / push to destinations. */
+  aiAllowSync: boolean;
+}
+
+export interface PageRef {
+  title: string;
+  url: string;
+  /** Excluded: reason tags (e.g. "Not linked"). Included: compatibility notices. */
+  tags: string[];
+}
+
+export interface PagesOverview {
+  hasRendered: boolean;
+  included: PageRef[];
+  excluded: PageRef[];
 }
 
 export interface WpCliInfo {
@@ -205,14 +246,33 @@ export interface SyncTotals {
   uploads: number;
 }
 
+export interface ParallelTarget {
+  destId: string;
+  name: string;
+  status: 'pending' | 'active' | 'done' | 'error' | 'cancelled';
+  uploaded: number;
+  total: number;
+  /** Package (single-zip) deploy — no per-file %, show an indeterminate bar. */
+  packaging: boolean;
+  message: string;
+}
+
 export interface SyncSnapshot {
-  phase: 'idle' | 'collect' | 'render' | 'assets' | 'finalize' | 'package' | 'upload' | 'done' | 'error' | 'cancelled';
+  phase: 'idle' | 'collect' | 'render' | 'assets' | 'finalize' | 'package' | 'upload' | 'deploy' | 'done' | 'error' | 'cancelled';
   type?: 'check' | 'sync';
   message?: string;
   counts?: SyncCounts;
   totals?: SyncTotals;
   queued?: { pages: number; assets: number; uploads: number };
   targets?: { index: number; total: number; done: number; name: string };
+  /** Parallel deploy: fan-out across destinations is active. */
+  parallel?: boolean;
+  /** How many destinations are being deployed at once. */
+  poolSize?: number;
+  /** Detached coordinator needs the dashboard to launch the worker pool. */
+  needsDispatch?: boolean;
+  /** Per-destination progress rows during a parallel deploy (empty otherwise). */
+  parallelTargets?: ParallelTarget[];
   removed?: number;
   errorCount?: number;
   skippedCount?: number;
@@ -228,6 +288,37 @@ export interface SyncSnapshot {
   driver?: 'cli' | 'browser';
   /** True when a full sync stopped at the Free page cap (more pages need Pro). */
   pageLimitHit?: boolean;
+  /** A package-configured destination fell back to file-by-file (runtime has no zip). */
+  zipUnavailable?: boolean;
+  /** Reason a package deploy was attempted but fell back to file-by-file (''=n/a). */
+  packageFallback?: string;
+  /** A "check" run's sync preview: what a sync to this destination would change. */
+  preview?: {
+    destId: string;
+    destName: string;
+    upload: number;
+    remove: number;
+    total: number;
+    inSync: boolean;
+  } | null;
+}
+
+/**
+ * A synchronous (no-render) sync preview for one destination, from GET
+ * /sync/check. When `needsProcess` is true the render is stale or missing —
+ * the counts are absent and the UI should prompt a Process first.
+ */
+export interface CheckPreview {
+  needsProcess: boolean;
+  destId: string;
+  destName: string;
+  message: string;
+  upload?: number;
+  remove?: number;
+  total?: number;
+  inSync?: boolean;
+  /** Published pages not in the export (present only when not needsProcess). */
+  excludedPublished?: number;
 }
 
 export interface ServerConfig {

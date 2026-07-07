@@ -1,21 +1,31 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { Button, ConfirmButton, Switch, Status, Tooltip, fadeUp } from '@wpeasy/ab-ui';
   import { api } from '../shared/api';
-  import type { DestinationDisplay } from '../shared/types';
+  import type { CheckPreview, DestinationDisplay } from '../shared/types';
   import { __ } from '../shared/i18n';
 
   let {
     destination,
     running,
+    checking = false,
+    result = null,
     onSaved,
     onCheck,
     onSync,
+    onProcess,
   }: {
     destination: DestinationDisplay;
     running: boolean;
+    /** A Check (no-render diff) is in flight for this destination. */
+    checking?: boolean;
+    /** Last Check preview for this destination, or null. */
+    result?: CheckPreview | null;
     onSaved: () => void;
     onCheck: (id: string) => void;
     onSync: (id: string, prune: boolean) => void;
+    /** Run a Process (render) so a stale page list/preview becomes accurate. */
+    onProcess: () => void;
   } = $props();
 
   const d = untrack(() => destination);
@@ -24,7 +34,7 @@
   let saving = $state(false);
 
   let connected = $derived(destination.status.connected);
-  let busy = $derived(saving || running);
+  let busy = $derived(saving || running || checking);
 
   // Why the run buttons are off (a disabled destination is never synced).
   let blockedReason = $derived(!enabled ? __('enableFirst') : !connected ? __('testConnFirst') : '');
@@ -37,7 +47,13 @@
     return host ? `https://${host}` : '';
   });
 
+  // Tone for the inline Check result.
+  let resultTone = $derived(
+    result?.needsProcess ? 'warn' : result?.inSync && !result?.excludedPublished ? 'ok' : 'info',
+  );
+
   async function toggle(value: boolean): Promise<void> {
+    enabled = value; // optimistic (Switch is no longer two-way bound)
     saving = true;
     try {
       await api.updateDestination(d.id, { enabled: value });
@@ -52,36 +68,41 @@
 
 <div class="bs-dtoolbar">
   <div class="bs-dstatus">
-    <span class="bs-dstatus__item bs-dstatus__item--{connected ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>{__('stConnected')}</span>
-    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.hasPushed ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>{__('stPushed')}</span>
-    <span class="bs-dstatus__item bs-dstatus__item--{destination.status.inSync ? 'on' : 'off'}"><span class="bs-dstatus__dot"></span>{__('stInSync')}</span>
+    <Status status={connected ? 'ok' : 'error'} label={__('stConnected')} />
+    <Status status={destination.status.hasPushed ? 'ok' : 'error'} label={__('stPushed')} />
+    <Status status={destination.status.inSync ? 'ok' : 'error'} label={__('stInSync')} />
   </div>
 
   <div class="bs-dtoolbar__switches">
-    <label class="bs-switch"><input type="checkbox" bind:checked={enabled} disabled={busy} onchange={() => toggle(enabled)} /> {__('swEnabled')}</label>
+    <Switch label={__('swEnabled')} checked={enabled ? 1 : 0} disabled={busy} onchange={(c) => toggle(c === 1)} />
   </div>
 
   <div class="bs-dtoolbar__actions">
-    <button
-      type="button"
-      class="bs-btn bs-btn--secondary"
-      onclick={() => onCheck(d.id)}
-      disabled={!canRun}
-      data-balloon={blockedReason || undefined}
-      data-balloon-pos="down"
-    >{__('btnCheck')}</button>
-    <button
-      type="button"
-      class="bs-btn bs-btn--primary"
-      onclick={() => onSync(d.id, false)}
-      disabled={!canRun}
-      data-balloon={blockedReason || undefined}
-      data-balloon-pos="down"
-    >{__('btnSync')}</button>
+    <Tooltip content={blockedReason || __('btnCheckHint')} placement="bottom">
+      <Button variant="secondary" onclick={() => onCheck(d.id)} disabled={!canRun}>
+        {checking ? __('btnChecking') : __('btnCheck')}
+      </Button>
+    </Tooltip>
+    {#if blockedReason}
+      <Tooltip content={blockedReason} placement="bottom">
+        <ConfirmButton variant="primary" label={__('btnSync')} confirmLabel={__('btnConfirmSync')} onconfirm={() => onSync(d.id, false)} disabled={!canRun} />
+      </Tooltip>
+    {:else}
+      <ConfirmButton variant="primary" label={__('btnSync')} confirmLabel={__('btnConfirmSync')} onconfirm={() => onSync(d.id, false)} disabled={!canRun} />
+    {/if}
     {#if url}
       <a class="bs-dtoolbar__link" href={url} target="_blank" rel="noopener noreferrer">{__('visitSite')}</a>
     {/if}
   </div>
+
+  {#if result}
+    <div class="bs-dcheck bs-dcheck--{resultTone}" role="status" in:fadeUp>
+      <span class="bs-dcheck__msg">{result.message}</span>
+      {#if result.needsProcess}
+        <Button variant="ghost" size="sm" onclick={onProcess} disabled={busy}>{__('btnProcess')}</Button>
+      {/if}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -90,93 +111,72 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: var(--bs-space--md) var(--bs-space--lg);
-    padding: var(--bs-space--sm) var(--bs-space--md);
-    background: var(--bs-color-surface--raised);
-    border: var(--bs-border--1) solid var(--bs-color-border);
-    border-radius: var(--bs-radius--md);
+    gap: var(--ab-space-4) var(--ab-space-5);
+    padding: var(--ab-space-3) var(--ab-space-4);
+    background: var(--ab-color-surface);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-md);
   }
 
   .bs-dstatus {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--bs-space--md);
-  }
-
-  .bs-dstatus__item {
-    display: flex;
-    align-items: center;
-    gap: var(--bs-space--2xs);
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-text--muted);
-  }
-
-  .bs-dstatus__dot {
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: var(--bs-radius--full);
-    background: var(--bs-color-text--subtle);
-  }
-
-  .bs-dstatus__item--on .bs-dstatus__dot {
-    background: var(--bs-color-success);
-  }
-
-  .bs-dstatus__item--off .bs-dstatus__dot {
-    background: var(--bs-color-danger);
+    gap: var(--ab-space-4);
   }
 
   .bs-dtoolbar__switches {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--bs-space--md);
-  }
-
-  .bs-switch {
-    display: flex;
-    align-items: center;
-    gap: var(--bs-space--xs);
-    font-size: var(--bs-text--sm);
+    gap: var(--ab-space-4);
   }
 
   .bs-dtoolbar__actions {
     display: flex;
     align-items: center;
-    gap: var(--bs-space--sm);
+    gap: var(--ab-space-3);
     margin-left: auto;
   }
 
-  .bs-btn {
-    padding: var(--bs-space--xs) var(--bs-space--md);
-    border: var(--bs-border--1) solid var(--bs-color-border--strong);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface);
-    color: var(--bs-color-text);
-    font: inherit;
-    font-weight: var(--bs-weight--medium);
-    cursor: pointer;
-  }
-
-  .bs-btn--primary {
-    background: var(--bs-color-primary);
-    border-color: transparent;
-    color: var(--bs-color-primary--contrast);
-  }
-
-  .bs-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
   .bs-dtoolbar__link {
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--medium);
-    color: var(--bs-color-primary);
+    font-size: var(--ab-text-sm);
+    font-weight: var(--ab-weight-medium);
+    color: var(--ab-color-primary);
     text-decoration: none;
     white-space: nowrap;
   }
 
   .bs-dtoolbar__link:hover {
     text-decoration: underline;
+  }
+
+  /* Inline Check result: full-width row under the toolbar actions. */
+  .bs-dcheck {
+    grid-column: 1 / -1;
+    flex-basis: 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--ab-space-3);
+    padding: var(--ab-space-2) var(--ab-space-3);
+    border-radius: var(--ab-radius-md);
+    font-size: var(--ab-text-sm);
+  }
+
+  .bs-dcheck__msg {
+    flex: 1 1 auto;
+  }
+
+  .bs-dcheck--ok {
+    background: color-mix(in srgb, var(--ab-color-success) 12%, transparent);
+    color: var(--ab-color-success);
+  }
+
+  .bs-dcheck--info {
+    background: color-mix(in srgb, var(--ab-color-primary) 12%, transparent);
+    color: var(--ab-color-text-muted);
+  }
+
+  .bs-dcheck--warn {
+    background: color-mix(in srgb, var(--ab-color-warning) 14%, transparent);
+    color: var(--ab-color-text-muted);
   }
 </style>

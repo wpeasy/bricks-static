@@ -24,22 +24,53 @@ defined('ABSPATH') || exit;
 final class VideoCollector {
 
     /**
-     * Build the video index from the current render.
+     * The exported HTML pages available for video replacement (for the page
+     * selector). Each entry is the export-relative path (the stored `page` key,
+     * matched at deploy time) plus a friendly display label.
      *
-     * @return array<int,array{url:string,thumb:string,provider:string,title:string,pages:array<int,string>}>
+     * @return array<int,array{value:string,label:string}>
      */
-    public static function collect(): array {
+    public static function pages(): array {
         $render = Manifest::load(Manifest::RENDER_OPTION);
-        $origin = rtrim((string) home_url(), '/');
 
-        // url => [title, provider, thumb, pages{}]
+        $out = [];
+        foreach ($render as $relative => $meta) {
+            if (substr(strtolower($relative), -5) !== '.html' || !is_file($meta['src'])) {
+                continue;
+            }
+            $out[] = ['value' => (string) $relative, 'label' => self::page_path((string) $relative)];
+        }
+
+        usort($out, static fn(array $a, array $b): int => strcasecmp($a['label'], $b['label']));
+
+        return $out;
+    }
+
+    /**
+     * The videos referenced by a single exported page. Video replacement is per
+     * page, so the dashboard picks a page first, then lists that page's videos.
+     *
+     * @param string $page_rel Export-relative page path (e.g. 'about/index.html').
+     * @return array<int,array{url:string,thumb:string,provider:string,title:string}>
+     */
+    public static function collect(string $page_rel): array {
+        $render = Manifest::load(Manifest::RENDER_OPTION);
+        $meta   = $render[$page_rel] ?? null;
+        if (!is_array($meta) || substr(strtolower($page_rel), -5) !== '.html' || !is_file($meta['src'])) {
+            return [];
+        }
+
+        $origin = rtrim((string) home_url(), '/');
+        $html   = (string) file_get_contents($meta['src']);
+
+        // url => [title, provider, thumb]
         $index = [];
-        $add   = static function (string $url, string $provider, string $thumb, string $title, string $page) use (&$index): void {
+        $add   = static function (string $url, string $provider, string $thumb, string $title) use (&$index): void {
             if ($url === '') {
                 return;
             }
             if (!isset($index[$url])) {
-                $index[$url] = ['title' => $title, 'provider' => $provider, 'thumb' => $thumb, 'pages' => []];
+                $index[$url] = ['title' => $title, 'provider' => $provider, 'thumb' => $thumb];
             }
             if ($index[$url]['title'] === '' && $title !== '') {
                 $index[$url]['title'] = $title;
@@ -47,46 +78,37 @@ final class VideoCollector {
             if ($index[$url]['thumb'] === '' && $thumb !== '') {
                 $index[$url]['thumb'] = $thumb;
             }
-            $index[$url]['pages'][$page] = true;
         };
 
-        foreach ($render as $relative => $meta) {
-            if (substr(strtolower($relative), -5) !== '.html' || !is_file($meta['src'])) {
-                continue;
-            }
-            $html = (string) file_get_contents($meta['src']);
-            $page = self::page_path($relative);
-
-            // <iframe> embeds.
-            if (preg_match_all('#<iframe\b[^>]*>#i', $html, $iframes)) {
-                foreach ($iframes[0] as $tag) {
-                    $src = self::attr($tag, 'src');
-                    if (!self::is_usable($src)) {
-                        continue;
-                    }
-                    [$provider, $thumb] = self::provider_thumb($src);
-                    $add($src, $provider, $thumb, self::attr($tag, 'title'), $page);
+        // <iframe> embeds.
+        if (preg_match_all('#<iframe\b[^>]*>#i', $html, $iframes)) {
+            foreach ($iframes[0] as $tag) {
+                $src = self::attr($tag, 'src');
+                if (!self::is_usable($src)) {
+                    continue;
                 }
+                [$provider, $thumb] = self::provider_thumb($src);
+                $add($src, $provider, $thumb, self::attr($tag, 'title'));
             }
+        }
 
-            // Local <video> (direct src and/or <source> children); poster = thumb.
-            if (preg_match_all('#<video\b([^>]*)>(.*?)</video>#is', $html, $videos, PREG_SET_ORDER)) {
-                foreach ($videos as $v) {
-                    $vtag   = '<video' . $v[1] . '>';
-                    $poster = self::attr($vtag, 'poster');
-                    $thumb  = $poster !== '' ? self::absolute($poster, $origin) : '';
-                    $title  = self::attr($vtag, 'title');
+        // Local <video> (direct src and/or <source> children); poster = thumb.
+        if (preg_match_all('#<video\b([^>]*)>(.*?)</video>#is', $html, $videos, PREG_SET_ORDER)) {
+            foreach ($videos as $v) {
+                $vtag   = '<video' . $v[1] . '>';
+                $poster = self::attr($vtag, 'poster');
+                $thumb  = $poster !== '' ? self::absolute($poster, $origin) : '';
+                $title  = self::attr($vtag, 'title');
 
-                    $direct = self::attr($vtag, 'src');
-                    if (self::is_usable($direct)) {
-                        $add($direct, 'video', $thumb, $title, $page);
-                    }
-                    if (preg_match_all('#<source\b[^>]*>#i', $v[2], $sources)) {
-                        foreach ($sources[0] as $stag) {
-                            $ssrc = self::attr($stag, 'src');
-                            if (self::is_usable($ssrc)) {
-                                $add($ssrc, 'video', $thumb, $title, $page);
-                            }
+                $direct = self::attr($vtag, 'src');
+                if (self::is_usable($direct)) {
+                    $add($direct, 'video', $thumb, $title);
+                }
+                if (preg_match_all('#<source\b[^>]*>#i', $v[2], $sources)) {
+                    foreach ($sources[0] as $stag) {
+                        $ssrc = self::attr($stag, 'src');
+                        if (self::is_usable($ssrc)) {
+                            $add($ssrc, 'video', $thumb, $title);
                         }
                     }
                 }
@@ -100,7 +122,6 @@ final class VideoCollector {
                 'thumb'    => $info['thumb'],
                 'provider' => $info['provider'],
                 'title'    => $info['title'],
-                'pages'    => array_keys($info['pages']),
             ];
         }
 

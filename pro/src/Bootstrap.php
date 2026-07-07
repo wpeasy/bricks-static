@@ -23,10 +23,8 @@ use WPEasy\BricksStaticPro\Licensing\FluentLicensing;
 use WPEasy\BricksStaticPro\Licensing\LicenseEnforcer;
 use WPEasy\BricksStaticPro\Licensing\LicenseSettings;
 use WPEasy\BricksStaticPro\Render\LinkDeployReplacer;
-use WPEasy\BricksStaticPro\Render\MediaDeployReplacer;
 use WPEasy\BricksStaticPro\Render\VideoDeployReplacer;
 use WPEasy\BricksStaticPro\REST\LinksController;
-use WPEasy\BricksStaticPro\REST\MediaController;
 use WPEasy\BricksStaticPro\REST\SitemapController;
 use WPEasy\BricksStaticPro\REST\VideosController;
 use WPEasy\BricksStaticPro\Sitemap\SitemapGenerator;
@@ -131,7 +129,8 @@ final class Bootstrap {
      * so the apply order stays text → media → link → video → data.
      */
     private static function register_pipeline(): void {
-        Pipeline::register_replacer(new MediaDeployReplacer());
+        // Media is now a Free feature (registered by the Free plugin). Pro adds
+        // Links + Videos.
         Pipeline::register_replacer(new LinkDeployReplacer());
         Pipeline::register_replacer(new VideoDeployReplacer());
 
@@ -149,7 +148,6 @@ final class Bootstrap {
      * Register the Pro REST controllers (hooked to `bs_register_rest_routes`).
      */
     public static function register_rest_routes(): void {
-        MediaController::register();
         LinksController::register();
         VideosController::register();
         SitemapController::register();

@@ -54,8 +54,10 @@ final class ProMenu {
             return;
         }
 
+        // Pro panels mount inside the Free dashboard's `.ab-ui`, so ab-ui's
+        // styles (loaded by Free) cover their `--ab-*` tokens; no extra dep.
         foreach ((array) ($entry['css'] ?? []) as $i => $css_file) {
-            wp_enqueue_style(self::HANDLE . '-' . $i, BSP_PLUGIN_URL . 'assets/dist/' . $css_file, ['bs-framework'], BSP_VERSION);
+            wp_enqueue_style(self::HANDLE . '-' . $i, BSP_PLUGIN_URL . 'assets/dist/' . $css_file, [], BSP_VERSION);
         }
 
         // Depends on the Free dashboard handle so it loads AFTER window.BS exists.

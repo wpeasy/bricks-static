@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
+  import { Checkbox, Input } from '@wpeasy/ab-ui';
   import { api } from '../../../src-svelte/shared/api';
   import type { LinkItem, LinkReplacement, DestinationDisplay } from '../../../src-svelte/shared/types';
   import { __, __f } from '../../../src-svelte/shared/i18n';
+  import ListSkeleton from '../../../src-svelte/lib/ListSkeleton.svelte';
 
   let { destination, onSaved }: { destination: DestinationDisplay; onSaved: () => void } = $props();
 
@@ -83,19 +85,19 @@
       <small>({links.length === 1 ? __f('nLink', links.length) : __f('nLinks', links.length)}{swapCount > 0 ? __f('nReplaced', swapCount) : ''})</small>
     </span>
     <div class="bs-links__filters">
-      <input type="search" placeholder={__('phSearchUrlLabel')} bind:value={search} />
-      <input type="search" list="bs-link-pages" placeholder={__('filterByPage')} bind:value={pageFilter} aria-label={__('filterByPageAria')} />
+      <Input type="search" placeholder={__('phSearchUrlLabel')} bind:value={search} />
+      <Input type="search" list="bs-link-pages" placeholder={__('filterByPage')} bind:value={pageFilter} aria-label={__('filterByPageAria')} />
       <datalist id="bs-link-pages">
         {#each pages as p}<option value={p}></option>{/each}
       </datalist>
-      <label class="bs-only"><input type="checkbox" bind:checked={onlyReplacements} /> {__('onlyReplacements')}</label>
+      <Checkbox label={__('onlyReplacements')} checked={onlyReplacements ? 1 : 0} onchange={(c) => (onlyReplacements = c === 1)} />
     </div>
   </div>
   <!-- eslint-disable-next-line svelte/no-at-html-tags -->
   <p class="bs-links__hint">{@html __('linksHint')}</p>
 
   {#if loading}
-    <p class="bs-links__note">{__('loadingLinks')}</p>
+    <ListSkeleton rows={5} label={__('loadingLinks')} />
   {:else if error}
     <p class="bs-links__note bs-links__note--err">{error}</p>
   {:else if links.length === 0}
@@ -108,13 +110,13 @@
             <span class="bs-links__url" title={item.url}>{item.url}</span>
             <span class="bs-links__sub">{item.text || __('noLabel')} · {item.pages.length === 1 ? __f('nPage', item.pages.length) : __f('nPages', item.pages.length)}</span>
           </div>
-          <input
+          <Input
             type="url"
             class="bs-links__input"
             placeholder={__('phReplacementUrl')}
             value={swaps[item.url] ?? ''}
-            onchange={(e) => commit(item.url, e.currentTarget.value)}
-            onblur={(e) => commit(item.url, e.currentTarget.value)}
+            onchange={(e: Event) => commit(item.url, (e.currentTarget as HTMLInputElement).value)}
+            onblur={(e: FocusEvent) => commit(item.url, (e.currentTarget as HTMLInputElement).value)}
           />
         </div>
       {/each}
@@ -129,7 +131,7 @@
   .bs-links {
     display: flex;
     flex-direction: column;
-    gap: var(--bs-space--sm);
+    gap: var(--ab-space-3);
   }
 
   .bs-links__head {
@@ -137,50 +139,29 @@
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: var(--bs-space--sm);
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--medium);
-    color: var(--bs-color-text--muted);
+    gap: var(--ab-space-3);
+    font-size: var(--ab-text-sm);
+    font-weight: var(--ab-weight-medium);
+    color: var(--ab-color-text-muted);
   }
 
   .bs-links__filters {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: var(--bs-space--xs);
-  }
-
-  .bs-only {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--bs-space--2xs);
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--normal);
-    color: var(--bs-color-text--muted);
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  .bs-links__filters input {
-    padding: var(--bs-space--2xs) var(--bs-space--sm);
-    border: var(--bs-border--1) solid var(--bs-color-border--strong);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface);
-    color: var(--bs-color-text);
-    font: inherit;
-    font-size: var(--bs-text--sm);
+    gap: var(--ab-space-2);
   }
 
   .bs-links__hint {
     margin: 0;
-    font-size: var(--bs-text--xs);
-    color: var(--bs-color-text--muted);
+    font-size: var(--ab-text-xs);
+    color: var(--ab-color-text-muted);
   }
 
   .bs-links__list {
     display: flex;
     flex-direction: column;
-    gap: var(--bs-space--xs);
+    gap: var(--ab-space-2);
     max-height: 32rem;
     overflow: auto;
   }
@@ -188,61 +169,56 @@
   .bs-links__row {
     display: flex;
     align-items: center;
-    gap: var(--bs-space--sm);
-    padding: var(--bs-space--xs) var(--bs-space--sm);
-    border: var(--bs-border--1) solid var(--bs-color-border);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface);
+    gap: var(--ab-space-3);
+    padding: var(--ab-space-2) var(--ab-space-3);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-md);
+    background: var(--ab-color-surface);
   }
 
   .bs-links__row.is-swapped {
-    border-color: var(--bs-color-primary);
+    border-color: var(--ab-color-primary);
   }
 
   .bs-links__meta {
     display: flex;
     flex-direction: column;
-    gap: var(--bs-space--3xs);
+    gap: var(--ab-space-1);
     min-width: 0;
     flex: 1;
   }
 
   .bs-links__url {
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--medium);
-    color: var(--bs-color-text);
+    font-size: var(--ab-text-sm);
+    font-weight: var(--ab-weight-medium);
+    color: var(--ab-color-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .bs-links__sub {
-    font-size: var(--bs-text--xs);
-    color: var(--bs-color-text--muted);
+    font-size: var(--ab-text-xs);
+    color: var(--ab-color-text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .bs-links__input {
+  /* Layout only — the field itself is styled by ab-ui. The class is passed to
+     the ab-ui Input child, so it needs :global to match (it carries no scope). */
+  :global(.bs-links__input) {
     flex: 0 0 14rem;
     max-width: 45%;
-    padding: var(--bs-space--xs) var(--bs-space--sm);
-    border: var(--bs-border--1) solid var(--bs-color-border--strong);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface);
-    color: var(--bs-color-text);
-    font: inherit;
-    font-size: var(--bs-text--sm);
   }
 
   .bs-links__note {
     margin: 0;
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-text--muted);
+    font-size: var(--ab-text-sm);
+    color: var(--ab-color-text-muted);
   }
 
   .bs-links__note--err {
-    color: var(--bs-color-danger);
+    color: var(--ab-color-danger);
   }
 </style>

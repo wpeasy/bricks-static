@@ -78,6 +78,10 @@ final class I18n {
             'nPagesListPlural'   => __('%1$d pages: %2$s', 'bricks-static-pro'),
             'replacedWith'       => __('↳ replaced with', 'bricks-static-pro'),
             'noMediaMatch'       => __('No media match the current filter.', 'bricks-static-pro'),
+            /* translators: %d is the number of size variants covered by one swap. */
+            'nSizes'             => __('%d sizes', 'bricks-static-pro'),
+            'mediaNotInLibrary'  => __('not in library', 'bricks-static-pro'),
+            'mediaNotInLibraryTip' => __('This image isn’t in the media library, so only this exact URL is swapped — other responsive sizes may remain.', 'bricks-static-pro'),
         ];
     }
 
@@ -117,6 +121,9 @@ final class I18n {
     private static function videos(): array {
         return [
             'videoReplacer'         => __('Video replacer', 'bricks-static-pro'),
+            'videoSelectPage'       => __('Page', 'bricks-static-pro'),
+            'videoPickPageFirst'    => __('Select a page above to replace its videos.', 'bricks-static-pro'),
+            'noVideosOnPage'        => __('No replaceable videos on this page.', 'bricks-static-pro'),
             /* translators: %d is a video count (singular). */
             'nVideo'                => __('%d video', 'bricks-static-pro'),
             /* translators: %d is a video count (plural). */

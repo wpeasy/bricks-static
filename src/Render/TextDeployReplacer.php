@@ -53,7 +53,8 @@ final class TextDeployReplacer implements DeployReplacer {
     /**
      * {@inheritDoc}
      */
-    public function apply(string $html, $ctx): string {
+    public function apply(string $html, $ctx, string $relative): string {
+        // Text replacements are global (whole-export), so the page path is ignored.
         return TextReplacer::apply($html, $ctx['searches'], $ctx['replaces']);
     }
 

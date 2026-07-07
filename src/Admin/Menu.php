@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Admin;
 
+use WPEasy\BricksStatic\Support\Assets;
 use WPEasy\BricksStatic\Support\Edition;
 use WPEasy\BricksStatic\Support\I18n;
 
@@ -128,8 +129,6 @@ final class Menu {
      * @param string $handle    Script handle (also the CSS handle prefix).
      */
     private static function enqueue_app(string $entry_key, string $handle): void {
-        wp_enqueue_style('bs-framework', BS_PLUGIN_URL . 'assets/css/bs-framework.css', [], BS_VERSION);
-
         $entry = self::manifest_entry($entry_key);
         if ($entry === null) {
             add_action('admin_notices', static function (): void {
@@ -140,8 +139,12 @@ final class Menu {
             return;
         }
 
-        foreach ((array) ($entry['css'] ?? []) as $i => $css_file) {
-            wp_enqueue_style($handle . '-' . $i, BS_PLUGIN_URL . 'assets/dist/' . $css_file, ['bs-framework'], BS_VERSION);
+        // Enqueue the entry's CSS AND every transitively-imported chunk's CSS.
+        // A plain CSS import shared by 2+ entries (e.g. `ab-ui/styles`, now used
+        // by the dashboard AND editor) is split by Vite into a shared chunk whose
+        // CSS lives outside this entry's own `css[]` — walk imports so it loads.
+        foreach (Assets::css_files($entry_key) as $i => $css_file) {
+            wp_enqueue_style($handle . '-' . $i, BS_PLUGIN_URL . 'assets/dist/' . $css_file, [], BS_VERSION);
         }
 
         wp_enqueue_script($handle, BS_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BS_VERSION, true);

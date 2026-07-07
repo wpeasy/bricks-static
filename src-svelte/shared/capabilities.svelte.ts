@@ -9,8 +9,14 @@
 export interface Capabilities {
   edition: 'free' | 'pro';
   maxDestinations: number;
+  /** Fixed Free-tier destination cap — edition-independent, for comparison UI. */
+  freeMaxDestinations: number;
   maxPages: number;
+  /** Fixed Free-tier page cap — edition-independent, for Free-vs-Pro comparison UI. */
+  freeMaxPages: number;
   advancedReplacements: boolean;
+  /** Media replacement is a Free feature; this is the per-page cap (Pro unlimited). */
+  maxMediaPerPage: number;
   gzip: boolean;
   sitemap: boolean;
   prune: boolean;
@@ -23,9 +29,12 @@ export interface Capabilities {
 
 const FREE_DEFAULTS: Capabilities = {
   edition: 'free',
-  maxDestinations: 1,
+  maxDestinations: 2,
+  freeMaxDestinations: 2,
   maxPages: 10,
+  freeMaxPages: 10,
   advancedReplacements: false,
+  maxMediaPerPage: 1,
   gzip: false,
   sitemap: false,
   prune: false,
@@ -42,8 +51,11 @@ function normalize(raw: unknown): Capabilities {
   return {
     edition: r.edition === 'pro' ? 'pro' : 'free',
     maxDestinations: Math.max(1, Number(r.maxDestinations) || 1),
+    freeMaxDestinations: Math.max(1, Number(r.freeMaxDestinations) || 2),
     maxPages: Math.max(1, Number(r.maxPages) || 10),
+    freeMaxPages: Math.max(1, Number(r.freeMaxPages) || 10),
     advancedReplacements: !!r.advancedReplacements,
+    maxMediaPerPage: Math.max(1, Number(r.maxMediaPerPage) || 1),
     gzip: !!r.gzip,
     sitemap: !!r.sitemap,
     prune: !!r.prune,

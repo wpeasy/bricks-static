@@ -29,9 +29,9 @@ export const REPLACEMENT_CATALOG: ReplacementEntry[] = [
   {
     key: 'media',
     title: 'Media',
-    tier: 'pro',
+    tier: 'free',
     countProp: 'mediaReplacements',
-    description: 'Swap images and media for other library items per destination — responsive variants are rebuilt automatically.',
+    description: 'Swap images per page for other library items — responsive variants are rebuilt automatically. Free allows one per page; Pro is unlimited.',
   },
   {
     key: 'links',

@@ -54,11 +54,15 @@ interface DeployReplacer {
     /**
      * Transform a single HTML document using the prepared context.
      *
-     * @param string $html The (already partially transformed) page HTML.
-     * @param mixed  $ctx  The context returned by {@see prepare()}.
+     * @param string $html     The (already partially transformed) page HTML.
+     * @param mixed  $ctx      The context returned by {@see prepare()}.
+     * @param string $relative The page's export-relative path (e.g. 'about/index.html').
+     *                         Page-scoped replacers (media, video) use it to apply
+     *                         only the swaps saved for this page; global replacers
+     *                         (text) ignore it.
      * @return string Transformed HTML (return $html unchanged to no-op).
      */
-    public function apply(string $html, $ctx): string;
+    public function apply(string $html, $ctx, string $relative): string;
 
     /**
      * A JSON-serialisable value folded into a destination's deploy signature, so

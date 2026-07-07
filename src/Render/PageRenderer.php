@@ -71,8 +71,16 @@ final class PageRenderer {
      */
     public static function fetch_asset(string $url): array {
         self::release_session();
-        $args            = self::request_args($url);
-        $args['timeout'] = 30;
+        $args = self::request_args($url);
+        /**
+         * Filters the per-asset fetch timeout (seconds). Raise it on slow hosts
+         * that serve large/generated assets; keep it below the sync watchdog
+         * window ({@see bs_stale_seconds}) so an in-flight fetch isn't reaped.
+         *
+         * @param int    $timeout Seconds.
+         * @param string $url     Asset URL.
+         */
+        $args['timeout'] = max(5, (int) apply_filters('bs_asset_timeout', 60, $url));
 
         $response = wp_remote_get($url, $args);
 
@@ -95,7 +103,15 @@ final class PageRenderer {
      */
     public static function request_args(string $url = ''): array {
         $args = [
-            'timeout'     => 60,
+            /**
+             * Filters the per-page loopback render timeout (seconds). Raise it for
+             * heavy pages; keep it below the sync watchdog window
+             * ({@see bs_stale_seconds}) so an in-flight render isn't reaped.
+             *
+             * @param int    $timeout Seconds.
+             * @param string $url     Page URL.
+             */
+            'timeout'     => max(5, (int) apply_filters('bs_render_timeout', 60, $url)),
             'redirection' => 5,
             'sslverify'   => self::should_verify_ssl(),
             'user-agent'  => self::USER_AGENT_PREFIX . BS_VERSION,

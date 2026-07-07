@@ -30,6 +30,22 @@ final class Edition {
     public const UNLIMITED = 9999;
 
     /**
+     * The Free edition's per-sync page cap — the fixed limit that defines the
+     * Free tier. Exposed as its own capability so edition-comparison UI (the
+     * Docs "Free vs Pro" table) can show the true Free figure even when the
+     * viewer is running Pro (where the live cap is UNLIMITED).
+     */
+    public const FREE_MAX_PAGES = 10;
+
+    /**
+     * The Free edition's destination cap — the fixed limit that defines the Free
+     * tier. Exposed as its own capability (like {@see FREE_MAX_PAGES}) so the
+     * Docs "Free vs Pro" table shows the true Free figure even when the viewer is
+     * running Pro (where the live cap is UNLIMITED).
+     */
+    public const FREE_MAX_DESTINATIONS = 2;
+
+    /**
      * Whether the Pro edition is active (licensed).
      */
     public static function is_pro(): bool {
@@ -45,7 +61,7 @@ final class Edition {
      * The maximum number of destinations the current edition may use.
      */
     public static function max_destinations(): int {
-        $default = self::is_pro() ? self::UNLIMITED : 1;
+        $default = self::is_pro() ? self::UNLIMITED : self::FREE_MAX_DESTINATIONS;
 
         /**
          * Filters the destination cap.
@@ -61,7 +77,7 @@ final class Edition {
      * robots.txt and the favicon do not count toward this.
      */
     public static function max_pages(): int {
-        $default = self::is_pro() ? self::UNLIMITED : 10;
+        $default = self::is_pro() ? self::UNLIMITED : self::FREE_MAX_PAGES;
 
         /**
          * Filters the per-run page cap.
@@ -69,6 +85,27 @@ final class Edition {
          * @param int $max Default cap for the active edition.
          */
         return max(1, (int) apply_filters('bs_max_pages', $default));
+    }
+
+    /**
+     * The Free edition's per-page media-replacement cap. Media replacement is a
+     * Free feature (unlike Links/Videos, which stay Pro via advancedReplacements),
+     * but Free allows only this many swaps per page; Pro lifts the cap.
+     */
+    public const FREE_MAX_MEDIA_PER_PAGE = 1;
+
+    /**
+     * How many media replacements are allowed per page in the current edition.
+     */
+    public static function max_media_per_page(): int {
+        $default = self::is_pro() ? self::UNLIMITED : self::FREE_MAX_MEDIA_PER_PAGE;
+
+        /**
+         * Filters the per-page media-replacement cap.
+         *
+         * @param int $max Default cap for the active edition.
+         */
+        return max(1, (int) apply_filters('bs_max_media_per_page', $default));
     }
 
     /**
@@ -90,7 +127,12 @@ final class Edition {
      * @return array{
      *     edition:string,
      *     maxDestinations:int,
+     *     freeMaxDestinations:int,
+     *     maxPages:int,
+     *     freeMaxPages:int,
      *     advancedReplacements:bool,
+     *     mediaReplacements:bool,
+     *     maxMediaPerPage:int,
      *     gzip:bool,
      *     sitemap:bool,
      *     prune:bool,
@@ -103,8 +145,13 @@ final class Edition {
         return [
             'edition'              => $pro ? 'pro' : 'free',
             'maxDestinations'      => self::max_destinations(),
+            'freeMaxDestinations'  => self::FREE_MAX_DESTINATIONS,
             'maxPages'             => self::max_pages(),
+            'freeMaxPages'         => self::FREE_MAX_PAGES,
+            // Links + Videos stay Pro; Media is Free with a per-page cap.
             'advancedReplacements' => $pro,
+            'mediaReplacements'    => true,
+            'maxMediaPerPage'      => self::max_media_per_page(),
             'gzip'                 => self::gzip_enabled(),
             'sitemap'              => $pro,
             'prune'                => $pro,

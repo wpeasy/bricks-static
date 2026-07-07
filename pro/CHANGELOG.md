@@ -9,6 +9,11 @@ Bricks Static Pro is an add-on that requires the free **Bricks Static** plugin.
 Its changelog is kept separate from Free's (`../CHANGELOG.md`); each release notes
 only Pro-facing changes. Compatibility with Free is declared by `BSP_MIN_FREE`.
 
+## [1.0.2] - 2026-07-07
+
+### Changed
+- **Media replacement is no longer Pro-only.** The Media panel (including this release's CSS-background detection and responsive-set swapping) has moved to the free plugin, capped at one swap per page; Pro simply removes that per-page cap. Video replacements moved to the same per-page model at the same time (previously a single site-wide swap).
+
 ## [1.0.1] - 2026-06-22
 
 ### Added

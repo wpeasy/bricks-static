@@ -10,7 +10,10 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Frontend;
 
+use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Render\PageRenderer;
+use WPEasy\BricksStatic\Support\Assets;
+use WPEasy\BricksStatic\Support\Edition;
 
 defined('ABSPATH') || exit;
 
@@ -55,8 +58,9 @@ final class Fab {
             return false;
         }
 
-        // Admin toggle (Bricks Static dashboard app bar), on by default.
-        if (!(bool) get_option('bs_fab_enabled', true)) {
+        // Admin toggle (Bricks Static dashboard app bar), on by default. Stored as
+        // '1'/'0' so an explicit "off" isn't swallowed by get_option's default.
+        if (get_option('bs_fab_enabled', '1') === '0') {
             return false;
         }
 
@@ -86,23 +90,58 @@ final class Fab {
             return;
         }
 
-        $entry = self::manifest_entry();
+        $entry = Assets::entry(self::ENTRY);
         if ($entry === null) {
             return; // Assets not built — fail silent on the frontend.
         }
 
-        foreach ((array) ($entry['css'] ?? []) as $i => $css_file) {
-            wp_enqueue_style('bs-frontend-' . $i, BS_PLUGIN_URL . 'assets/dist/' . $css_file, [], BS_VERSION);
-        }
-
+        // Includes the shared SyncPanel modal's CSS chunk (transitive) + the ab-ui
+        // base stylesheet, so the modal is themed off the dashboard theme on the
+        // front end too. ab-ui CSS is fully `.ab-ui`-scoped — it cannot affect the
+        // visitor-facing page content.
+        Assets::enqueue_ab_ui_css();
+        Assets::enqueue_css(self::ENTRY);
         wp_enqueue_script(self::SCRIPT_HANDLE, BS_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BS_VERSION, true);
 
+        // In `manual` discovery mode the modal also shows a per-post "Include"
+        // switch, so the page can be opted in/out from the Bricks editor / front
+        // end without opening the WP post editor.
+        $manual = UrlCollector::mode() === 'manual';
+
+        // Always resolve the post id (not just in manual mode): the modal sends it
+        // to /sync/page-status so single-page sync can be gated to published
+        // pages. Without it the server's url_to_postid() fallback returns 0 for a
+        // draft (no permalink rewrite), and the draft looks publishable.
+        $post_id = self::resolve_post_id();
+
         wp_localize_script(self::SCRIPT_HANDLE, 'bsFabData', [
-            'restUrl'  => esc_url_raw(rest_url('bs/v1')),
-            'nonce'    => wp_create_nonce('wp_rest'),
-            'pageUrl'  => self::current_url(),
-            'inEditor' => self::in_editor(),
+            'restUrl'       => esc_url_raw(rest_url('bs/v1')),
+            'nonce'         => wp_create_nonce('wp_rest'),
+            'pageUrl'       => self::current_url(),
+            'inEditor'      => self::in_editor(),
+            'manualMode'    => $manual,
+            'postId'        => $post_id,
+            'included'      => $post_id > 0 ? UrlCollector::is_included($post_id) : false,
+            'effective'     => $post_id > 0 ? UrlCollector::is_effective($post_id) : false,
+            'includedCount' => $manual ? UrlCollector::effective_count() : 0,
+            'savedCount'    => $manual ? UrlCollector::included_count() : 0,
+            'maxPages'      => Edition::max_pages(),
+            'unlimited'     => Edition::is_pro(),
         ]);
+    }
+
+    /**
+     * Best-effort resolve the post id for the current page (for the manual-mode
+     * Include switch). The queried object on a singular page, else a reverse
+     * lookup from the URL.
+     */
+    private static function resolve_post_id(): int {
+        $id = is_singular() ? (int) get_queried_object_id() : 0;
+        if ($id <= 0) {
+            $id = (int) url_to_postid(self::current_url());
+        }
+
+        return $id;
     }
 
     /**
@@ -128,22 +167,5 @@ final class Fab {
         }
 
         return str_replace('<script ', '<script type="module" ', $tag);
-    }
-
-    /**
-     * Read the frontend entry from the Vite manifest.
-     *
-     * @return array<string,mixed>|null
-     */
-    private static function manifest_entry(): ?array {
-        $path = BS_PLUGIN_DIR . 'assets/dist/.vite/manifest.json';
-        if (!is_readable($path)) {
-            return null;
-        }
-
-        $manifest = json_decode((string) file_get_contents($path), true);
-        $entry    = is_array($manifest) ? ($manifest[self::ENTRY] ?? null) : null;
-
-        return is_array($entry) ? $entry : null;
     }
 }

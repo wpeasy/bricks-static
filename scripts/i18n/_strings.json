@@ -6,6 +6,150 @@
     "msgid": "Generate and serve static HTML versions of Bricks-built pages for performance."
   },
   {
+    "msgid": "Inspect and drive the Bricks Static export/sync engine."
+  },
+  {
+    "msgid": "Get sync status"
+  },
+  {
+    "msgid": "Returns whether a destination is connected, whether anything has been pushed, and whether the static copy is in sync, plus the resolved sync method and discovery mode."
+  },
+  {
+    "msgid": "Get sync method"
+  },
+  {
+    "msgid": "Returns how a sync will run: discovery mode, transport, compression, server target and link style."
+  },
+  {
+    "msgid": "List exportable pages"
+  },
+  {
+    "msgid": "Lists published, public posts/pages with their static-export state: whether each is included, whether it will actually export under the current plan, and whether it is currently synced."
+  },
+  {
+    "msgid": "Get page sync status"
+  },
+  {
+    "msgid": "For one post, returns its include/effective/synced state and per-destination push state."
+  },
+  {
+    "msgid": "Check page link integrity"
+  },
+  {
+    "msgid": "For one post, reports internal links that point to pages NOT in the export (outbound) and currently-included pages that link TO it (inbound) — the data behind the manual-mode link-integrity warnings."
+  },
+  {
+    "msgid": "List destinations"
+  },
+  {
+    "msgid": "Lists the configured deploy destinations by name, transport type and enabled state. Never returns credentials."
+  },
+  {
+    "msgid": "Get sync progress"
+  },
+  {
+    "msgid": "Returns the current sync job snapshot (phase, counts, totals, recent errors) — useful for polling a run started elsewhere."
+  },
+  {
+    "msgid": "Set discovery mode"
+  },
+  {
+    "msgid": "Sets how pages are discovered for export: \"linked\", \"all\" or \"manual\"."
+  },
+  {
+    "msgid": "The discovery mode to set."
+  },
+  {
+    "msgid": "Include or exclude a page"
+  },
+  {
+    "msgid": "In manual discovery mode, sets whether a single post is included in the static export. Respects the Free page limit."
+  },
+  {
+    "msgid": "The post ID."
+  },
+  {
+    "msgid": "True to include, false to exclude."
+  },
+  {
+    "msgid": "Include multiple pages"
+  },
+  {
+    "msgid": "In manual discovery mode, includes a batch of posts (e.g. the cascade when enabling a page that links to others). Respects the Free page limit and reports any skipped."
+  },
+  {
+    "msgid": "The post IDs to include."
+  },
+  {
+    "msgid": "Scan (dry run)"
+  },
+  {
+    "msgid": "Starts a check run: renders the pages and reports what would change, without pushing anything to a destination."
+  },
+  {
+    "msgid": "Sync"
+  },
+  {
+    "msgid": "Starts a full sync: renders the pages and pushes the static copy to the destination(s)."
+  },
+  {
+    "msgid": "Sync a single page"
+  },
+  {
+    "msgid": "Renders one page (and any new internal pages it links to) and pushes only the changed files to destinations opted into single-page sync."
+  },
+  {
+    "msgid": "The internal page URL to sync."
+  },
+  {
+    "msgid": "Cancel sync"
+  },
+  {
+    "msgid": "Requests cancellation of the running sync job."
+  },
+  {
+    "msgid": "Reset sync state"
+  },
+  {
+    "msgid": "Clears the local record of what has been pushed so the next sync re-uploads everything. Destructive: does not delete remote files but forces a full re-upload."
+  },
+  {
+    "msgid": "A valid post ID is required."
+  },
+  {
+    "msgid": "Inbound links reflect the most recent scan/sync."
+  },
+  {
+    "msgid": "You cannot edit this post."
+  },
+  {
+    "msgid": "Free plan page limit reached."
+  },
+  {
+    "msgid": "A valid internal page URL is required."
+  },
+  {
+    "msgid": "No destinations are enabled for single-page sync."
+  },
+  {
+    "msgid": "Static"
+  },
+  {
+    "msgid": "In sync — open to re-sync"
+  },
+  {
+    "msgid": "Out of date — open to sync"
+  },
+  {
+    "msgid": "Not in the static export — open to manage"
+  },
+  {
+    "msgid": "Run a check or sync to see status"
+  },
+  {
+    "msgid": "Saved, but over your Free limit — won’t export until you upgrade or free up room"
+  },
+  {
     "msgid": "Dashboard"
   },
   {
@@ -13,6 +157,111 @@
   },
   {
     "msgid": "Bricks Static: the admin assets are not built. Run \"npm run build\" in the plugin directory."
+  },
+  {
+    "msgid": "(no title)"
+  },
+  {
+    "msgid": "Form submit action points to this site (PHP/REST callback won’t work)"
+  },
+  {
+    "msgid": "Search form posts back to this site (won’t work)"
+  },
+  {
+    "msgid": "Links to a PHP script on this site"
+  },
+  {
+    "msgid": "Not published"
+  },
+  {
+    "msgid": "Not included"
+  },
+  {
+    "msgid": "Over plan limit"
+  },
+  {
+    "msgid": "Not rendered"
+  },
+  {
+    "msgid": "Not linked"
+  },
+  {
+    "msgid": "AI tools (MCP)"
+  },
+  {
+    "msgid": "Expose Bricks Static to AI assistants through the WordPress Abilities API. Read-only abilities (status, page list, link checks) are always available to administrators; the actions below are off by default."
+  },
+  {
+    "msgid": "Requires WordPress 6.9 or newer (the Abilities API). Read-only and action abilities are unavailable on this site."
+  },
+  {
+    "msgid": "An MCP client (e.g. the WordPress MCP plugin) is needed to actually reach these abilities."
+  },
+  {
+    "msgid": "Allow AI to change settings"
+  },
+  {
+    "msgid": "Discovery mode and the per-page Include switch. Respects your plan limits."
+  },
+  {
+    "msgid": "Allow AI to run syncs"
+  },
+  {
+    "msgid": "Scan, sync, single-page sync, cancel and reset. These render pages and push to your destinations."
+  },
+  {
+    "msgid": "Include in static export"
+  },
+  {
+    "msgid": "When off, this page is left out of the static export."
+  },
+  {
+    "msgid": "Sync this page"
+  },
+  {
+    "msgid": "Syncing…"
+  },
+  {
+    "msgid": "Publish this page to sync it."
+  },
+  {
+    "msgid": "Enable a destination to sync this page."
+  },
+  {
+    "msgid": "Not pushed"
+  },
+  {
+    "msgid": "%1$d of %2$d pages included"
+  },
+  {
+    "msgid": "%d pages included"
+  },
+  {
+    "msgid": "Free plan page limit reached — exclude another page, or upgrade to Pro to add more."
+  },
+  {
+    "msgid": "%d more saved — over your Free limit."
+  },
+  {
+    "msgid": "This page is saved but over your Free limit — it won’t export until you upgrade or free up room."
+  },
+  {
+    "msgid": "This page links to %d page(s) not included:"
+  },
+  {
+    "msgid": "%d included page(s) link here — they will have dead links:"
+  },
+  {
+    "msgid": "Based on the last check/sync — run a check to refresh."
+  },
+  {
+    "msgid": "Include all"
+  },
+  {
+    "msgid": "Including…"
+  },
+  {
+    "msgid": "%d couldn’t be included (Free limit reached)."
   },
   {
     "msgid": "Generate and serve static HTML versions of your site for performance."
@@ -81,9 +330,6 @@
     "msgid": "Wiped a remote, or want a full re-upload? Reset clears the push record for every destination."
   },
   {
-    "msgid": "Reset sync state"
-  },
-  {
     "msgid": "This will render the site and push to %s. Continue?"
   },
   {
@@ -111,6 +357,9 @@
     "msgid": "All published"
   },
   {
+    "msgid": "Manual selection"
+  },
+  {
     "msgid": "What's the difference?"
   },
   {
@@ -120,6 +369,9 @@
     "msgid": "default"
   },
   {
+    "msgid": "Export only the pages you choose. Each Page, Post and custom post type gets an \"Include\" switch — off by default, except the home page — in its editor, the Pages/Posts list and the front-end Sync panel. Nothing else is crawled in, so the export is exactly your selection."
+  },
+  {
     "msgid": "Starts at your home page and follows internal links from page to page. A page that nothing links to isn't reachable by a visitor, so it's left out — this also keeps builder-only URLs (such as Bricks <code>/template/…</code> previews) out of the static site."
   },
   {
@@ -127,6 +379,54 @@
   },
   {
     "msgid": "Either way, builder/preview post types are never exported."
+  },
+  {
+    "msgid": "View included/excluded pages"
+  },
+  {
+    "msgid": "Process"
+  },
+  {
+    "msgid": "Render the site for the current mode so the page list is accurate."
+  },
+  {
+    "msgid": "View list"
+  },
+  {
+    "msgid": "%d not in export"
+  },
+  {
+    "msgid": "Published pages that aren’t in the static export. Click to view them."
+  },
+  {
+    "msgid": "Pages in the static export"
+  },
+  {
+    "msgid": "Included"
+  },
+  {
+    "msgid": "Excluded"
+  },
+  {
+    "msgid": "Loading…"
+  },
+  {
+    "msgid": "No pages are in the export yet."
+  },
+  {
+    "msgid": "Every published page is in the export."
+  },
+  {
+    "msgid": "Page"
+  },
+  {
+    "msgid": "Path"
+  },
+  {
+    "msgid": "Notices"
+  },
+  {
+    "msgid": "Reason"
   },
   {
     "msgid": "WP-CLI detected"
@@ -154,6 +454,15 @@
   },
   {
     "msgid": "Discovery"
+  },
+  {
+    "msgid": "Internal-link crawl from the home page — only pages reachable by following links."
+  },
+  {
+    "msgid": "Every published page, post and taxonomy archive — including content nothing links to."
+  },
+  {
+    "msgid": "Only the pages you mark “Include” (per-post)."
   },
   {
     "msgid": "Transport"
@@ -279,7 +588,10 @@
     "msgid": "Check"
   },
   {
-    "msgid": "Sync"
+    "msgid": "Checking…"
+  },
+  {
+    "msgid": "Preview what a sync would change on this destination — compares the last render, uploads nothing."
   },
   {
     "msgid": "Visit site ↗"
@@ -322,9 +634,6 @@
   },
   {
     "msgid": "Out of date"
-  },
-  {
-    "msgid": "Not pushed"
   },
   {
     "msgid": "Remove deleted files from each destination (prune)"
@@ -564,9 +873,6 @@
     "msgid": "Formatting"
   },
   {
-    "msgid": "Loading…"
-  },
-  {
     "msgid": "Cancel"
   },
   {
@@ -606,6 +912,16 @@
     "msgid": "The destination URL returned a redirect, which is not followed for safety."
   },
   {
+    "msgid": "The page list has changed since the last render. Click Process to refresh it, then Check again."
+  },
+  {
+    "msgid": "Nothing has been rendered yet. Click Process first, then Check."
+  },
+  {
+    "msgid": "%d published page isn’t in the export — see View list.",
+    "msgid_plural": "%d published pages aren’t in the export — see View list."
+  },
+  {
     "msgid": "Bricks Static documentation requires JavaScript."
   },
   {
@@ -615,7 +931,7 @@
     "msgid": "Bricks Static Pro"
   },
   {
-    "msgid": "Pro features for Bricks Static — multiple destinations, advanced replacements (media/links/videos/data), gzip pre-compression, pruning, and sitemaps."
+    "msgid": "Pro features for Bricks Static — multiple destinations, advanced replacements (media/links/videos), gzip pre-compression, pruning, and sitemaps."
   },
   {
     "msgid": "Bricks Static Pro requires Bricks Static %s or newer. Please update the Bricks Static plugin."
@@ -721,6 +1037,9 @@
     "msgid": "Filter by page"
   },
   {
+    "msgid": "Only replacements"
+  },
+  {
     "msgid": "Media replacer"
   },
   {
@@ -764,6 +1083,15 @@
   },
   {
     "msgid": "No media match the current filter."
+  },
+  {
+    "msgid": "%d sizes"
+  },
+  {
+    "msgid": "not in library"
+  },
+  {
+    "msgid": "This image isn’t in the media library, so only this exact URL is swapped — other responsive sizes may remain."
   },
   {
     "msgid": "Link replacer"

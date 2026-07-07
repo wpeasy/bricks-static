@@ -19,6 +19,7 @@ export default defineConfig({
         dashboard: 'src-svelte/dashboard/main.ts',
         frontend: 'src-svelte/frontend/main.ts',
         docs: 'src-svelte/docs/main.ts',
+        editor: 'src-svelte/editor/main.ts',
       },
     },
   },

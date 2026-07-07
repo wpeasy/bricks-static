@@ -22,9 +22,9 @@ defined('ABSPATH') || exit;
 final class Job {
 
     /**
-     * Option storing the active job.
+     * Option storing the active (main) job.
      */
-    private const OPTION = 'bs_job';
+    public const OPTION = 'bs_job';
 
     /**
      * Path segments that are never rendered (matched at segment boundaries).
@@ -39,27 +39,39 @@ final class Job {
     public array $data;
 
     /**
-     * @param array<string,mixed> $data Job state.
+     * The option this job persists to. The main run uses {@see OPTION}; a
+     * parallel per-destination deploy worker uses its own `bs_target_<id>` key
+     * so concurrent workers never clobber each other's state.
      */
-    private function __construct(array $data) {
-        $this->data = $data;
+    private string $option;
+
+    /**
+     * @param array<string,mixed> $data   Job state.
+     * @param string              $option Storage option name.
+     */
+    private function __construct(array $data, string $option = self::OPTION) {
+        $this->data   = $data;
+        $this->option = $option;
     }
 
     /**
-     * Load the active job, or null if none.
+     * Load a job from its option, or null if none.
+     *
+     * @param string $option Storage option name (defaults to the main job).
      */
-    public static function load(): ?self {
-        $data = get_option(self::OPTION);
+    public static function load(string $option = self::OPTION): ?self {
+        $data = get_option($option);
 
-        return is_array($data) && !empty($data) ? new self($data) : null;
+        return is_array($data) && !empty($data) ? new self($data, $option) : null;
     }
 
     /**
      * Create and persist a fresh job.
      *
-     * @param string $type Run type ('check' for a dry run, 'sync' for a push).
+     * @param string $type   Run type ('check' for a dry run, 'sync' for a push).
+     * @param string $option Storage option name (defaults to the main job).
      */
-    public static function create(string $type): self {
+    public static function create(string $type, string $option = self::OPTION): self {
         $job = new self([
             'type'      => $type,
             'phase'     => 'collect',
@@ -88,25 +100,27 @@ final class Job {
             'message'   => 'Collecting URLs…',
             'startedAt' => time(),
             'updatedAt' => time(),
-        ]);
+        ], $option);
         $job->save();
 
         return $job;
     }
 
     /**
-     * Persist the job.
+     * Persist the job to its own option.
      */
     public function save(): void {
         $this->data['updatedAt'] = time();
-        update_option(self::OPTION, $this->data, false);
+        update_option($this->option, $this->data, false);
     }
 
     /**
-     * Delete the active job.
+     * Delete a job's option (defaults to the main job).
+     *
+     * @param string $option Storage option name.
      */
-    public static function clear(): void {
-        delete_option(self::OPTION);
+    public static function clear(string $option = self::OPTION): void {
+        delete_option($option);
     }
 
     /**

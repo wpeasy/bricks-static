@@ -10,7 +10,6 @@
 
 import { mount, unmount } from 'svelte';
 import type { DestinationDisplay } from '../../../src-svelte/shared/types';
-import MediaReplacer from './MediaReplacer.svelte';
 import LinkReplacer from './LinkReplacer.svelte';
 import VideoReplacer from './VideoReplacer.svelte';
 
@@ -44,6 +43,6 @@ function register(key: string, Comp: any, badge: (d: DestinationDisplay) => numb
   });
 }
 
-register('media', MediaReplacer, (d) => d.mediaReplacements?.length ?? 0);
+// Media is now a Free feature (rendered directly by the Free bundle).
 register('links', LinkReplacer, (d) => d.linkReplacements?.length ?? 0);
 register('videos', VideoReplacer, (d) => d.videoReplacements?.length ?? 0);

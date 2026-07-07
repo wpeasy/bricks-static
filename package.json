@@ -1,6 +1,6 @@
 {
   "name": "bricks-static",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -24,5 +24,8 @@
     "svelte-check": "^4.0.0",
     "typescript": "^5.6.0",
     "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "@wpeasy/ab-ui": "github:wpeasy/ab-ui#7d5503464b1655fa64b4ae29196aabd6e8f94a8d"
   }
 }

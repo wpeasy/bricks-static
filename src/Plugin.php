@@ -10,14 +10,19 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic;
 
+use WPEasy\BricksStatic\Abilities\AbilityRegistry;
+use WPEasy\BricksStatic\Admin\Editor;
 use WPEasy\BricksStatic\Admin\Menu;
 use WPEasy\BricksStatic\Frontend\Fab;
+use WPEasy\BricksStatic\Render\MediaDeployReplacer;
 use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Render\TextDeployReplacer;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Sync\Pipeline;
 use WPEasy\BricksStatic\REST\ConnectionController;
 use WPEasy\BricksStatic\REST\DestinationsController;
+use WPEasy\BricksStatic\REST\EditorController;
+use WPEasy\BricksStatic\REST\MediaController;
 use WPEasy\BricksStatic\REST\StatusController;
 use WPEasy\BricksStatic\REST\SyncController;
 
@@ -40,15 +45,26 @@ final class Plugin {
 
         if (is_admin()) {
             Menu::init();
+            // Per-post "Include" metabox — self-gates to `manual` discovery mode.
+            Editor::init();
         }
 
         // Frontend "Sync this page" FAB (self-gates to admins on public pages).
         Fab::init();
 
+        // Watch content edits so the dashboard can flag the render stale.
+        \WPEasy\BricksStatic\Sync\ChangeTracker::init();
+
+        // Expose abilities to the WordPress Abilities API for MCP/AI discovery
+        // (no-op on WP < 6.9; read-only always, actions behind opt-in toggles).
+        AbilityRegistry::init();
+
         add_action('rest_api_init', [self::class, 'register_rest_routes']);
 
         // On our own loopback render requests only, tidy the captured output so
-        // the static copy doesn't ship broken references.
+        // the static copy doesn't ship broken references. (Head cruft — feed/
+        // oEmbed links, generator meta — is cleaned deterministically on the
+        // captured HTML string in the render pipeline; see Render\HeadCleaner.)
         if (PageRenderer::is_render_request()) {
             add_action('init', [self::class, 'prepare_render_output']);
         }
@@ -71,6 +87,9 @@ final class Plugin {
      */
     private static function register_pipeline(): void {
         Pipeline::register_replacer(new TextDeployReplacer());
+        // Media replacement is a Free feature (capped per page); Links + Videos
+        // remain Pro (registered by the Pro Bootstrap).
+        Pipeline::register_replacer(new MediaDeployReplacer());
     }
 
     /**
@@ -104,6 +123,8 @@ final class Plugin {
         DestinationsController::register();
         StatusController::register();
         SyncController::register();
+        EditorController::register();
+        MediaController::register();
 
         /**
          * Lets add-ons register additional REST controllers under the bs/v1

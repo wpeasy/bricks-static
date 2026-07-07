@@ -12,10 +12,16 @@ namespace WPEasy\BricksStatic\REST;
 
 use WP_REST_Request;
 use WP_REST_Response;
+use WPEasy\BricksStatic\Abilities\AbilityRegistry;
 use WPEasy\BricksStatic\Discovery\UrlCollector;
+use WPEasy\BricksStatic\Render\CompatibilityScanner;
 use WPEasy\BricksStatic\Settings\Destinations;
+use WPEasy\BricksStatic\Sync\ChangeTracker;
+use WPEasy\BricksStatic\Sync\DeployPool;
 use WPEasy\BricksStatic\Support\Edition;
 use WPEasy\BricksStatic\Support\Environment;
+use WPEasy\BricksStatic\Support\Paths;
+use WPEasy\BricksStatic\Support\Url;
 use WPEasy\BricksStatic\Sync\Manifest;
 use WPEasy\BricksStatic\Sync\MethodResolver;
 use WPEasy\BricksStatic\Sync\Runner;
@@ -48,6 +54,12 @@ final class StatusController {
             'callback'            => [self::class, 'save_settings'],
             'permission_callback' => [self::class, 'can_manage'],
         ]);
+
+        register_rest_route(self::NS, '/pages-overview', [
+            'methods'             => 'GET',
+            'callback'            => [self::class, 'pages_overview'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
     }
 
     /**
@@ -64,8 +76,10 @@ final class StatusController {
         $state  = get_option('bs_connection_state', []);
         $pushed = Manifest::load(Destinations::pushed_option(Destinations::primary()->id()));
 
-        $connected  = is_array($state) && !empty($state['ok']);
-        $has_pushed = !empty($pushed);
+        $render       = Manifest::load(Manifest::RENDER_OPTION);
+        $connected    = is_array($state) && !empty($state['ok']);
+        $has_pushed   = !empty($pushed);
+        $has_rendered = !empty($render);
 
         // In sync = something has been pushed and the destination's last-synced
         // signature (render + its replacements) still matches the current state.
@@ -86,11 +100,162 @@ final class StatusController {
             'cli'       => Environment::cli_command(),
             'wpCli'     => Environment::wp_cli(),
             'discoveryMode' => UrlCollector::mode(),
-            'fabEnabled'    => (bool) get_option('bs_fab_enabled', true),
+            // Whether a render exists yet.
+            'hasRendered'   => $has_rendered,
+            // Whether that render still reflects the current mode AND current
+            // content — i.e. the pages list is accurate. When false the dashboard
+            // offers "Process" (re-render) instead of "View list".
+            'renderCurrent' => $has_rendered
+                && !ChangeTracker::is_dirty()
+                && ChangeTracker::rendered_mode() === UrlCollector::mode(),
+            // Published pages NOT in the export — surfaced beside "View list" so an
+            // in-sync export never silently hides content the user just published.
+            'excludedPublished' => $has_rendered
+                ? UrlCollector::published_excluded_count(array_keys($render))
+                : 0,
+            'fabEnabled'    => get_option('bs_fab_enabled', '1') !== '0',
+            // Max destinations deployed at once during a multi-destination sync.
+            'concurrentSyncs' => DeployPool::concurrency(),
+            // AI/MCP opt-ins. `aiAvailable` reflects whether the host WordPress
+            // exposes the Abilities API at all (WP 6.9+).
+            'aiAvailable'   => function_exists('wp_register_ability'),
+            'aiAllowChanges' => AbilityRegistry::changes_enabled(),
+            'aiAllowSync'    => AbilityRegistry::sync_enabled(),
             // Live edition/capability map — keeps the UI in step with a license
             // change between page loads.
             'capabilities'  => Edition::capabilities(),
         ]);
+    }
+
+    /**
+     * GET /pages-overview — split published pages/posts into those that are in
+     * the last render (Included) and those that are not (Excluded). Buckets by
+     * the actual render manifest, so it reflects the export under any discovery
+     * mode (and excludes pages dropped by the Free page cap).
+     */
+    public static function pages_overview(): WP_REST_Response {
+        $render   = Manifest::load(Manifest::RENDER_OPTION);
+        $rendered = array_flip(array_keys($render)); // relative path => index, for O(1) lookup.
+        $mode     = UrlCollector::mode();
+
+        $included = [];
+        $excluded = [];
+
+        $types = UrlCollector::public_post_types();
+        if (!empty($types)) {
+            // Include unpublished statuses so the Excluded tab can explain "Not
+            // published". auto-draft/trash/inherit (revisions, attachments) stay out.
+            $ids = get_posts([
+                'post_type'        => $types,
+                'post_status'      => ['publish', 'draft', 'pending', 'private', 'future'],
+                'posts_per_page'   => -1,
+                'fields'           => 'ids',
+                'no_found_rows'    => true,
+                'suppress_filters' => false,
+            ]);
+
+            foreach ($ids as $pid) {
+                $pid    = (int) $pid;
+                $url    = (string) get_permalink($pid);
+                $rel    = $url !== '' ? Url::to_relative_path($url) : null;
+                $title  = (string) get_the_title($pid);
+                $title  = $title !== '' ? $title : __('(no title)', 'bricks-static');
+                $status = (string) get_post_status($pid);
+
+                if ($status === 'publish' && $rel !== null && isset($rendered[$rel])) {
+                    $included[] = [
+                        'title' => $title,
+                        'url'   => $url,
+                        'tags'  => self::page_notices((string) $rel),
+                    ];
+                } else {
+                    $excluded[] = [
+                        'title' => $title,
+                        'url'   => $url,
+                        'tags'  => self::exclusion_reasons($pid, $status, $mode),
+                    ];
+                }
+            }
+
+            $by_title = static fn(array $a, array $b): int => strcasecmp($a['title'], $b['title']);
+            usort($included, $by_title);
+            usort($excluded, $by_title);
+        }
+
+        return new WP_REST_Response([
+            'hasRendered' => !empty($render),
+            'included'    => $included,
+            'excluded'    => $excluded,
+        ]);
+    }
+
+    /**
+     * Human-readable "won't work statically" notices for a rendered page, from a
+     * fresh compatibility scan of its cached HTML (deduped by label).
+     *
+     * @param string $rel Render-manifest relative path (e.g. "about/index.html").
+     * @return array<int,string>
+     */
+    private static function page_notices(string $rel): array {
+        $file = Paths::output_dir() . '/' . $rel;
+        if (!is_file($file)) {
+            return [];
+        }
+
+        $html = (string) file_get_contents($file);
+        if ($html === '') {
+            return [];
+        }
+
+        $labels = [
+            'form'        => __('Form submit action points to this site (PHP/REST callback won’t work)', 'bricks-static'),
+            'search-form' => __('Search form posts back to this site (won’t work)', 'bricks-static'),
+            'php-link'    => __('Links to a PHP script on this site', 'bricks-static'),
+        ];
+
+        $tags = [];
+        foreach (CompatibilityScanner::scan($html) as $issue) {
+            $type  = (string) ($issue['type'] ?? '');
+            $label = $labels[$type] ?? '';
+            if ($label !== '' && !in_array($label, $tags, true)) {
+                $tags[] = $label;
+            }
+        }
+
+        return $tags;
+    }
+
+    /**
+     * Why a page isn't in the static export, as display tags.
+     *
+     * @param int    $post_id Post id.
+     * @param string $status  Post status.
+     * @param string $mode    Discovery mode ('linked'|'all'|'manual').
+     * @return array<int,string>
+     */
+    private static function exclusion_reasons(int $post_id, string $status, string $mode): array {
+        if ($status !== 'publish') {
+            return [__('Not published', 'bricks-static')];
+        }
+
+        if ($mode === 'manual') {
+            if (!UrlCollector::is_included($post_id)) {
+                return [__('Not included', 'bricks-static')];
+            }
+            if (!UrlCollector::is_effective($post_id)) {
+                return [__('Over plan limit', 'bricks-static')];
+            }
+            return [__('Not rendered', 'bricks-static')];
+        }
+
+        if ($mode === 'all') {
+            // Every published page is seeded in "all" mode, so absence means the
+            // Free page cap dropped it (or, on Pro, a render error).
+            return [Edition::is_pro() ? __('Not rendered', 'bricks-static') : __('Over plan limit', 'bricks-static')];
+        }
+
+        // 'linked' — published but not reachable by the home-page crawl.
+        return [__('Not linked', 'bricks-static')];
     }
 
     /**
@@ -106,12 +271,30 @@ final class StatusController {
         }
 
         if (array_key_exists('fabEnabled', $params)) {
-            update_option('bs_fab_enabled', !empty($params['fabEnabled']), false);
+            // Store as '1'/'0' (not a PHP bool): get_option() can't tell a stored
+            // `false` from "unset", so a boolean false would always read back as
+            // the `true` default and the toggle could never be turned off.
+            update_option('bs_fab_enabled', empty($params['fabEnabled']) ? '0' : '1', false);
+        }
+
+        if (array_key_exists('aiAllowChanges', $params)) {
+            update_option(AbilityRegistry::OPT_CHANGES, !empty($params['aiAllowChanges']), false);
+        }
+
+        if (array_key_exists('aiAllowSync', $params)) {
+            update_option(AbilityRegistry::OPT_SYNC, !empty($params['aiAllowSync']), false);
+        }
+
+        if (array_key_exists('concurrentSyncs', $params)) {
+            DeployPool::set_concurrency((int) $params['concurrentSyncs']);
         }
 
         return new WP_REST_Response([
-            'discoveryMode' => UrlCollector::mode(),
-            'fabEnabled'    => (bool) get_option('bs_fab_enabled', true),
+            'discoveryMode'   => UrlCollector::mode(),
+            'fabEnabled'      => get_option('bs_fab_enabled', '1') !== '0',
+            'aiAllowChanges'  => AbilityRegistry::changes_enabled(),
+            'aiAllowSync'     => AbilityRegistry::sync_enabled(),
+            'concurrentSyncs' => DeployPool::concurrency(),
         ]);
     }
 }

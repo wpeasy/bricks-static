@@ -10,12 +10,14 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Sync;
 
+use WPEasy\BricksStatic\CLI\Background;
 use WPEasy\BricksStatic\Deploy\PackageDeployer;
 use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Render\AssetExtractor;
 use WPEasy\BricksStatic\Render\CompatibilityScanner;
 use WPEasy\BricksStatic\Render\FaviconGenerator;
+use WPEasy\BricksStatic\Render\HeadCleaner;
 use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Render\StableHash;
 use WPEasy\BricksStatic\Render\UrlRewriter;
@@ -86,6 +88,11 @@ final class Runner {
         // Pruning is a Pro capability; never prune on a single-page sync.
         $job->data['prune'] = !$single && !empty($options['prune']) && Edition::capabilities()['prune'];
 
+        // A "check" run is a dry-run preview of what would sync to one destination.
+        if ($type !== 'sync') {
+            $job->data['checkDest'] = (string) ($options['checkDest'] ?? '');
+        }
+
         if ($single) {
             $job->data['singlePage'] = true;
             // Pages already in the render — don't re-crawl them; only follow links
@@ -117,11 +124,29 @@ final class Runner {
         } else {
             // Seeds come solely from UrlCollector, which honours the discovery mode
             // ('linked' = home page only, then follow links; 'all' = + every
-            // published post/term). The generated sitemap is built FROM the export
-            // afterwards — it must not seed it, or 'Only linked pages' would still
-            // pull in unlinked content (Sample Page, Hello World, …).
-            foreach (UrlCollector::collect() as $url) {
+            // published post/term; 'manual' = only the posts whose Include switch
+            // is on). The generated sitemap is built FROM the export afterwards —
+            // it must not seed it, or 'Only linked pages' would still pull in
+            // unlinked content (Sample Page, Hello World, …).
+            $seeds = UrlCollector::collect();
+            foreach ($seeds as $url) {
                 $job->enqueue_page($url);
+            }
+
+            // Manual mode is an authoritative set: the crawler still runs (so each
+            // included page's assets are collected), but it must never render a
+            // page OUTSIDE the chosen set — an excluded page linked from an
+            // included one has to stay out. tick_render() enforces this allowlist.
+            if (UrlCollector::mode() === 'manual') {
+                $allowed = [];
+                foreach ($seeds as $url) {
+                    $rel = Url::to_relative_path($url);
+                    if ($rel !== null) {
+                        $allowed[$rel] = true;
+                    }
+                }
+                $job->data['lockedCrawl'] = true;
+                $job->data['allowed']     = $allowed;
             }
         }
 
@@ -260,7 +285,10 @@ final class Runner {
 
         self::beat(); // Mark the job as actively driven (see is_driver_alive()).
 
-        if (self::is_cancelled()) {
+        // Deploy-phase cancellation is handled inside the monitor: it must NOT
+        // clear the cancel flag (the worker processes still need to read it) and
+        // must wait for the workers to wind down before finalizing.
+        if (($job->data['phase'] ?? '') !== 'deploy' && self::is_cancelled()) {
             self::close_connection();
             // If we'd already swapped in the holding page, put the real home back.
             if (!empty($job->data['holdingShown'])) {
@@ -292,6 +320,9 @@ final class Runner {
             case 'prune':
                 self::tick_prune($job);
                 break;
+            case 'deploy':
+                self::tick_deploy_monitor($job);
+                break;
         }
 
         return self::snapshot($job);
@@ -313,6 +344,49 @@ final class Runner {
      * Generous so a single slow page render doesn't look like a stalled process.
      */
     private const HEARTBEAT_TTL = 25;
+
+    /**
+     * Option holding the last "a deploy WORKER is actively uploading" timestamp.
+     * Separate from the coordinator heartbeat so worker death is detectable even
+     * while the coordinator keeps monitoring (which keeps HEARTBEAT/cliAlive warm).
+     */
+    private const WORKER_HEARTBEAT = 'bs_worker_heartbeat';
+
+    /**
+     * Seconds to wait for the deploy pool to come alive before giving up. Guards
+     * against a detached parallel deploy monitoring forever when the dashboard
+     * closed before dispatching (or WP-CLI can't launch the workers at all).
+     */
+    private const DEPLOY_STALL_LIMIT = 120;
+
+    /**
+     * Timestamp option recording when the dashboard last launched the worker pool
+     * (POST /sync/deploy-dispatch). Written by the web request; READ by the
+     * coordinator monitor so it can tell "workers were just asked for, give them a
+     * moment" from "no workers and none requested — re-flag needsDispatch". Keeping
+     * this OUT of the job blob makes the monitor the sole writer of that blob, so
+     * the two processes never clobber each other's writes.
+     */
+    private const DISPATCH_MARK = 'bs_deploy_dispatch_at';
+
+    /**
+     * Stamp the worker heartbeat (called by a deploy worker as files upload).
+     */
+    private static function beat_worker(): void {
+        update_option(self::WORKER_HEARTBEAT, time(), false);
+    }
+
+    /**
+     * Whether a deploy worker has uploaded within the heartbeat window.
+     */
+    private static function is_worker_alive(): bool {
+        global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- cross-process worker heartbeat; must bypass the in-memory options cache.
+        $ts = (int) $wpdb->get_var(
+            $wpdb->prepare("SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", self::WORKER_HEARTBEAT)
+        );
+        return $ts > 0 && (time() - $ts) <= self::HEARTBEAT_TTL;
+    }
 
     /**
      * Stamp the heartbeat — called as work progresses so the dashboard can tell
@@ -381,9 +455,29 @@ final class Runner {
 
     /**
      * Request cancellation of the active job.
+     *
+     * Normally this just raises the flag and the next tick winds the job down
+     * gracefully. But if NO driver is alive (the driving tab was closed, or a
+     * prompted WP-CLI run never started — e.g. the user refreshed mid-run), no
+     * tick will ever read the flag, so the job would sit "running" until the 90s
+     * stale guard fires. In that case finalize it here so the dashboard can clear
+     * the stuck progress immediately.
      */
     public static function cancel(): void {
         update_option(self::CANCEL_FLAG, '1', false);
+
+        if (self::is_driver_alive()) {
+            return;
+        }
+
+        $job = Job::load();
+        if ($job !== null && !in_array($job->data['phase'], ['done', 'error', 'cancelled'], true)) {
+            $job->data['phase']   = 'cancelled';
+            $job->data['message'] = 'Cancelled.';
+            $job->save();
+        }
+        delete_option(self::CANCEL_FLAG);
+        self::release_driver();
     }
 
     /**
@@ -410,6 +504,22 @@ final class Runner {
     private const STALE_SECONDS = 90;
 
     /**
+     * The no-progress window before a running job is auto-discarded. Filterable
+     * so a site that raised {@see bs_render_timeout}/{@see bs_asset_timeout}
+     * above the default can keep this window comfortably larger than a single
+     * request, or the watchdog could reap a job that's still working.
+     */
+    private static function stale_seconds(): int {
+        /**
+         * Filters the no-progress window (seconds) before a running sync job is
+         * treated as abandoned.
+         *
+         * @param int $seconds Window in seconds.
+         */
+        return max(30, (int) apply_filters('bs_stale_seconds', self::STALE_SECONDS));
+    }
+
+    /**
      * Current snapshot of the active job without advancing it.
      *
      * A running job that hasn't progressed in a while is auto-discarded so it
@@ -424,7 +534,7 @@ final class Runner {
         }
 
         $running = !in_array($job->data['phase'], ['done', 'error', 'cancelled'], true);
-        if ($running && (time() - (int) $job->data['updatedAt']) > self::STALE_SECONDS) {
+        if ($running && (time() - (int) $job->data['updatedAt']) > self::stale_seconds()) {
             Job::clear();
             delete_option(self::CANCEL_FLAG);
             return ['phase' => 'idle'];
@@ -472,7 +582,7 @@ final class Runner {
                     continue;
                 }
 
-                self::cache_file($job, $relative, UrlRewriter::rewrite($result['body']));
+                self::cache_file($job, $relative, UrlRewriter::rewrite(HeadCleaner::clean($result['body'])));
                 $job->data['counts']['pagesDone']++;
 
                 $compat = CompatibilityScanner::scan($result['body']);
@@ -480,15 +590,27 @@ final class Runner {
                     $job->data['compat'][] = ['url' => $url, 'issues' => $compat];
                 }
 
+                $src_pid = Url::to_post_id($url);
                 foreach (AssetExtractor::extract_links($result['body'], $url) as $link) {
+                    $rel = Url::to_relative_path($link);
+
+                    // Record the link graph BEFORE the crawl filters, so a link to
+                    // an excluded page is captured too (powers the manual-mode
+                    // link-integrity checks). Keyed by source post id; deduped.
+                    if ($src_pid > 0 && $rel !== null) {
+                        $job->data['linkGraph'][$src_pid][$rel] = true;
+                    }
+
                     // Single-page: follow a link only if it points at a page NOT
                     // already rendered — pulling in just the new pages this change
                     // introduced, so none of them ship as a dead internal link.
-                    if (!empty($job->data['singlePage'])) {
-                        $rel = Url::to_relative_path($link);
-                        if ($rel !== null && isset($job->data['known'][$rel])) {
-                            continue;
-                        }
+                    if (!empty($job->data['singlePage']) && $rel !== null && isset($job->data['known'][$rel])) {
+                        continue;
+                    }
+                    // Manual mode: only render pages in the authoritative allowed
+                    // set, so an excluded page can't return via an internal link.
+                    if (!empty($job->data['lockedCrawl']) && ($rel === null || !isset($job->data['allowed'][$rel]))) {
+                        continue;
                     }
                     $job->enqueue_page($link);
                 }
@@ -609,22 +731,456 @@ final class Runner {
         Manifest::save(Manifest::RENDER_OPTION, $manifest);
         self::write_manifest_file($job, $manifest);
 
+        // A full render reflects current content under the current mode — clear
+        // the "content changed" flag and record the mode it was built under.
+        // (Single-page runs are partial, so they don't reset this.)
+        if (empty($job->data['singlePage'])) {
+            ChangeTracker::mark_rendered(UrlCollector::mode());
+        }
+
+        // Persist the link graph (source post id => linked rels). Full run
+        // replaces it; a single-page run merges the re-rendered pages over it.
+        $built = [];
+        foreach ((array) ($job->data['linkGraph'] ?? []) as $pid => $rels) {
+            $built[(int) $pid] = array_keys((array) $rels);
+        }
+        LinkGraph::save(empty($job->data['singlePage']) ? $built : array_replace(LinkGraph::load(), $built));
+
         $job->data['counts']['files'] = count($manifest);
 
         if ($job->data['type'] !== 'sync') {
-            $job->data['phase']   = 'done';
-            $job->data['message'] = 'Done.';
+            self::finalize_check_preview($job);
             $job->save();
             return;
         }
 
-        // Sync: deploy the shared render to each target destination in turn.
+        // Sync: deploy the shared render to each target destination. When the pool
+        // is eligible (>1 target, concurrency > 1, CLI spawn available) fan the
+        // deploy out across worker processes; otherwise deploy them in turn (the
+        // untouched sequential path).
         if (empty($job->data['targets'])) {
             $job->data['targets'] = [Destinations::primary()->id()];
         }
-        $job->data['targetIndex'] = 0;
-        self::start_target($job);
+
+        if (self::parallel_eligible($job)) {
+            self::begin_parallel_deploy($job);
+        } else {
+            $job->data['targetIndex'] = 0;
+            self::start_target($job);
+        }
         $job->save();
+    }
+
+    /**
+     * Whether the deploy phase should fan out across concurrent worker processes.
+     * Requires a multi-destination full sync, a concurrency setting above 1, and
+     * a host that can spawn WP-CLI workers (real parallelism is impossible in the
+     * single-threaded browser-tick fallback).
+     *
+     * @param Job $job Active job.
+     */
+    private static function parallel_eligible(Job $job): bool {
+        return empty($job->data['singlePage'])
+            && count((array) ($job->data['targets'] ?? [])) > 1
+            && DeployPool::concurrency() > 1
+            && Background::can_spawn();
+    }
+
+    /**
+     * Whether THIS process is a detached, console-less coordinator (the dashboard-
+     * spawned `wp bricks-static run`). Such a process CANNOT reliably spawn further
+     * background processes on Windows (`start` needs a console — the symptom is
+     * "The process tried to write to a nonexistent pipe"), so it must NOT launch
+     * the worker pool itself: it flags `needsDispatch` and the dashboard's poll
+     * launches the workers from a web request (valid handles). A console-attached
+     * `wp bricks-static sync` leaves this false and spawns directly.
+     */
+    private static bool $detached = false;
+
+    /**
+     * Mark this process as the detached coordinator (called by the `run` command).
+     */
+    public static function mark_detached(): void {
+        self::$detached = true;
+    }
+
+    /**
+     * Enter the parallel deploy phase: reset per-target state, mark the job
+     * 'deploy', then either spawn the worker pool (console context) or flag it for
+     * web-request dispatch (detached coordinator — see {@see $detached}). Each
+     * worker claims a destination and deploys it independently;
+     * {@see tick_deploy_monitor} aggregates progress and finalizes when done.
+     *
+     * @param Job $job Active job.
+     */
+    private static function begin_parallel_deploy(Job $job): void {
+        $targets = array_values(array_map('strval', (array) $job->data['targets']));
+
+        DeployPool::reset($targets);
+        delete_option(self::WORKER_HEARTBEAT); // fresh pool — no stale liveness
+        delete_option(self::DISPATCH_MARK);    // fresh pool — not yet dispatched
+
+        $pool = min(DeployPool::concurrency(), count($targets));
+
+        if (!self::$detached) {
+            // Console context (terminal `wp bricks-static sync`) — spawn directly.
+            $spawned = DeployPool::spawn_workers($pool);
+            if ($spawned < 1) {
+                // Spawning failed outright — fall back to sequential so the sync
+                // still completes (just one destination at a time).
+                $job->data['targetIndex'] = 0;
+                self::start_target($job);
+                return;
+            }
+        }
+
+        $job->data['phase']           = 'deploy';
+        $job->data['parallel']        = true;
+        $job->data['poolSize']        = $pool;
+        $job->data['deployStartedAt'] = time();
+        // Detached: workers not spawned yet — the dashboard dispatches them.
+        $job->data['needsDispatch']   = self::$detached;
+        $job->data['lastSpawnAt']     = time();
+        $job->data['parallelTargets'] = [];
+        $job->data['message']         = sprintf('Deploying to %d destinations (%d at a time)…', count($targets), $pool);
+    }
+
+    /**
+     * Spawn (or re-spawn) the worker pool from THIS request's context. Called by
+     * the dashboard (`POST /sync/deploy-dispatch`) because the detached coordinator
+     * can't spawn workers itself. Idempotent + safe to call repeatedly: the atomic
+     * per-target claim prevents any destination being deployed twice.
+     *
+     * @return array{ok:bool,spawned:int,phase:string}
+     */
+    public static function dispatch_workers(): array {
+        $job = Job::load();
+        if ($job === null) {
+            return ['ok' => false, 'spawned' => 0, 'phase' => 'idle'];
+        }
+
+        $phase = (string) ($job->data['phase'] ?? '');
+        if ($phase !== 'deploy' || empty($job->data['needsDispatch'])) {
+            return ['ok' => false, 'spawned' => 0, 'phase' => $phase];
+        }
+
+        $spawned = DeployPool::spawn_workers((int) ($job->data['poolSize'] ?? 1));
+
+        // Record the dispatch time in a SEPARATE option (not the job blob) so we
+        // never clobber the coordinator monitor's concurrent progress writes. The
+        // monitor reads this to flip needsDispatch off once workers are launched.
+        update_option(self::DISPATCH_MARK, time(), false);
+
+        return ['ok' => $spawned > 0, 'spawned' => $spawned, 'phase' => 'deploy'];
+    }
+
+    /**
+     * Coordinator monitor for the parallel deploy phase. Does NO uploading — the
+     * worker processes do that; this aggregates their per-target state into the
+     * job snapshot, re-spawns the pool if the workers died before finishing, and
+     * flips the job to done/error once every target is finished.
+     *
+     * @param Job $job Active job.
+     */
+    private static function tick_deploy_monitor(Job $job): void {
+        $targets = array_values(array_map('strval', (array) ($job->data['targets'] ?? [])));
+        $agg     = DeployPool::aggregate($targets);
+
+        $job->data['counts']['uploaded'] = $agg['uploaded'];
+        $job->data['counts']['pruned']   = $agg['pruned'];
+        $job->data['totals']['uploads']  = $agg['totalUploads'];
+        $job->data['failed']             = $agg['failed'];
+        $job->data['targetsDone']        = $agg['done'];
+        $job->data['parallelTargets']    = $agg['perTarget'];
+        if (!empty($agg['zipUnavailable'])) {
+            $job->data['zipUnavailable'] = true;
+        }
+        if (!empty($agg['packageFallback'])) {
+            $job->data['packageFallback'] = (string) $agg['packageFallback'];
+        }
+
+        // Cancellation: the workers stop claiming/uploading as soon as they see
+        // the flag (they check it every batch), so we just wait for them to go
+        // quiet — once no worker has beat within the heartbeat window they've all
+        // wound down — then finalize. The cancel flag is left for start() to clear
+        // on the next run so no in-flight worker misses it.
+        if (self::is_cancelled()) {
+            if (!self::is_worker_alive()) {
+                $job->data['phase']   = 'cancelled';
+                $job->data['message'] = 'Cancelled.';
+                DeployPool::cleanup($targets);
+            } else {
+                $job->data['message'] = 'Cancelling…';
+            }
+            $job->save();
+            if (PHP_SAPI === 'cli') {
+                usleep(300000);
+            }
+            return;
+        }
+
+        if ($agg['allFinished']) {
+            $job->data['phase']   = $agg['anyError'] ? 'error' : 'done';
+            $job->data['message'] = $agg['anyError']
+                ? 'Some destinations failed to deploy — re-run Sync to retry.'
+                : self::done_message($job);
+            DeployPool::cleanup($targets);
+            $job->save();
+            return;
+        }
+
+        // Give up rather than monitor forever if the pool never came alive (e.g.
+        // the dashboard tab was closed before it could dispatch, or WP-CLI can't
+        // actually launch the workers). is_worker_alive() stays true while workers
+        // upload, so this only fires when NO worker beat for the whole window.
+        if (!self::is_worker_alive() && (time() - (int) ($job->data['deployStartedAt'] ?? time())) > self::DEPLOY_STALL_LIMIT) {
+            $job->data['phase']   = 'error';
+            $job->data['message'] = 'Deploy workers did not start — check WP-CLI, or lower Concurrent syncs and re-run.';
+            DeployPool::cleanup($targets);
+            $job->save();
+            return;
+        }
+
+        // Resilience + dispatch coordination. The monitor is the SOLE writer of
+        // needsDispatch (the dashboard only records a dispatch marker), so these
+        // two processes never clobber each other.
+        if (self::is_worker_alive()) {
+            $job->data['needsDispatch'] = false; // pool is up and uploading
+        } elseif (self::$detached) {
+            // Detached coordinator can't spawn — ask the dashboard, unless we just
+            // asked (give the freshly-launched workers a moment to start beating).
+            $dispatched = (int) get_option(self::DISPATCH_MARK, 0);
+            $recent     = $dispatched > 0 && (time() - $dispatched) <= self::HEARTBEAT_TTL;
+            $job->data['needsDispatch'] = !$recent;
+        } elseif ((time() - (int) ($job->data['lastSpawnAt'] ?? 0)) > self::HEARTBEAT_TTL) {
+            // Console context — re-spawn directly. The atomic claim keeps any
+            // destination from being deployed twice.
+            DeployPool::spawn_workers((int) ($job->data['poolSize'] ?? 1));
+            $job->data['lastSpawnAt'] = time();
+        }
+
+        $job->save();
+
+        // Throttle a CLI coordinator's tight monitor loop (the browser poll has
+        // its own interval, so this only paces the detached CLI watcher).
+        if (PHP_SAPI === 'cli') {
+            usleep(300000); // 0.3s
+        }
+    }
+
+    /**
+     * Worker-process entry point: claim and deploy destinations until none are
+     * left unclaimed (or the run is cancelled). Each claimed destination is
+     * deployed to completion over its own connection, reusing the same
+     * package/upload/prune machinery as the sequential path — just scoped to a
+     * private per-target job blob so concurrent workers never collide.
+     */
+    public static function run_deploy_worker(): void {
+        $token = DeployPool::worker_token();
+
+        while (!self::is_cancelled()) {
+            $dest_id = DeployPool::claim_next_target($token);
+            if ($dest_id === null) {
+                break; // Every target is owned by a worker — nothing left to do.
+            }
+            self::deploy_target_worker($dest_id);
+        }
+
+        self::close_connection();
+    }
+
+    /**
+     * Deploy a single destination to completion inside a worker, driving a
+     * private per-target job through the existing package/upload/prune ticks.
+     *
+     * @param string $dest_id Destination id.
+     */
+    private static function deploy_target_worker(string $dest_id): void {
+        $main   = Job::load();
+        $prune  = $main !== null && !empty($main->data['prune']);
+        $option = DeployPool::target_option($dest_id);
+
+        $job = Job::create('sync', $option);
+        $job->data['parallel']    = true;
+        $job->data['prune']       = $prune;
+        $job->data['targets']     = [$dest_id];
+        $job->data['targetIndex'] = 0;
+        self::start_target($job); // → phase 'package'|'upload' for THIS destination
+        $job->save();
+
+        while (!in_array($job->data['phase'], ['done', 'error', 'cancelled'], true)) {
+            if (self::is_cancelled()) {
+                self::close_connection();
+                $job->data['phase']   = 'cancelled';
+                $job->data['message'] = 'Cancelled.';
+                $job->save();
+                return;
+            }
+
+            self::beat_worker(); // Mark this worker alive (separate from cliAlive).
+
+            switch ($job->data['phase']) {
+                case 'package':
+                    self::tick_package($job);
+                    break;
+                case 'upload':
+                    self::tick_upload($job);
+                    break;
+                case 'prune':
+                    self::tick_prune($job);
+                    break;
+                default:
+                    // Unknown phase — bail rather than spin.
+                    $job->data['phase'] = 'error';
+                    $job->save();
+                    break 2;
+            }
+        }
+
+        self::close_connection();
+    }
+
+    /**
+     * Finish a "check" run as a sync preview: diff the destination's deploy
+     * manifest against what was last pushed to it, and report what a Sync would
+     * change — WITHOUT connecting or uploading. Uses the locally-stored pushed
+     * manifest, so it works offline and before the first sync (everything counts
+     * as "to upload").
+     *
+     * @param Job $job Active job.
+     */
+    private static function finalize_check_preview(Job $job): void {
+        $preview = self::compute_check_preview(
+            (string) ($job->data['checkDest'] ?? ''),
+            !empty($job->data['prune'])
+        );
+
+        $job->data['preview'] = $preview;
+        $job->data['phase']   = 'done';
+        $job->data['message'] = self::check_message($preview);
+    }
+
+    /**
+     * Synchronous sync preview for a destination — WITHOUT rendering. Rendering
+     * is owned by Process (a "check" run) and the content-change tracker, so a
+     * Check just diffs the CURRENT render manifest against what was last pushed
+     * to the destination and reports what a Sync would change.
+     *
+     * When the render is missing, or no longer reflects the current discovery
+     * mode / content, it returns ['needsProcess' => true] rather than silently
+     * re-rendering — the caller should run Process first.
+     *
+     * @param string $dest_id Destination id ('' or 'all' → primary).
+     * @return array<string,mixed>
+     */
+    public static function preview(string $dest_id): array {
+        if ($dest_id === '' || $dest_id === 'all') {
+            $dest_id = Destinations::primary()->id();
+        }
+        $dest = Destinations::get($dest_id);
+        $name = $dest !== null ? (string) $dest->get('name') : $dest_id;
+
+        // Mirrors StatusController's renderCurrent: a render exists AND still
+        // reflects the current mode + content (the page list is accurate).
+        $has_rendered   = !empty(Manifest::load(Manifest::RENDER_OPTION));
+        $render_current = $has_rendered
+            && !ChangeTracker::is_dirty()
+            && ChangeTracker::rendered_mode() === UrlCollector::mode();
+
+        if (!$render_current) {
+            return [
+                'needsProcess' => true,
+                'destId'       => $dest_id,
+                'destName'     => $name,
+                'message'      => $has_rendered
+                    ? __('The page list has changed since the last render. Click Process to refresh it, then Check again.', 'bricks-static')
+                    : __('Nothing has been rendered yet. Click Process first, then Check.', 'bricks-static'),
+            ];
+        }
+
+        // Removals only happen on sync when pruning is available (a Pro
+        // capability), so only surface them in the preview when it could apply.
+        $preview = self::compute_check_preview($dest_id, !empty(Edition::capabilities()['prune']));
+        $preview['needsProcess'] = false;
+        $preview['message']      = self::check_message($preview);
+
+        return $preview;
+    }
+
+    /**
+     * Diff the destination's deploy manifest (built from the current render)
+     * against what was last pushed to it. Shared by the synchronous {@see
+     * preview()} and the legacy "check" run's {@see finalize_check_preview()}.
+     *
+     * @param string $dest_id Destination id ('' or 'all' → primary).
+     * @param bool   $prune   Whether removals should be counted.
+     * @return array{destId:string,destName:string,upload:int,remove:int,total:int,inSync:bool,excludedPublished:int}
+     */
+    private static function compute_check_preview(string $dest_id, bool $prune): array {
+        if ($dest_id === '' || $dest_id === 'all') {
+            $dest_id = Destinations::primary()->id();
+        }
+        $dest = Destinations::get($dest_id);
+
+        $render = Manifest::load(Manifest::RENDER_OPTION);
+        $deploy = self::build_deploy_manifest($render, $dest_id);
+        $diff   = Manifest::diff(Manifest::load(Destinations::pushed_option($dest_id)), $deploy);
+
+        return [
+            'destId'   => $dest_id,
+            'destName' => $dest !== null ? (string) $dest->get('name') : $dest_id,
+            'upload'   => count($diff['changed']),
+            'remove'   => $prune ? count($diff['removed']) : 0,
+            'total'    => count($deploy),
+            'inSync'   => self::in_sync($dest_id, $dest),
+            // Published pages that aren't in the export at all — so an "in sync"
+            // result never silently hides content the user just published.
+            'excludedPublished' => UrlCollector::published_excluded_count(array_keys($render)),
+        ];
+    }
+
+    /**
+     * Human-readable summary of a check preview.
+     *
+     * @param array<string,mixed> $p Preview data.
+     */
+    private static function check_message(array $p): string {
+        $name   = (string) $p['destName'];
+        $upload = (int) $p['upload'];
+        $remove = (int) $p['remove'];
+
+        if ($upload === 0 && $remove === 0) {
+            $base = !empty($p['inSync'])
+                ? sprintf('%s is up to date — nothing to sync.', $name)
+                : sprintf('%s: no file changes, but settings differ — Sync to refresh.', $name);
+        } else {
+            $parts = [];
+            if ($upload > 0) {
+                $parts[] = sprintf('%d file(s) to upload', $upload);
+            }
+            if ($remove > 0) {
+                $parts[] = sprintf('%d to remove', $remove);
+            }
+            $base = sprintf('%s: %s on next sync.', $name, implode(', ', $parts));
+        }
+
+        // Never let an "in sync" reading hide published pages that aren't in the
+        // export (orphan pages in linked mode, etc.).
+        $excluded = (int) ($p['excludedPublished'] ?? 0);
+        if ($excluded > 0) {
+            $base .= ' ' . sprintf(
+                /* translators: %d: number of published pages not in the static export. */
+                _n(
+                    '%d published page isn’t in the export — see View list.',
+                    '%d published pages aren’t in the export — see View list.',
+                    $excluded,
+                    'bricks-static'
+                ),
+                $excluded
+            );
+        }
+
+        return $base;
     }
 
     /**
@@ -759,7 +1315,7 @@ final class Runner {
         $name = $dest !== null ? (string) $dest->get('name') : $dest_id;
 
         $deploy = self::build_deploy_manifest(Manifest::load(Manifest::RENDER_OPTION), $dest_id);
-        Manifest::save(Manifest::DEPLOY_OPTION, $deploy);
+        Manifest::save(self::deploy_option($job), $deploy);
 
         $diff = Manifest::diff(Manifest::load(self::pushed_option($job)), $deploy);
 
@@ -781,6 +1337,13 @@ final class Runner {
         } else {
             $job->data['phase']   = 'upload';
             $job->data['message'] = sprintf('Uploading to %s…', $name);
+            // This destination is set up for package deploy, but the PHP runtime
+            // running the sync has no ZipArchive — so we fall back to (slower)
+            // file-by-file. Flag it so the dashboard can explain WHY. Common on
+            // Local's bundled CLI PHP; most production hosts have zip.
+            if (PackageDeployer::would_package($dest_id, $dest) && !PackageDeployer::can_build()) {
+                $job->data['zipUnavailable'] = true;
+            }
         }
     }
 
@@ -885,7 +1448,7 @@ final class Runner {
             $original    = (string) file_get_contents($meta['src']);
             $transformed = $original;
             foreach ($active as $a) {
-                $transformed = $a['replacer']->apply($transformed, $a['ctx']);
+                $transformed = $a['replacer']->apply($transformed, $a['ctx'], $relative);
             }
 
             // Only write a per-destination copy when the page actually changed;
@@ -961,6 +1524,58 @@ final class Runner {
     }
 
     /**
+     * The DEPLOY hash of one page for one destination — the base render with that
+     * destination's active replacers applied (media/links/videos/text), hashed the
+     * same way {@see write_deploy_file()} does. This is what a page's PUSHED-manifest
+     * hash is compared against to tell if the page is in sync there. A plain
+     * render-hash comparison is WRONG for a destination that transforms the page
+     * (it would look permanently out of sync). Returns '' when the page isn't in
+     * the current render. No side effects (unlike build_deploy_manifest).
+     *
+     * @param string $rel     Export-relative page path.
+     * @param string $dest_id Destination id.
+     */
+    public static function page_deploy_hash(string $rel, string $dest_id): string {
+        $render = Manifest::load(Manifest::RENDER_OPTION);
+        $meta   = $render[$rel] ?? null;
+        if (!is_array($meta) || !is_file((string) ($meta['src'] ?? ''))) {
+            return '';
+        }
+
+        $base = (string) ($meta['hash'] ?? '');
+        // Only HTML pages are transformed by replacers; anything else keeps its
+        // render hash.
+        if (substr(strtolower($rel), -5) !== '.html') {
+            return $base;
+        }
+
+        $dest = Destinations::get($dest_id);
+        if ($dest === null) {
+            return $base;
+        }
+
+        $dest_base = PackageDeployer::base_url($dest);
+        $active    = [];
+        foreach (Pipeline::replacers() as $replacer) {
+            $prepared = $replacer->prepare($dest, $dest_base);
+            if (($prepared['ctx'] ?? null) !== null) {
+                $active[] = ['replacer' => $replacer, 'ctx' => $prepared['ctx']];
+            }
+        }
+        if (empty($active)) {
+            return $base; // No transform → deploy page == render page.
+        }
+
+        $original    = (string) file_get_contents((string) $meta['src']);
+        $transformed = $original;
+        foreach ($active as $a) {
+            $transformed = $a['replacer']->apply($transformed, $a['ctx'], $rel);
+        }
+
+        return $transformed === $original ? $base : StableHash::of_html($transformed);
+    }
+
+    /**
      * Deploy the whole target as a single package: upload one zip + a one-shot
      * helper, then extract server-side. Falls back to per-file uploads if the
      * host can't run the helper.
@@ -978,7 +1593,7 @@ final class Runner {
             return;
         }
 
-        $manifest = Manifest::load(Manifest::DEPLOY_OPTION);
+        $manifest = Manifest::load(self::deploy_option($job));
 
         self::beat();
 
@@ -1016,10 +1631,17 @@ final class Runner {
             if (empty($result['retryable'])) {
                 update_option(PackageDeployer::OFF_PREFIX . (string) ($job->data['destId'] ?? ''), 1, false);
             }
+            // Surface WHY package deploy fell back (the deployer's reason), instead
+            // of a bare "unavailable here" — so the user can act on it. Recorded on
+            // the job too, for a persistent post-run notice.
+            $reason = trim((string) ($result['message'] ?? ''), " \t\n\r\0\x0B.");
+            $job->data['packageFallback'] = $reason;
             $job->data['phase']        = 'upload';
             $job->data['htaccessDone'] = false;
             $job->data['holdingShown'] = false;
-            $job->data['message']      = 'Package deploy unavailable here — uploading file by file…';
+            $job->data['message']      = $reason !== ''
+                ? sprintf('%s — uploading file by file instead…', $reason)
+                : 'Package deploy didn’t complete — uploading file by file instead…';
             $job->save();
             return;
         }
@@ -1047,7 +1669,7 @@ final class Runner {
      * @param Job $job Active job.
      */
     private static function tick_upload(Job $job): void {
-        $manifest = Manifest::load(Manifest::DEPLOY_OPTION);
+        $manifest = Manifest::load(self::deploy_option($job));
 
         try {
             $transport = self::target_transport($job);
@@ -1226,6 +1848,22 @@ final class Runner {
     }
 
     /**
+     * The deploy-manifest option for the job's target destination. Per-destination
+     * (not a single global) so concurrent deploy workers each read/write their own
+     * target's manifest without clobbering one another.
+     *
+     * @param Job $job Active job.
+     */
+    private static function deploy_option(Job $job): string {
+        $id = (string) ($job->data['destId'] ?? '');
+        if ($id === '') {
+            $id = Destinations::primary()->id();
+        }
+
+        return Manifest::DEPLOY_OPTION . '_' . $id;
+    }
+
+    /**
      * Option-name prefix for a destination's last-synced signature.
      */
     public const SYNC_SIG = 'bs_sync_sig_';
@@ -1285,6 +1923,11 @@ final class Runner {
      * @param \WPEasy\BricksStatic\Settings\Destination|null  $dest    Destination.
      */
     public static function in_sync(string $dest_id, $dest): bool {
+        // Content edited since the last render → the export is stale everywhere.
+        if (ChangeTracker::is_dirty()) {
+            return false;
+        }
+
         $stored = (string) get_option(self::SYNC_SIG . $dest_id, '');
 
         return $stored !== '' && $stored === self::sync_signature($dest);
@@ -1342,10 +1985,22 @@ final class Runner {
      * @param TransportInterface $transport Connected transport.
      */
     private static function upload_holding_page(TransportInterface $transport): void {
-        $tmp = Paths::cache_dir() . '/.holding.out';
+        $tmp = self::worker_tmp('holding.out');
         file_put_contents($tmp, self::holding_html());
         self::put_retry($transport, $tmp, self::HOME_FILE);
         @unlink($tmp);
+    }
+
+    /**
+     * A process-unique staging path in the cache dir. Parallel deploy runs one
+     * worker process per destination, so the transient upload temp files (holding
+     * page, .htaccess merge, on-the-fly .gz) MUST NOT share a fixed name or one
+     * worker's unlink would pull the file out from under another mid-upload.
+     *
+     * @param string $suffix Short, filename-safe suffix.
+     */
+    private static function worker_tmp(string $suffix): string {
+        return Paths::cache_dir() . '/.bs-tmp-' . getmypid() . '-' . $suffix;
     }
 
     /**
@@ -1427,13 +2082,13 @@ HTML;
 
         // One-time backup of the original before we ever merge into it.
         if ($existing !== '' && !$transport->exists('.htaccess.bricks-static.bak')) {
-            $bak = Paths::cache_dir() . '/.htaccess.bak.out';
+            $bak = self::worker_tmp('htaccess.bak.out');
             file_put_contents($bak, $existing);
             self::put_retry($transport, $bak, '.htaccess.bricks-static.bak');
             @unlink($bak);
         }
 
-        $tmp = Paths::cache_dir() . '/.htaccess.out';
+        $tmp = self::worker_tmp('htaccess.out');
         file_put_contents($tmp, HtaccessBuilder::merge($existing));
         self::put_retry($transport, $tmp, '.htaccess');
         @unlink($tmp);
@@ -1458,7 +2113,7 @@ HTML;
             return;
         }
 
-        $tmp = Paths::cache_dir() . '/.tmp-upload.gz';
+        $tmp = self::worker_tmp('upload.gz');
         if (Compressor::gzip_to($source, $tmp)) {
             self::put_retry($transport, $tmp, $relative . '.gz');
             @unlink($tmp);
@@ -1586,12 +2241,26 @@ HTML;
             'removed'      => $d['removed'] ?? 0,
             'prune'        => !empty($d['prune']),
             'pageLimitHit' => !empty($d['pageLimitHit']),
+            // A destination configured for package (zip) deploy fell back to
+            // file-by-file because the sync runtime has no ZipArchive.
+            'zipUnavailable' => !empty($d['zipUnavailable']),
+            // The reason a package deploy was ATTEMPTED but fell back to
+            // file-by-file (deployer message), '' if not applicable.
+            'packageFallback' => (string) ($d['packageFallback'] ?? ''),
             'targets'      => [
                 'index' => (int) ($d['targetIndex'] ?? 0),
                 'total' => count($d['targets'] ?? []),
                 'done'  => (int) ($d['targetsDone'] ?? 0),
                 'name'  => self::target_name($d),
             ],
+            // Parallel deploy: per-destination progress rows (empty for a
+            // sequential run), plus the active pool size.
+            'parallel'     => !empty($d['parallel']),
+            'poolSize'     => (int) ($d['poolSize'] ?? 0),
+            // The detached coordinator can't spawn the pool itself — the dashboard
+            // launches the workers via POST /sync/deploy-dispatch when this is set.
+            'needsDispatch'   => !empty($d['needsDispatch']),
+            'parallelTargets' => array_values((array) ($d['parallelTargets'] ?? [])),
             'errorCount'   => count($d['errors']),
             'skippedCount' => count($d['skipped']),
             'failedCount'  => count($d['failed'] ?? []),
@@ -1603,6 +2272,7 @@ HTML;
             'updatedAt'    => $d['updatedAt'],
             'running'      => !in_array($d['phase'], ['done', 'error', 'cancelled', 'idle'], true),
             'cliAlive'     => self::is_driver_alive(),
+            'preview'      => $d['preview'] ?? null,
         ];
     }
 }

@@ -43,32 +43,38 @@ final class VideoDeployReplacer implements DeployReplacer {
             return ['ctx' => null, 'files' => []];
         }
 
-        $swaps = []; // fromSrc => final src
-        $files = []; // manifest key => local source file
+        $by_page = []; // page => (fromSrc => final src)
+        $files   = []; // manifest key => local source file (uploaded regardless of page)
 
         foreach ($videos as $v) {
+            $page = (string) $v['page'];
             $toId = (int) ($v['toId'] ?? 0);
             if ($toId > 0) {
-                $url                = (string) wp_get_attachment_url($toId);
-                $swaps[$v['from']]  = $url !== '' ? UrlRewriter::rewrite($url) : $v['to'];
+                $url = (string) wp_get_attachment_url($toId);
+                $by_page[$page][$v['from']] = $url !== '' ? UrlRewriter::rewrite($url) : $v['to'];
                 $file = (string) get_attached_file($toId);
                 $key  = $url !== '' ? Url::to_relative_path($url) : null;
                 if ($file !== '' && is_file($file) && $key !== null) {
                     $files[$key] = $file;
                 }
             } else {
-                $swaps[$v['from']] = $v['to'];
+                $by_page[$page][$v['from']] = $v['to'];
             }
         }
 
-        return ['ctx' => ['swaps' => $swaps, 'base' => $dest_base], 'files' => $files];
+        return ['ctx' => ['byPage' => $by_page, 'base' => $dest_base], 'files' => $files];
     }
 
     /**
      * {@inheritDoc}
+     *
+     * The embed-origin fix (YouTube `origin=`) runs on EVERY page via the base
+     * URL; per-page swaps apply only to the page they were saved for.
      */
-    public function apply(string $html, $ctx): string {
-        return VideoReplacer::apply($html, $ctx['swaps'], $ctx['base']);
+    public function apply(string $html, $ctx, string $relative): string {
+        $swaps = (array) ($ctx['byPage'][$relative] ?? []);
+
+        return VideoReplacer::apply($html, $swaps, (string) $ctx['base']);
     }
 
     /**

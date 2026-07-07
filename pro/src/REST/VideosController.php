@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStaticPro\REST;
 
+use WP_REST_Request;
 use WP_REST_Response;
 use WPEasy\BricksStaticPro\Media\VideoCollector;
 
@@ -44,9 +45,19 @@ final class VideosController {
     }
 
     /**
-     * GET /videos — every iframe embed the rendered site references.
+     * GET /videos — the exported pages (for the selector) and, when a `page` is
+     * given, the videos on that page. Video replacement is per page, so no videos
+     * are returned until a page is selected.
+     *
+     * @param WP_REST_Request $request Request.
      */
-    public static function list_videos(): WP_REST_Response {
-        return new WP_REST_Response(['videos' => VideoCollector::collect()]);
+    public static function list_videos(WP_REST_Request $request): WP_REST_Response {
+        $page = (string) $request->get_param('page');
+
+        return new WP_REST_Response([
+            'pages'  => VideoCollector::pages(),
+            'page'   => $page,
+            'videos' => $page !== '' ? VideoCollector::collect($page) : [],
+        ]);
     }
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { Button, ConfirmButton, Input, Select } from '@wpeasy/ab-ui';
   import { api } from '../shared/api';
   import type { Capabilities, ConnectionInput, DestinationDisplay, Transport } from '../shared/types';
   import { __ } from '../shared/i18n';
@@ -38,7 +39,6 @@
   let testing = $state(false);
   let message = $state('');
   let messageOk = $state(true);
-  let confirmRemove = $state(false);
   let busy = $derived(saving || testing || running);
 
   // How this destination deploys (live from /destinations).
@@ -85,7 +85,14 @@
     }
   }
 
-  function handleTransportChange(): void {
+  let transportOptions = $derived([
+    { value: 'sftp', label: 'SFTP' + (capabilities.sftp ? '' : __('optUnavailable')), disabled: !capabilities.sftp },
+    { value: 'ftps', label: __('optFtps') + (capabilities.ftps ? '' : __('optUnavailable')), disabled: !capabilities.ftps },
+    { value: 'ftp', label: __('optFtp') + (capabilities.ftp ? '' : __('optUnavailable')), disabled: !capabilities.ftp },
+  ]);
+
+  function handleTransportChange(value: string): void {
+    transport = value as Transport;
     if (!d.port.fromConstant && KNOWN_DEFAULT_PORTS.includes(port)) {
       port = DEFAULT_PORTS[transport];
     }
@@ -139,52 +146,31 @@
 
 <section class="bs-card bs-stack bs-stack--md">
   <div class="bs-grid">
-    <div class="bs-field">
-      <label for="bs-transport-{d.id}">{__('fldTransport')}</label>
-      <select id="bs-transport-{d.id}" bind:value={transport} onchange={handleTransportChange} disabled={d.transport.fromConstant || busy}>
-        <option value="sftp" disabled={!capabilities.sftp}>SFTP{capabilities.sftp ? '' : __('optUnavailable')}</option>
-        <option value="ftps" disabled={!capabilities.ftps}>{__('optFtps')}{capabilities.ftps ? '' : __('optUnavailable')}</option>
-        <option value="ftp" disabled={!capabilities.ftp}>{__('optFtp')}{capabilities.ftp ? '' : __('optUnavailable')}</option>
-      </select>
-    </div>
-    <div class="bs-field">
-      <label for="bs-port-{d.id}">{__('fldPort')}</label>
-      <input id="bs-port-{d.id}" type="number" bind:value={port} placeholder={transport === 'sftp' ? '22' : '21'} disabled={d.port.fromConstant || busy} />
-    </div>
+    <Select
+      label={__('fldTransport')}
+      id="bs-transport-{d.id}"
+      value={transport}
+      options={transportOptions}
+      disabled={d.transport.fromConstant || busy}
+      onchange={(v) => handleTransportChange(String(v))}
+    />
+    <Input label={__('fldPort')} type="number" bind:value={port} placeholder={transport === 'sftp' ? '22' : '21'} disabled={d.port.fromConstant || busy} />
 
-    <div class="bs-field">
-      <label for="bs-host-{d.id}">{__('fldHost')}</label>
-      <input id="bs-host-{d.id}" type="text" bind:value={host} placeholder="ftp.example.com" disabled={d.host.fromConstant || busy} />
-    </div>
-    <div class="bs-field">
-      <label for="bs-user-{d.id}">{__('fldUsername')}</label>
-      <input id="bs-user-{d.id}" type="text" bind:value={username} autocomplete="off" disabled={d.username.fromConstant || busy} />
-    </div>
+    <Input label={__('fldHost')} bind:value={host} placeholder="ftp.example.com" disabled={d.host.fromConstant || busy} />
+    <Input label={__('fldUsername')} bind:value={username} autocomplete="off" disabled={d.username.fromConstant || busy} />
 
-    <div class="bs-field">
-      <label for="bs-pass-{d.id}">{__('fldPassword')}</label>
-      <input id="bs-pass-{d.id}" type="password" bind:value={password} autocomplete="new-password" placeholder={d.password.hasValue ? __('phSavedBlank') : __('fldPassword')} disabled={d.password.fromConstant || busy} />
-    </div>
-    <div class="bs-field">
-      <label for="bs-remote-{d.id}">{__('fldRemotePath')}</label>
-      <input id="bs-remote-{d.id}" type="text" bind:value={remotePath} placeholder={__('phRemoteEmpty')} disabled={d.remotePath.fromConstant || busy} />
-    </div>
+    <Input label={__('fldPassword')} type="password" bind:value={password} autocomplete="new-password" placeholder={d.password.hasValue ? __('phSavedBlank') : __('fldPassword')} disabled={d.password.fromConstant || busy} />
+    <Input label={__('fldRemotePath')} bind:value={remotePath} placeholder={__('phRemoteEmpty')} disabled={d.remotePath.fromConstant || busy} />
 
-    <div class="bs-field">
-      <label for="bs-url-{d.id}">{__('fldDestUrl')}</label>
-      <input id="bs-url-{d.id}" type="url" bind:value={destinationUrl} placeholder="https://www.example.com" disabled={d.destinationUrl.fromConstant || busy} />
-    </div>
-    <div class="bs-field">
-      <label for="bs-base-{d.id}">{__('fldSubPath')}</label>
-      <input id="bs-base-{d.id}" type="text" bind:value={basePath} placeholder="/" disabled={d.basePath.fromConstant || busy} />
-    </div>
+    <Input label={__('fldDestUrl')} type="url" bind:value={destinationUrl} placeholder="https://www.example.com" disabled={d.destinationUrl.fromConstant || busy} />
+    <Input label={__('fldSubPath')} bind:value={basePath} placeholder="/" disabled={d.basePath.fromConstant || busy} />
   </div>
 
   {#if deployNote}
     <p class="bs-deploy bs-deploy--{deployNote.tone}">
       {#if deployNote.tone === 'ok'}⚡ {/if}{deployNote.text}
       {#if deployNote.retest}
-        <button type="button" class="bs-link" onclick={retestPackage} disabled={retesting || busy}>{retesting ? __('btnReTesting') : __('btnReTest')}</button>
+        <Button variant="ghost" size="sm" onclick={retestPackage} disabled={retesting || busy}>{retesting ? __('btnReTesting') : __('btnReTest')}</Button>
       {/if}
       {#if retestMsg}<span class="bs-deploy__result"> — {retestMsg}</span>{/if}
     </p>
@@ -196,146 +182,68 @@
 
   <div class="bs-row bs-row--between">
     <div class="bs-row bs-row--wrap">
-      <button type="button" class="bs-btn bs-btn--secondary" onclick={test} disabled={busy || !host}>{testing ? __('btnTesting') : __('btnTest')}</button>
-      <button type="button" class="bs-btn bs-btn--primary" onclick={save} disabled={busy}>{saving ? __('btnSaving') : __('btnSave')}</button>
+      <Button variant="secondary" onclick={test} disabled={busy || !host}>{testing ? __('btnTesting') : __('btnTest')}</Button>
+      <Button variant="primary" onclick={save} disabled={busy}>{saving ? __('btnSaving') : __('btnSave')}</Button>
     </div>
     {#if canRemove}
-      {#if confirmRemove}
-        <span class="bs-remove">
-          <span class="bs-remove__q">{__('confirmRemoveDest')}</span>
-          <button type="button" class="bs-link bs-link--danger" onclick={() => onRemove(d.id)} disabled={busy}>{__('btnYesRemove')}</button>
-          <button type="button" class="bs-link" onclick={() => (confirmRemove = false)}>{__('btnCancel')}</button>
-        </span>
-      {:else}
-        <button type="button" class="bs-link bs-link--danger" onclick={() => (confirmRemove = true)} disabled={busy}>{__('btnRemoveDest')}</button>
-      {/if}
+      <ConfirmButton
+        variant="danger"
+        size="sm"
+        label={__('btnRemoveDest')}
+        confirmLabel={__('btnYesRemove')}
+        onconfirm={() => onRemove(d.id)}
+        disabled={busy}
+      />
     {/if}
   </div>
 </section>
 
 <style>
   .bs-card {
-    padding: var(--bs-space--lg);
-    background: var(--bs-color-surface--raised);
-    border: var(--bs-border--1) solid var(--bs-color-border);
-    border-radius: var(--bs-radius--lg);
-    box-shadow: var(--bs-shadow--sm);
+    /* Fixed-width Connection panel; Replacements fills the rest of the row. */
+    flex: 0 0 34rem;
+    max-width: 100%;
+    padding: var(--ab-space-5);
+    background: var(--ab-color-surface);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-lg);
+    box-shadow: var(--ab-shadow-sm);
   }
 
   .bs-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--bs-space--md);
-  }
-
-  .bs-field {
-    display: flex;
-    flex-direction: column;
-    gap: var(--bs-space--2xs);
-  }
-
-  .bs-field label {
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--medium);
-    color: var(--bs-color-text--muted);
-  }
-
-  .bs-field input,
-  .bs-field select {
-    padding: var(--bs-space--xs) var(--bs-space--sm);
-    border: var(--bs-border--1) solid var(--bs-color-border--strong);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface);
-    color: var(--bs-color-text);
-    font: inherit;
-    font-size: var(--bs-text--sm);
-  }
-
-  .bs-field input:disabled,
-  .bs-field select:disabled {
-    opacity: 0.6;
-  }
-
-  .bs-btn {
-    padding: var(--bs-space--xs) var(--bs-space--md);
-    border: var(--bs-border--1) solid var(--bs-color-border--strong);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface);
-    color: var(--bs-color-text);
-    font: inherit;
-    font-weight: var(--bs-weight--medium);
-    cursor: pointer;
-  }
-
-  .bs-btn--primary {
-    background: var(--bs-color-primary);
-    border-color: transparent;
-    color: var(--bs-color-primary--contrast);
-  }
-
-  .bs-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+    gap: var(--ab-space-4);
   }
 
   .bs-deploy {
     margin: 0;
-    font-size: var(--bs-text--sm);
+    font-size: var(--ab-text-sm);
   }
 
   .bs-deploy--ok {
-    color: var(--bs-color-success);
+    color: var(--ab-color-success);
   }
 
   .bs-deploy--muted {
-    color: var(--bs-color-text--muted);
+    color: var(--ab-color-text-muted);
   }
 
   .bs-deploy__result {
-    color: var(--bs-color-text--secondary);
+    color: var(--ab-color-text-muted);
   }
 
   .bs-msg {
     margin: 0;
-    font-size: var(--bs-text--sm);
+    font-size: var(--ab-text-sm);
   }
 
   .bs-msg--ok {
-    color: var(--bs-color-success);
+    color: var(--ab-color-success);
   }
 
   .bs-msg--err {
-    color: var(--bs-color-danger);
-  }
-
-  .bs-link {
-    background: none;
-    border: 0;
-    padding: 0;
-    color: var(--bs-color-primary);
-    font: inherit;
-    font-size: var(--bs-text--sm);
-    cursor: pointer;
-  }
-
-  .bs-link--danger {
-    color: var(--bs-color-danger);
-  }
-
-  .bs-remove {
-    display: flex;
-    align-items: center;
-    gap: var(--bs-space--sm);
-  }
-
-  .bs-remove__q {
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-danger);
-  }
-
-  .bs-link:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    color: var(--ab-color-danger);
   }
 
   @media (max-width: 640px) {

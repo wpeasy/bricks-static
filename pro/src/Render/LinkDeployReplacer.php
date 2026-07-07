@@ -47,7 +47,8 @@ final class LinkDeployReplacer implements DeployReplacer {
     /**
      * {@inheritDoc}
      */
-    public function apply(string $html, $ctx): string {
+    public function apply(string $html, $ctx, string $relative): string {
+        // Link replacements are global (whole-export), so the page path is ignored.
         return LinkReplacer::apply($html, $ctx);
     }
 

@@ -48,41 +48,126 @@ final class Background {
             return false;
         }
 
-        $command = WpCli::build_command('bricks-static run --path=' . escapeshellarg(rtrim((string) ABSPATH, '/\\')));
+        $command = self::build('run');
         if ($command === null) {
             return false;
         }
 
-        return self::spawn_detached($command);
+        // The coordinator is a single launch — its own fixed .bat (overwritten
+        // each run, never accumulating).
+        return self::spawn_detached($command, '.bs-run.bat');
     }
 
     /**
-     * Launch a command detached so the web request returns immediately.
+     * Spawn N detached `wp bricks-static deploy_worker` processes — the parallel
+     * deploy pool. Each worker claims and uploads one destination at a time (its
+     * own transport connection), so independent remote pushes overlap.
      *
-     * @param string $command Fully-formed shell command.
+     * NOTE: the subcommand is `deploy_worker` with an UNDERSCORE — WP-CLI derives
+     * subcommand names from the method name verbatim and does NOT convert `_`→`-`.
+     * Using `deploy-worker` here silently spawns an unknown command that exits at
+     * once (looks "spawned" but does zero work).
+     *
+     * @param int $count How many workers to launch.
+     * @return int The number of workers actually spawned.
      */
-    private static function spawn_detached(string $command): bool {
+    public static function spawn_workers(int $count): int {
+        if (!self::can_spawn() || $count < 1) {
+            return 0;
+        }
+
+        $command = self::build('deploy_worker');
+        if ($command === null) {
+            return 0;
+        }
+
+        // On Windows, write the worker launcher ONCE and start it N times. Every
+        // worker runs the identical command, so a single shared, never-rewritten
+        // .bat is safe to read concurrently — and avoids both the write/read race
+        // and per-spawn filename churn. (An earlier unique-name + self-deleting
+        // .bat caused "The batch file cannot be found" when the delete raced the
+        // launch, and uniqid() collided within one microsecond in this loop.)
         if (DIRECTORY_SEPARATOR === '\\') {
-            // Windows: wrap the (heavily-quoted) command in a .bat so START gets
-            // a single clean argument — nested quotes break START otherwise.
-            $bat = Paths::cache_dir() . '/.bs-run.bat';
+            $bat = Paths::cache_dir() . '/.bs-worker.bat';
             if (!Paths::ensure() || file_put_contents($bat, "@echo off\r\n" . $command . " > NUL 2>&1\r\n") === false) {
-                return false;
+                return 0;
             }
             $bat_win = str_replace('/', '\\', $bat);
 
-            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_popen -- spawns the background WP-CLI sync runner; the command is built from internal paths, not request input.
-            $handle = @popen('start "bricks-static" /B "' . $bat_win . '"', 'r');
-            if (is_resource($handle)) {
-                pclose($handle);
-                return true;
+            $spawned = 0;
+            for ($i = 0; $i < $count; $i++) {
+                if (self::launch_bat($bat_win)) {
+                    $spawned++;
+                }
             }
-            return false;
+
+            return $spawned;
+        }
+
+        // POSIX: exec nohup per worker — no shared file, so no race.
+        if (!function_exists('exec')) {
+            return 0;
+        }
+        $spawned = 0;
+        for ($i = 0; $i < $count; $i++) {
+            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec -- spawns a background WP-CLI deploy worker; the command is built internally, not from request input.
+            @exec('nohup ' . $command . ' > /dev/null 2>&1 &');
+            $spawned++;
+        }
+
+        return $spawned;
+    }
+
+    /**
+     * Build the full shell command for `wp bricks-static <subcommand>`.
+     *
+     * @param string $subcommand The bricks-static subcommand.
+     */
+    private static function build(string $subcommand): ?string {
+        return WpCli::build_command('bricks-static ' . $subcommand . ' --path=' . escapeshellarg(rtrim((string) ABSPATH, '/\\')));
+    }
+
+    /**
+     * Launch a command detached so the web request returns immediately, wrapping
+     * it in a fixed .bat on Windows (START needs a single clean argument —
+     * nested quotes in the raw command break it).
+     *
+     * @param string $command   Fully-formed shell command.
+     * @param string $bat_name  Basename of the .bat to (re)write in the cache dir.
+     */
+    private static function spawn_detached(string $command, string $bat_name): bool {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $bat = Paths::cache_dir() . '/' . $bat_name;
+            if (!Paths::ensure() || file_put_contents($bat, "@echo off\r\n" . $command . " > NUL 2>&1\r\n") === false) {
+                return false;
+            }
+
+            return self::launch_bat(str_replace('/', '\\', $bat));
         }
 
         if (function_exists('exec')) {
             // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec -- spawns the background WP-CLI sync runner; the command is built internally, not from request input.
             @exec('nohup ' . $command . ' > /dev/null 2>&1 &');
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * START an already-written .bat detached (Windows).
+     *
+     * @param string $bat_win Windows-style absolute path to the .bat.
+     */
+    private static function launch_bat(string $bat_win): bool {
+        // Redirect START's stdio to NUL so the detached child doesn't inherit (and
+        // then write to) this process's stdout pipe after we pclose it — that write
+        // is what prints "The process tried to write to a nonexistent pipe" into a
+        // console-run `wp bricks-static sync`.
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_popen -- spawns the background WP-CLI runner; the command is built from internal paths, not request input.
+        $handle = @popen('start "bricks-static" /B "' . $bat_win . '" <NUL >NUL 2>&1', 'r');
+        if (is_resource($handle)) {
+            pclose($handle);
             return true;
         }
 

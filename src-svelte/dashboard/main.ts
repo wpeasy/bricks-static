@@ -1,3 +1,6 @@
+import '@wpeasy/ab-ui/styles';
+import '@wpeasy/ab-ui/styles/wp-admin.css';
+import '../shared/app.css';
 import { mount } from 'svelte';
 import App from './App.svelte';
 import { registerReplacementPanel } from '../shared/panelRegistry.svelte';

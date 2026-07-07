@@ -1,0 +1,88 @@
+/**
+ * Project base + layout utilities — powered by ab-ui tokens.
+ *
+ * Replaces the old `bs-framework.css`: its `--bs-*` tokens are now ab-ui's
+ * `--ab-*` (resolved on the `.ab-ui` wrapper), and its box-sizing / margin
+ * resets are covered by ab-ui's own reset. This file carries only the bits
+ * ab-ui's reset doesn't: heading sizes and a couple of flex layout helpers.
+ *
+ * Loaded once per entry after `@wpeasy/ab-ui/styles` + `@wpeasy/ab-ui/styles/wp-admin.css`. Element
+ * styles are scoped under `.ab-ui` so they never touch the surrounding admin.
+ */
+
+/* Headings — ab-ui's reset only zeroes their margins; size + colour here so
+   wp-admin's own dark heading colour doesn't bleed through (dark-on-dark). */
+.ab-ui :where(h1, h2, h3, h4, h5, h6) {
+  color: var(--ab-color-text);
+}
+.ab-ui :where(h1) {
+  font-size: var(--ab-text-2xl);
+  font-weight: var(--ab-weight-semibold);
+  line-height: var(--ab-leading-tight);
+}
+.ab-ui :where(h2) {
+  font-size: var(--ab-text-xl);
+  font-weight: var(--ab-weight-semibold);
+  line-height: var(--ab-leading-tight);
+}
+.ab-ui :where(h3) {
+  font-size: var(--ab-text-lg);
+  font-weight: var(--ab-weight-semibold);
+}
+.ab-ui :where(h4) {
+  font-size: var(--ab-text-md);
+  font-weight: var(--ab-weight-semibold);
+}
+.ab-ui :where(small) {
+  font-size: var(--ab-text-sm);
+  color: var(--ab-color-text-muted);
+}
+.ab-ui :where(code, kbd, pre, samp) {
+  font-family: var(--ab-font-mono);
+  font-size: 0.9em;
+}
+.ab-ui :where(a) {
+  color: var(--ab-color-primary);
+  text-decoration: none;
+}
+.ab-ui :where(a):hover {
+  color: var(--ab-color-primary-hover);
+  text-decoration: underline;
+}
+
+/* Flex/gap layout helpers (used as `class="bs-stack …"` on .ab-ui markup). The
+   gap tokens only resolve inside `.ab-ui`, so these are inert in the host admin. */
+.bs-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ab-space-4);
+}
+.bs-stack--xs {
+  gap: var(--ab-space-2);
+}
+.bs-stack--sm {
+  gap: var(--ab-space-3);
+}
+.bs-stack--md {
+  gap: var(--ab-space-4);
+}
+.bs-stack--lg {
+  gap: var(--ab-space-5);
+}
+.bs-stack--xl {
+  gap: var(--ab-space-6);
+}
+
+.bs-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--ab-space-3);
+}
+
+.bs-row--between {
+  justify-content: space-between;
+}
+.bs-row--wrap {
+  flex-wrap: wrap;
+}

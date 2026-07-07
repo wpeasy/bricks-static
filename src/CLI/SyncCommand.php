@@ -81,13 +81,38 @@ final class SyncCommand {
             return;
         }
 
-        $last_phase = '';
+        $last_phase   = '';
+        $last_targets = []; // destId => last-reported status, for per-destination lines
         while (!empty($snapshot['running'])) {
             $snapshot = Runner::tick();
 
             if (($snapshot['phase'] ?? '') !== $last_phase) {
                 \WP_CLI::log('  ' . ($snapshot['message'] ?? $snapshot['phase']));
                 $last_phase = $snapshot['phase'];
+            }
+
+            // Per-destination progress during a parallel deploy (the phase stays
+            // 'deploy' throughout, so log each target as it starts and finishes).
+            foreach ((array) ($snapshot['parallelTargets'] ?? []) as $t) {
+                $id     = (string) ($t['destId'] ?? '');
+                $status = (string) ($t['status'] ?? '');
+                if ($id === '' || ($last_targets[$id] ?? '') === $status) {
+                    continue;
+                }
+                $last_targets[$id] = $status;
+                $label = [
+                    'active'    => !empty($t['packaging']) ? 'packaging' : 'uploading',
+                    'done'      => 'done',
+                    'error'     => 'failed',
+                    'cancelled' => 'cancelled',
+                ][$status] ?? null;
+                if ($label !== null) {
+                    // Package deploy is a single server-side step — no per-file count.
+                    $suffix = ($status === 'active' && !empty($t['packaging']))
+                        ? ''
+                        : sprintf(' (%d/%d)', (int) ($t['uploaded'] ?? 0), (int) ($t['total'] ?? 0));
+                    \WP_CLI::log('    ' . (string) ($t['name'] ?? $id) . ': ' . $label . $suffix);
+                }
             }
         }
 
@@ -141,6 +166,11 @@ final class SyncCommand {
             return;
         }
 
+        // This is the detached, console-less coordinator: it must not try to spawn
+        // the parallel deploy pool itself (Windows `start` needs a console) — the
+        // dashboard dispatches the workers from a web request instead.
+        Runner::mark_detached();
+
         // Only one driver may advance a job (see Runner::claim_driver). If the
         // browser already took over (because this spawn was slow to launch), stand
         // down instead of double-driving and starving the worker pool.
@@ -154,5 +184,19 @@ final class SyncCommand {
         }
 
         \WP_CLI::success((string) ($snapshot['message'] ?? 'Done.'));
+    }
+
+    /**
+     * Deploy-pool worker: claim and upload one destination at a time until the
+     * pool's target list is exhausted. Spawned (detached, one per concurrency
+     * slot) by the parallel deploy phase; not normally invoked by hand.
+     *
+     * @param array<int,string>    $args       Positional args (unused).
+     * @param array<string,string> $assoc_args Flags (unused).
+     * @when after_wp_load
+     */
+    public function deploy_worker(array $args, array $assoc_args): void {
+        Runner::run_deploy_worker();
+        \WP_CLI::success('Deploy worker finished.');
     }
 }

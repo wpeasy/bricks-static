@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Tooltip } from '@wpeasy/ab-ui';
   import type { DestinationDisplay } from '../shared/types';
   import { canAddDestination } from '../shared/capabilities.svelte';
   import { __ } from '../shared/i18n';
@@ -21,6 +22,8 @@
   // Multiple destinations are a Pro capability; the cap is 1 in Free.
   let canAdd = $derived(canAddDestination(destinations.length));
 
+  // Inline rename: double-click a tab to turn it into a text field.
+  // ab-ui Tabs can't host an inline <input>, so this strip stays bespoke.
   let editingId = $state('');
   let editValue = $state('');
 
@@ -31,9 +34,7 @@
 
   function commit(): void {
     const name = editValue.trim();
-    if (editingId && name) {
-      onRename(editingId, name);
-    }
+    if (editingId && name) onRename(editingId, name);
     editingId = '';
   }
 
@@ -51,57 +52,59 @@
   {/if}
   {#each destinations as d (d.id)}
     {#if editingId === d.id}
+      <!-- svelte-ignore a11y_autofocus -->
       <input
         class="bs-tab bs-tab--edit"
         bind:value={editValue}
         onblur={commit}
         onkeydown={onKey}
+        autofocus
         aria-label={__('destNameAria')}
       />
     {:else}
-      <button
-        type="button"
-        class="bs-tab"
-        class:bs-tab--active={active === d.id}
-        onclick={() => onSelect(d.id)}
-        ondblclick={() => startEdit(d)}
-        title={__('dblClickRename')}
-      >
-        {d.name || __('destinationDefault')}{#if !d.enabled}<span class="bs-tab__off">{__('tabOff')}</span>{/if}
-      </button>
+      <Tooltip content={__('dblClickRename')} placement="bottom">
+        <button
+          type="button"
+          class="bs-tab"
+          class:bs-tab--active={active === d.id}
+          onclick={() => onSelect(d.id)}
+          ondblclick={() => startEdit(d)}
+        >
+          {d.name || __('destinationDefault')}{#if !d.enabled}<span class="bs-tab__off">{__('tabOff')}</span>{/if}
+        </button>
+      </Tooltip>
     {/if}
   {/each}
-  <button
-    type="button"
-    class="bs-tab bs-tab--add"
-    onclick={() => canAdd && onAdd()}
-    disabled={!canAdd}
-    data-balloon={canAdd ? null : __('multiDestReqPro')}
-    data-balloon-pos="down"
-    aria-label={__('addDestAria')}
-  >+</button>
+  {#if canAdd}
+    <button type="button" class="bs-tab bs-tab--add" onclick={onAdd} aria-label={__('addDestAria')}>+</button>
+  {:else}
+    <Tooltip content={__('multiDestReqPro')} placement="bottom">
+      <button type="button" class="bs-tab bs-tab--add" disabled aria-label={__('addDestAria')}>+</button>
+    </Tooltip>
+  {/if}
 </div>
 
 <style>
   .bs-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--bs-space--2xs);
-    border-bottom: var(--bs-border--1) solid var(--bs-color-border);
-    padding-bottom: var(--bs-space--xs);
+    align-items: center;
+    gap: var(--ab-space-1);
+    border-bottom: 1px solid var(--ab-color-border);
+    padding-bottom: var(--ab-space-2);
   }
 
   .bs-tab {
     flex: 0 0 auto;
     text-align: center;
-    padding: var(--bs-space--xs) var(--bs-space--md);
-    border: var(--bs-border--1) solid transparent;
-    border-radius: var(--bs-radius--md) var(--bs-radius--md) 0 0;
+    padding: var(--ab-space-2) var(--ab-space-4);
+    border: 1px solid transparent;
+    border-radius: var(--ab-radius-md) var(--ab-radius-md) 0 0;
     background: none;
-    color: var(--bs-color-text--muted);
+    color: var(--ab-color-text-muted);
     font: inherit;
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--medium);
+    font-size: var(--ab-text-sm);
+    font-weight: var(--ab-weight-medium);
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
@@ -109,31 +112,36 @@
   }
 
   .bs-tab:hover {
-    color: var(--bs-color-text);
+    color: var(--ab-color-text);
   }
 
   .bs-tab--active {
-    background: var(--bs-color-surface--raised);
-    border-color: var(--bs-color-border);
-    color: var(--bs-color-text);
+    background: var(--ab-color-surface);
+    border-color: var(--ab-color-border);
+    color: var(--ab-color-text);
   }
 
   .bs-tab--edit {
-    background: var(--bs-color-surface);
-    border-color: var(--bs-color-primary);
-    color: var(--bs-color-text);
+    background: var(--ab-color-surface);
+    border-color: var(--ab-color-primary);
+    color: var(--ab-color-text);
   }
 
   .bs-tab--add {
     flex: 0 0 auto;
-    color: var(--bs-color-primary);
-    font-size: var(--bs-text--lg);
+    color: var(--ab-color-primary);
+    font-size: var(--ab-text-lg);
     line-height: 1;
   }
 
+  .bs-tab--add:disabled {
+    color: var(--ab-color-text-muted);
+    cursor: not-allowed;
+  }
+
   .bs-tab__off {
-    margin-left: var(--bs-space--2xs);
-    font-size: var(--bs-text--xs);
-    color: var(--bs-color-text--subtle);
+    margin-left: var(--ab-space-1);
+    font-size: var(--ab-text-xs);
+    color: var(--ab-color-text-muted);
   }
 </style>

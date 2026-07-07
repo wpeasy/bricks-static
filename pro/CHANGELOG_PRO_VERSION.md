@@ -1,14 +1,11 @@
 # Changelog
 
-## v1.0.1 (2026-06-22)
+## v1.0.2 (2026-07-07)
 
-### New
-Bricks Static Pro unlocks every limit in the free plugin — unlimited pages and destinations, plus Media, Links and Videos replacements and gzip-compressed output — and adds remote pruning, sitemap & robots.txt generation, and licensed automatic updates on top. Everything below is included when Pro is active alongside the free plugin.
+### Improved
+Media replacements are no longer exclusive to Pro — they're now included free, limited to one swap per page. Pro removes that per-page limit, so you can keep swapping as many images as you like, including this release's improvements: whole responsive image sets update together (including lazy-loaded versions), and CSS background images can be swapped too, not just `<img>` tags.
 
-### New
-The Media, Links and Videos panels gain an "Only replacements" filter — turn it on to list only the items you've already given a replacement.
-
-### New
-The Pro replacement panels (Media, Links, Videos) are now translated into French, German, Italian, Spanish and Dutch, matching the free plugin's dashboard language.
+### Improved
+Video replacements now work per page instead of one global swap — pick a page, then swap the videos on just that page, giving you finer control over what changes where.
 
 Bricks Static Pro requires the free Bricks Static plugin. Its changelog is published at https://brxprod.com/bricks-static-changelog/

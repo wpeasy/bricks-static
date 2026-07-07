@@ -28,30 +28,30 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--bs-space--sm);
+    gap: var(--ab-space-3);
   }
 
   .bs-upsell__desc {
     margin: 0;
-    color: var(--bs-color-text--muted);
-    font-size: var(--bs-text--sm);
+    color: var(--ab-color-text-muted);
+    font-size: var(--ab-text-sm);
   }
 
   .bs-upsell__note {
     margin: 0;
-    color: var(--bs-color-text--subtle);
-    font-size: var(--bs-text--xs);
+    color: var(--ab-color-text-muted);
+    font-size: var(--ab-text-xs);
   }
 
   .bs-upsell__btn {
     display: inline-flex;
     align-items: center;
-    padding: var(--bs-space--xs) var(--bs-space--md);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-accent, #7c3aed);
+    padding: var(--ab-space-2) var(--ab-space-4);
+    border-radius: var(--ab-radius-md);
+    background: #7c3aed;
     color: #fff;
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--semibold);
+    font-size: var(--ab-text-sm);
+    font-weight: var(--ab-weight-semibold);
     text-decoration: none;
   }
 

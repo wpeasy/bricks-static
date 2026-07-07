@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Badge, Button, Progress, Tooltip, fadeUp } from '@wpeasy/ab-ui';
   import type { SyncSnapshot } from '../shared/types';
   import { caps } from '../shared/capabilities.svelte';
   import { PURCHASE_URL } from '../shared/upsell';
@@ -24,6 +25,7 @@
     finalize: __('phFinalize'),
     package: __('phPackage'),
     upload: __('phUpload'),
+    deploy: __('phDeploy'),
     prune: __('phPrune'),
     done: __('phDone'),
     error: __('phError'),
@@ -83,6 +85,18 @@
   let isPackaging = $derived(snapshot?.phase === 'package');
   let showUploads = $derived((snapshot?.type === 'sync') && uploadsTotal > 0 && !isPackaging);
 
+  // Parallel deploy: fan-out across destinations. When active, show a per-
+  // destination progress row instead of the single aggregate upload bar.
+  let parallelTargets = $derived(snapshot?.parallelTargets ?? []);
+  let isParallel = $derived(!!snapshot?.parallel && parallelTargets.length > 0);
+  const TARGET_TONE: Record<string, 'primary' | 'success' | 'warning' | 'danger'> = {
+    done: 'success',
+    error: 'danger',
+    cancelled: 'warning',
+    active: 'primary',
+    pending: 'primary',
+  };
+
   let tone = $derived(
     snapshot?.phase === 'error' || snapshot?.phase === 'cancelled'
       ? 'warn'
@@ -90,11 +104,10 @@
         ? 'ok'
         : 'active',
   );
-
-  function pct(done: number, total: number): number {
-    return total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
-  }
-
+  // Map our run-tone to ab-ui's Progress/Badge tones.
+  let abTone = $derived<'primary' | 'success' | 'warning' | 'danger'>(
+    tone === 'ok' ? 'success' : tone === 'warn' ? 'warning' : 'primary',
+  );
   function humanBytes(bytes: number): string {
     if (!bytes) return '0 B';
     const units = ['B', 'KB', 'MB', 'GB'];
@@ -104,13 +117,15 @@
 </script>
 
 {#if visible && snapshot}
-  <section class="bs-card bs-stack bs-stack--sm bs-progress--{tone}">
+  <section class="bs-card bs-stack bs-stack--sm bs-progress--{tone}" in:fadeUp>
     <div class="bs-row bs-row--between">
       <h2>{__('progress')}{#if destLabel}<span class="bs-progress__dest"> · {destLabel}</span>{/if}</h2>
       <div class="bs-progress__head-right">
-        <span class="bs-progress__phase">{phaseLabel}</span>
+        <Badge tone={abTone} variant="soft">{phaseLabel}</Badge>
         {#if finished}
-          <button type="button" class="bs-progress__close" onclick={dismiss} aria-label={__('btnDismiss')} data-balloon={__('btnDismiss')} data-balloon-pos="down-left">×</button>
+          <Tooltip content={__('btnDismiss')} placement="bottom-end">
+            <Button variant="ghost" size="sm" onclick={dismiss} aria-label={__('btnDismiss')}>×</Button>
+          </Tooltip>
         {/if}
       </div>
     </div>
@@ -122,32 +137,48 @@
     <div class="bs-progress__bar-group">
       <div class="bs-progress__row">
         <span class="bs-progress__label">{__('lblPages')}</span>
-        <div class="bs-progress__track">
-          <div class="bs-progress__fill" style="width: {pct(pagesDone, pagesTotal)}%"></div>
-        </div>
+        <Progress class="bs-progress__bar" value={pagesDone} max={Math.max(pagesTotal, 1)} tone={abTone} label={__('lblPages')} />
         <span class="bs-progress__num">{pagesDone}/{pagesTotal}</span>
       </div>
       <div class="bs-progress__row">
         <span class="bs-progress__label">{__('lblAssets')}</span>
-        <div class="bs-progress__track">
-          <div class="bs-progress__fill" style="width: {pct(assetsDone, assetsTotal)}%"></div>
-        </div>
+        <Progress class="bs-progress__bar" value={assetsDone} max={Math.max(assetsTotal, 1)} tone={abTone} label={__('lblAssets')} />
         <span class="bs-progress__num">{assetsDone}/{assetsTotal}</span>
       </div>
-      {#if isPackaging}
+      {#if isParallel}
+        {#each parallelTargets as t (t.destId)}
+          {@const terminal = t.status === 'done' || t.status === 'error' || t.status === 'cancelled'}
+          {@const indeterminate = t.status === 'active' && (t.packaging || t.total === 0)}
+          <div class="bs-progress__row">
+            <span class="bs-progress__label bs-progress__label--dest">{t.name}</span>
+            <Progress
+              class="bs-progress__bar"
+              value={indeterminate ? null : t.status === 'done' ? Math.max(t.total, 1) : t.uploaded}
+              max={Math.max(t.total, 1)}
+              tone={TARGET_TONE[t.status] ?? 'primary'}
+              label={t.name}
+            />
+            <span class="bs-progress__num">
+              {#if terminal}
+                <Badge tone={TARGET_TONE[t.status]} variant="soft">{__('tgt_' + t.status)}</Badge>
+              {:else if indeterminate}
+                {t.packaging ? __('tgtPackaging') : __('tgt_active')}
+              {:else}
+                {t.uploaded}/{Math.max(t.total, 0)}
+              {/if}
+            </span>
+          </div>
+        {/each}
+      {:else if isPackaging}
         <div class="bs-progress__row">
           <span class="bs-progress__label">{__('lblDeploy')}</span>
-          <div class="bs-progress__track">
-            <div class="bs-progress__fill bs-progress__fill--indeterminate"></div>
-          </div>
+          <Progress class="bs-progress__bar" value={null} tone={abTone} label={__('lblDeploy')} />
           <span class="bs-progress__num">{__f('nFiles', uploadsTotal)}</span>
         </div>
       {:else if showUploads}
         <div class="bs-progress__row">
           <span class="bs-progress__label">{__('lblUploads')}</span>
-          <div class="bs-progress__track">
-            <div class="bs-progress__fill" style="width: {pct(uploaded, uploadsTotal)}%"></div>
-          </div>
+          <Progress class="bs-progress__bar" value={uploaded} max={Math.max(uploadsTotal, 1)} tone={abTone} label={__('lblUploads')} />
           <span class="bs-progress__num">{uploaded}/{uploadsTotal}</span>
         </div>
       {/if}
@@ -162,6 +193,12 @@
       {#if failedCount > 0}<span class="bs-progress__err">{failedCount === 1 ? __f('nFailedUpload', failedCount) : __f('nFailedUploads', failedCount)}</span>{/if}
     </div>
 
+    {#if snapshot.packageFallback}
+      <div class="bs-progress__notice">{__f('pkgFallbackNotice', snapshot.packageFallback)}</div>
+    {:else if snapshot.zipUnavailable}
+      <div class="bs-progress__notice">{__('zipFallbackNotice')}</div>
+    {/if}
+
     {#if snapshot.pageLimitHit}
       <div class="bs-progress__limit">
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -174,9 +211,9 @@
       <div class="bs-progress__retry">
         <span>{failedCount === 1 ? __f('nFileFailed', failedCount) : __f('nFilesFailed', failedCount)}</span>
         {#if canRetry}
-          <button type="button" class="bs-btn bs-btn--primary" onclick={onRetry} disabled={retrying}>
+          <Button variant="primary" size="sm" onclick={onRetry} disabled={retrying}>
             {retrying ? __('btnRetrying') : failedCount === 1 ? __f('btnRetryUpload', failedCount) : __f('btnRetryUploads', failedCount)}
-          </button>
+          </Button>
         {/if}
       </div>
     {/if}
@@ -225,145 +262,89 @@
 
 <style>
   .bs-card {
-    padding: var(--bs-space--lg);
-    background: var(--bs-color-surface--raised);
-    border: var(--bs-border--1) solid var(--bs-color-border);
-    border-radius: var(--bs-radius--lg);
-    box-shadow: var(--bs-shadow--sm);
+    padding: var(--ab-space-5);
+    background: var(--ab-color-surface);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-lg);
+    box-shadow: var(--ab-shadow-sm);
   }
 
   .bs-progress__head-right {
     display: flex;
     align-items: center;
-    gap: var(--bs-space--xs);
-  }
-
-  .bs-progress__phase {
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--semibold);
-    padding: var(--bs-space--3xs) var(--bs-space--sm);
-    border-radius: var(--bs-radius--pill);
-    background: var(--bs-color-surface--sunken);
-  }
-
-  .bs-progress__close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.6rem;
-    height: 1.6rem;
-    border: 0;
-    border-radius: var(--bs-radius--sm);
-    background: none;
-    color: var(--bs-color-text--muted);
-    font-size: var(--bs-text--lg);
-    line-height: 1;
-    cursor: pointer;
-  }
-
-  .bs-progress__close:hover {
-    background: var(--bs-color-surface--sunken);
-    color: var(--bs-color-text);
-  }
-
-  .bs-progress--ok .bs-progress__phase {
-    background: color-mix(in srgb, var(--bs-color-success) 18%, transparent);
-    color: var(--bs-color-success);
-  }
-
-  .bs-progress--warn .bs-progress__phase {
-    background: color-mix(in srgb, var(--bs-color-warning) 18%, transparent);
-    color: var(--bs-color-warning);
+    gap: var(--ab-space-2);
   }
 
   .bs-progress__msg {
-    color: var(--bs-color-text--muted);
-    font-size: var(--bs-text--sm);
+    color: var(--ab-color-text-muted);
+    font-size: var(--ab-text-sm);
   }
 
   .bs-progress__bar-group {
     display: flex;
     flex-direction: column;
-    gap: var(--bs-space--xs);
+    gap: var(--ab-space-2);
   }
 
   .bs-progress__row {
     display: grid;
     grid-template-columns: 4rem 1fr 4rem;
     align-items: center;
-    gap: var(--bs-space--sm);
+    gap: var(--ab-space-3);
   }
 
   .bs-progress__label {
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-text--muted);
+    font-size: var(--ab-text-sm);
+    color: var(--ab-color-text-muted);
   }
 
-  .bs-progress__track {
-    height: 0.5rem;
-    border-radius: var(--bs-radius--pill);
-    background: var(--bs-color-surface--sunken);
+  /* Per-destination rows use the destination name as the label — let it truncate
+     instead of widening the (grid) label column. */
+  .bs-progress__label--dest {
+    max-width: 12ch;
     overflow: hidden;
-  }
-
-  .bs-progress__fill {
-    height: 100%;
-    background: var(--bs-color-primary);
-    transition: width 0.2s ease;
-  }
-
-  .bs-progress--ok .bs-progress__fill {
-    background: var(--bs-color-success);
-  }
-
-  .bs-progress__fill--indeterminate {
-    width: 35%;
-    border-radius: var(--bs-radius--pill);
-    animation: bs-indeterminate 1.1s ease-in-out infinite;
-  }
-
-  @keyframes bs-indeterminate {
-    0% { margin-left: -35%; }
-    100% { margin-left: 100%; }
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ab-color-text);
   }
 
   .bs-progress__dest {
-    font-weight: var(--bs-weight--normal);
-    color: var(--bs-color-text--muted);
+    font-weight: var(--ab-weight-normal);
+    color: var(--ab-color-text-muted);
   }
 
   .bs-progress__num {
-    font-size: var(--bs-text--sm);
+    font-size: var(--ab-text-sm);
     font-variant-numeric: tabular-nums;
     text-align: right;
-    color: var(--bs-color-text--muted);
+    color: var(--ab-color-text-muted);
   }
 
   .bs-progress__stats {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--bs-space--md);
-    font-size: var(--bs-text--sm);
-    color: var(--bs-color-text--muted);
+    gap: var(--ab-space-4);
+    font-size: var(--ab-text-sm);
+    color: var(--ab-color-text-muted);
   }
 
   .bs-progress__err {
-    color: var(--bs-color-danger);
+    color: var(--ab-color-danger);
   }
 
   .bs-progress__warn {
-    color: var(--bs-color-warning);
+    color: var(--ab-color-warning);
   }
 
   .bs-progress__retry {
     display: flex;
     align-items: center;
-    gap: var(--bs-space--md);
-    padding: var(--bs-space--sm) var(--bs-space--md);
-    border: var(--bs-border--1) solid var(--bs-color-danger);
-    border-radius: var(--bs-radius--md);
-    background: color-mix(in srgb, var(--bs-color-danger) 7%, var(--bs-color-surface--raised));
-    font-size: var(--bs-text--sm);
+    gap: var(--ab-space-4);
+    padding: var(--ab-space-3) var(--ab-space-4);
+    border: 1px solid var(--ab-color-danger);
+    border-radius: var(--ab-radius-md);
+    background: color-mix(in srgb, var(--ab-color-danger) 7%, var(--ab-color-surface));
+    font-size: var(--ab-text-sm);
   }
 
   .bs-progress__retry span {
@@ -373,12 +354,23 @@
   .bs-progress__limit {
     display: flex;
     align-items: center;
-    gap: var(--bs-space--md);
-    padding: var(--bs-space--sm) var(--bs-space--md);
-    border: var(--bs-border--1) solid var(--bs-color-accent, #7c3aed);
-    border-radius: var(--bs-radius--md);
-    background: color-mix(in srgb, var(--bs-color-accent, #7c3aed) 7%, var(--bs-color-surface--raised));
-    font-size: var(--bs-text--sm);
+    gap: var(--ab-space-4);
+    padding: var(--ab-space-3) var(--ab-space-4);
+    border: 1px solid #7c3aed;
+    border-radius: var(--ab-radius-md);
+    background: color-mix(in srgb, #7c3aed 7%, var(--ab-color-surface));
+    font-size: var(--ab-text-sm);
+  }
+
+  /* Informational fallback notice (e.g. zip unavailable → file-by-file). */
+  .bs-progress__notice {
+    padding: var(--ab-space-3) var(--ab-space-4);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-md);
+    background: var(--ab-color-surface-2, var(--ab-color-surface));
+    font-size: var(--ab-text-sm);
+    color: var(--ab-color-text-muted);
+    line-height: 1.5;
   }
 
   .bs-progress__limit span {
@@ -386,55 +378,50 @@
   }
 
   .bs-btn {
-    padding: var(--bs-space--xs) var(--bs-space--md);
-    border: var(--bs-border--1) solid var(--bs-color-border--strong);
-    border-radius: var(--bs-radius--md);
-    background: var(--bs-color-surface);
-    color: var(--bs-color-text);
+    padding: var(--ab-space-2) var(--ab-space-4);
+    border: 1px solid var(--ab-color-border-strong);
+    border-radius: var(--ab-radius-md);
+    background: var(--ab-color-surface);
+    color: var(--ab-color-text);
     font: inherit;
-    font-size: var(--bs-text--sm);
-    font-weight: var(--bs-weight--medium);
+    font-size: var(--ab-text-sm);
+    font-weight: var(--ab-weight-medium);
     cursor: pointer;
     white-space: nowrap;
   }
 
   .bs-btn--primary {
-    background: var(--bs-color-primary);
+    background: var(--ab-color-primary);
     border-color: transparent;
-    color: var(--bs-color-primary--contrast);
-  }
-
-  .bs-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+    color: var(--ab-color-primary-on);
   }
 
   .bs-progress__list {
-    margin: var(--bs-space--xs) 0 0;
-    padding-left: var(--bs-space--lg);
-    font-size: var(--bs-text--xs);
-    color: var(--bs-color-text--muted);
+    margin: var(--ab-space-2) 0 0;
+    padding-left: var(--ab-space-5);
+    font-size: var(--ab-text-xs);
+    color: var(--ab-color-text-muted);
     max-height: 12rem;
     overflow: auto;
   }
 
   .bs-progress__list code {
-    color: var(--bs-color-text);
+    color: var(--ab-color-text);
   }
 
   .bs-progress__sublist {
-    margin: var(--bs-space--3xs) 0 var(--bs-space--xs);
-    padding-left: var(--bs-space--md);
+    margin: var(--ab-space-1) 0 var(--ab-space-2);
+    padding-left: var(--ab-space-4);
     list-style: none;
   }
 
   .bs-progress__itype {
-    font-weight: var(--bs-weight--medium);
-    color: var(--bs-color-text);
+    font-weight: var(--ab-weight-medium);
+    color: var(--ab-color-text);
   }
 
   summary {
     cursor: pointer;
-    font-size: var(--bs-text--sm);
+    font-size: var(--ab-text-sm);
   }
 </style>

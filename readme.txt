@@ -19,8 +19,9 @@ It crawls your site, renders each page, collects the CSS/JS/images, rewrites URL
 = Free features =
 
 * Render Bricks pages to static HTML (up to **10 pages** per sync)
-* Deploy to **1 destination** over SFTP, FTP or FTPS
+* Deploy to **2 destinations** over SFTP, FTP or FTPS
 * **Text** replacements per destination
+* **Media** replacements — swap one image per page (Pro lifts the per-page limit)
 * Per-file **and** one-shot package (zip) deploy
 * Automatic `.htaccess` generation **plus** a copy-paste nginx snippet
 * Favicon and asset handling
@@ -33,7 +34,8 @@ The optional [Bricks Static Pro](https://brxprod.com/bricks-static/) add-on remo
 
 * **Unlimited pages** per sync
 * **Unlimited destinations** + sync-all
-* **Advanced replacements** — Media, Links and Videos swaps per destination
+* **Unlimited media replacements** per page (Free allows one per page)
+* **Advanced replacements** — Links and Videos swaps per destination
 * **Gzip pre-compression** (`.gz`) for faster delivery
 * **Remote pruning** — delete files that no longer exist locally
 * **Sitemap.xml + robots.txt** generation
@@ -44,9 +46,10 @@ The optional [Bricks Static Pro](https://brxprod.com/bricks-static/) add-on remo
 | Feature | Free | Pro |
 | --- | --- | --- |
 | Pages per sync | 10 | Unlimited |
-| Destinations | 1 | Unlimited |
+| Destinations | 2 | Unlimited |
 | Text replacements | Yes | Yes |
-| Media / Links / Videos / Data replacements | — | Yes |
+| Media replacements (per page) | 1 per page | Unlimited |
+| Link / Video replacements | — | Yes |
 | Gzip pre-compression | — | Yes |
 | Remote pruning | — | Yes |
 | Sitemap + robots.txt | — | Yes |
@@ -81,7 +84,7 @@ No — the free version is fully functional for small sites. Pro is for larger s
 == Screenshots ==
 
 1. The Bricks Static dashboard — destinations, status and sync controls.
-2. Per-destination replacements (Text is free; Media, Links and Videos are Pro).
+2. Per-destination replacements (Text and Media are free; Links and Videos are Pro).
 3. The "sync this page" button on the front end.
 
 == Changelog ==
