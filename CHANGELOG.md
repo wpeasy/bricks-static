@@ -5,6 +5,11 @@ All notable changes to **Bricks Static** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-07-07
+
+### Fixed
+- **Dashboard crash on hosts that open wp-admin from a cross-origin tab (e.g. InstaWP).** The i18n dictionary lookup fell back to reading `window.opener.bsData`/`bspData`, which throws a `SecurityError` when the opener is a different origin — this could crash the entire dashboard on load. The fallback now fails safe instead.
+
 ## [1.0.2] - 2026-07-07
 
 ### Added

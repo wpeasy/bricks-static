@@ -27,13 +27,29 @@ type WindowWithI18n = {
  */
 let cache: Dict | null = null;
 
+/**
+ * Reads `win[key]?.i18n`, swallowing the SecurityError a browser throws when
+ * `win` (e.g. `window.opener`) is a cross-origin window — merely reading a
+ * named property off a foreign Window object throws, optional chaining included.
+ */
+function readI18n(win: WindowWithI18n | null | undefined, key: 'bsData' | 'bspData'): Dict | undefined {
+  if (!win) {
+    return undefined;
+  }
+  try {
+    return win[key]?.i18n;
+  } catch {
+    return undefined;
+  }
+}
+
 function dict(): Dict {
   if (cache) {
     return cache;
   }
   const w = window as unknown as WindowWithI18n;
-  const free = w.bsData?.i18n ?? w.opener?.bsData?.i18n ?? {};
-  const pro = w.bspData?.i18n ?? w.opener?.bspData?.i18n ?? {};
+  const free = readI18n(w, 'bsData') ?? readI18n(w.opener, 'bsData') ?? {};
+  const pro = readI18n(w, 'bspData') ?? readI18n(w.opener, 'bspData') ?? {};
   cache = { ...free, ...pro };
   return cache;
 }

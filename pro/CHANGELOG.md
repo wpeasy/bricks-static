@@ -9,6 +9,11 @@ Bricks Static Pro is an add-on that requires the free **Bricks Static** plugin.
 Its changelog is kept separate from Free's (`../CHANGELOG.md`); each release notes
 only Pro-facing changes. Compatibility with Free is declared by `BSP_MIN_FREE`.
 
+## [1.0.3] - 2026-07-07
+
+### Fixed
+- **Dashboard crash on hosts that open wp-admin from a cross-origin tab (e.g. InstaWP).** Same shared i18n fix as Free — the fallback that read `window.opener.bspData` could crash the dashboard when the opener was a different origin; it now fails safe.
+
 ## [1.0.2] - 2026-07-07
 
 ### Changed
