@@ -5,6 +5,11 @@ All notable changes to **Bricks Static** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-07-07
+
+### Fixed
+- **Package deploy no longer retries a known-bad guessed helper URL forever.** When a destination has no explicit **Destination URL** set, the fast package deploy guesses one from the FTP/SFTP host (e.g. `https://ftp.example.com`) to call its one-shot deploy helper. That guess is often unreachable or fails TLS validation (e.g. `cURL error 60: SSL: no alternative certificate subject name matches...`), and previously this was retried — and failed the same way — on every single sync. It now disables package deploy for that destination after the first such failure (falling back to file-by-file, same as before) instead of repeating the error every sync. Setting an explicit Destination URL immediately re-enables it on the next sync.
+
 ## [1.0.3] - 2026-07-07
 
 ### Fixed

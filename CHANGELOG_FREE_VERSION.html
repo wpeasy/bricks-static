@@ -1,4 +1,4 @@
 <h1>Changelog</h1>
-<h2>v1.0.3 (2026-07-07)</h2>
+<h2>v1.0.4 (2026-07-07)</h2>
 <h3>Fixed</h3>
-<p>Fixed a crash that could break the whole dashboard on WordPress hosts that open wp-admin from a cross-origin tab, such as InstaWP. A behind-the-scenes translation lookup no longer errors out in that situation.</p>
+<p>If a destination doesn't have a Destination URL set, the fast package deploy guesses one from your FTP/SFTP host — and that guess can fail (e.g. an SSL certificate mismatch). Previously this failed the same way on every single sync. Now it stops trying after the first failure and quietly uploads file-by-file instead — set a Destination URL in that destination's settings to get the faster deploy back.</p>

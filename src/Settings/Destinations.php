@@ -185,12 +185,14 @@ final class Destinations {
 
         foreach ($list as $i => $data) {
             if ((string) ($data['id'] ?? '') === $id) {
-                $before  = self::target_signature(new Destination($data, $i === 0));
-                $dest    = new Destination($data, $i === 0);
-                $list[$i] = $dest->apply($input);
+                $before     = self::target_signature(new Destination($data, $i === 0));
+                $dest       = new Destination($data, $i === 0);
+                $url_before = trim((string) $dest->get('destinationUrl'));
+                $list[$i]   = $dest->apply($input);
                 update_option(self::OPTION, $list, false);
 
-                $after = new Destination($list[$i], $i === 0);
+                $after     = new Destination($list[$i], $i === 0);
+                $url_after = trim((string) $after->get('destinationUrl'));
 
                 // If the destination now points at a different server/location,
                 // its push record described the OLD target and is no longer valid
@@ -205,6 +207,11 @@ final class Destinations {
                     // trusted SFTP host key so the new one is established afresh.
                     $cfg = $after->connection_config();
                     \WPEasy\BricksStatic\Transport\SftpTransport::forget_host_key((string) $cfg['host'], (int) $cfg['port']);
+                } elseif ($url_after !== $url_before) {
+                    // Destination URL changed on its own (host unchanged) — the
+                    // package-deploy probe result for the OLD guessed/explicit URL
+                    // no longer applies, so give the new URL a fresh chance.
+                    delete_option('bs_pkg_off_' . $id);
                 }
 
                 return $after;

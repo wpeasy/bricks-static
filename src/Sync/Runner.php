@@ -1622,7 +1622,7 @@ final class Runner {
             $job->save();
         };
 
-        $result = PackageDeployer::deploy($transport, $base_url, $files, $deletes, PackageDeployer::sslverify($base_url), $progress);
+        $result = PackageDeployer::deploy($transport, $base_url, $files, $deletes, PackageDeployer::sslverify($base_url), PackageDeployer::url_is_guess($dest), $progress);
 
         if (empty($result['ok'])) {
             // Only permanently disable package deploy on a DEFINITIVE failure

@@ -106,14 +106,33 @@ final class PackageDeployer {
     }
 
     /**
+     * Whether base_url() had to GUESS the helper URL from the connection host,
+     * rather than using an explicit Destination URL. A guessed host (e.g. an FTP
+     * hostname) is frequently unreachable over HTTPS or lacks a matching TLS
+     * cert, so a guess-based failure is a permanent misconfiguration, not a
+     * transient one — callers use this to stop retrying instead of re-guessing
+     * (and re-erroring) on every sync.
+     *
+     * @param \WPEasy\BricksStatic\Settings\Destination|null $dest Destination.
+     */
+    public static function url_is_guess($dest): bool {
+        return $dest === null || trim((string) $dest->get('destinationUrl')) === '';
+    }
+
+    /**
      * Deploy a set of files via the package strategy.
      *
-     * @param TransportInterface    $transport Connected transport for the destination.
-     * @param string                $base_url  Public URL the destination is served from.
-     * @param array<string,string>  $files     Map of remote-relative path => local source file.
-     * @param array<int,string>     $deletes   Remote-relative paths to remove.
-     * @param bool                  $sslverify Whether to verify TLS when calling the helper.
-     * @param callable|null         $progress  Optional fn(string $stage) for UI feedback.
+     * @param TransportInterface    $transport   Connected transport for the destination.
+     * @param string                $base_url    Public URL the destination is served from.
+     * @param array<string,string>  $files       Map of remote-relative path => local source file.
+     * @param array<int,string>     $deletes     Remote-relative paths to remove.
+     * @param bool                  $sslverify   Whether to verify TLS when calling the helper.
+     * @param bool                  $url_is_guess Whether $base_url was guessed from the connection
+     *                                            host (see {@see url_is_guess()}) rather than an
+     *                                            explicit Destination URL — a failed helper call
+     *                                            is then treated as a permanent misconfiguration
+     *                                            (non-retryable) instead of a transient one.
+     * @param callable|null         $progress    Optional fn(string $stage) for UI feedback.
      * @return array{ok:bool,extracted:int,deleted:int,errors:array<int,string>,message:string}
      */
     public static function deploy(
@@ -122,6 +141,7 @@ final class PackageDeployer {
         array $files,
         array $deletes,
         bool $sslverify,
+        bool $url_is_guess = false,
         ?callable $progress = null
     ): array {
         $report = static function (string $stage) use ($progress): void {
@@ -217,7 +237,10 @@ final class PackageDeployer {
         self::cleanup_remote($transport, $zip_name, $php_name);
 
         if (is_wp_error($response)) {
-            return $fail('Could not reach the deploy helper: ' . $response->get_error_message());
+            // A guessed URL (e.g. an FTP hostname with no matching HTTPS/TLS setup)
+            // will fail this exact way every time — treat it as permanent, not
+            // transient, so we stop re-guessing on every sync.
+            return $fail('Could not reach the deploy helper: ' . $response->get_error_message(), !$url_is_guess);
         }
 
         $code = (int) wp_remote_retrieve_response_code($response);
@@ -236,8 +259,9 @@ final class PackageDeployer {
 
         // A 200 that isn't our JSON means the host returned the script as text or
         // an error page — it can't run PHP/ZipArchive here, so disable package
-        // (not retryable). A non-200 (timeout, 5xx, wrong URL) might be transient.
-        $definitive = ($code === 200);
+        // (not retryable). A non-200 (timeout, 5xx, wrong URL) might be transient
+        // — unless the URL itself was guessed, which won't fix itself either.
+        $definitive = ($code === 200) || $url_is_guess;
 
         return $fail('Deploy helper failed (HTTP ' . $code . ') — the host may not run PHP here.', !$definitive);
     }

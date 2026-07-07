@@ -111,7 +111,8 @@ final class DestinationsController {
                 $base,
                 ['.bs-package-test/probe.html' => $tmp],
                 [],
-                PackageDeployer::sslverify($base)
+                PackageDeployer::sslverify($base),
+                PackageDeployer::url_is_guess($dest)
             );
             if (!empty($result['ok'])) {
                 $transport->delete('.bs-package-test/probe.html');
