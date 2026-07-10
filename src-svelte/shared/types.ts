@@ -321,6 +321,32 @@ export interface CheckPreview {
   excludedPublished?: number;
 }
 
+/**
+ * Export ZIP job snapshot, from POST /export/start|tick and GET /export.
+ * A separate, much simpler shape than SyncSnapshot — export never renders,
+ * uploads, or fans out across destinations.
+ */
+export interface ExportSnapshot {
+  phase: 'idle' | 'needsProcess' | 'preparing' | 'gzip' | 'packaging' | 'saving' | 'done' | 'error' | 'cancelled';
+  destId?: string;
+  destName?: string;
+  message?: string;
+  gzipDone?: number;
+  gzipTotal?: number;
+  /** Set when gzip was expected (Pro) but the server's PHP lacks gzencode(). */
+  gzipNotice?: string;
+  packDone?: number;
+  packTotal?: number;
+  fileCount?: number;
+  bytes?: number;
+  running?: boolean;
+  /** Single-use token for GET /export/download?token=…&_wpnonce=…, present once phase === 'done'. */
+  downloadToken?: string;
+  /** Same contract as CheckPreview.needsProcess — render is stale/missing, prompt Process first. */
+  needsProcess?: boolean;
+  startedAt?: number;
+}
+
 export interface ServerConfig {
   htaccess: string;
   nginx: string;

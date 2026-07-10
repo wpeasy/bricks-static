@@ -15,16 +15,20 @@
     open = $bindable(false),
     title,
     wide = false,
+    size,
     children,
   }: {
     open: boolean;
     title: string;
     /** Near-fullscreen for content that needs room, e.g. long lists. */
     wide?: boolean;
+    /** Explicit ab-ui size preset — overrides `wide` when set (e.g. 'lg' for a
+        wizard, which needs more than 'md' but not 'near'-fullscreen). */
+    size?: 'sm' | 'md' | 'lg' | 'near' | 'full';
     children: Snippet;
   } = $props();
 </script>
 
-<AbModal bind:open {title} size={wide ? 'near' : 'md'} portal={false}>
+<AbModal bind:open {title} size={size ?? (wide ? 'near' : 'md')} portal={false}>
   {@render children()}
 </AbModal>

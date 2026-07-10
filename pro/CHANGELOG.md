@@ -9,6 +9,14 @@ Bricks Static Pro is an add-on that requires the free **Bricks Static** plugin.
 Its changelog is kept separate from Free's (`../CHANGELOG.md`); each release notes
 only Pro-facing changes. Compatibility with Free is declared by `BSP_MIN_FREE`.
 
+## [1.0.4] - 2026-07-10
+
+### Added
+- **Export ZIP now includes gzip `.gz` siblings** and the fuller gzip-serving `.htaccess` rules, plus `sitemap.xml`/`robots.txt`, matching what a real Sync would push to a destination — the same content Free's new Export ZIP feature packages, with Pro's gzip pre-compression and sitemaps layered on. Falls back with an in-progress notice ("Gzip is not available on this server") if the PHP runtime lacks `gzencode()`.
+
+### Changed
+- No Pro-facing behaviour change, but bumped alongside Free: `src-svelte/lib/Modal.svelte` (shared with Pro's own Link/Video replacer panels) gained an optional `size` prop, used only by Free's new setup wizard — fully backward compatible with every existing Pro modal.
+
 ## [1.0.3] - 2026-07-07
 
 ### Fixed

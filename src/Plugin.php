@@ -13,6 +13,7 @@ namespace WPEasy\BricksStatic;
 use WPEasy\BricksStatic\Abilities\AbilityRegistry;
 use WPEasy\BricksStatic\Admin\Editor;
 use WPEasy\BricksStatic\Admin\Menu;
+use WPEasy\BricksStatic\Export\ExportDownload;
 use WPEasy\BricksStatic\Frontend\Fab;
 use WPEasy\BricksStatic\Render\MediaDeployReplacer;
 use WPEasy\BricksStatic\Render\PageRenderer;
@@ -22,6 +23,7 @@ use WPEasy\BricksStatic\Sync\Pipeline;
 use WPEasy\BricksStatic\REST\ConnectionController;
 use WPEasy\BricksStatic\REST\DestinationsController;
 use WPEasy\BricksStatic\REST\EditorController;
+use WPEasy\BricksStatic\REST\ExportController;
 use WPEasy\BricksStatic\REST\MediaController;
 use WPEasy\BricksStatic\REST\StatusController;
 use WPEasy\BricksStatic\REST\SyncController;
@@ -32,6 +34,16 @@ defined('ABSPATH') || exit;
  * Wires up the plugin's subsystems.
  */
 final class Plugin {
+
+    /**
+     * Runs on plugin activation (`register_activation_hook`, `bricks-static.php`).
+     * Resets the first-run setup-wizard flag so deactivating and reactivating
+     * the plugin always shows it again — e.g. re-testing onboarding, or a fresh
+     * clone of a site that already has the option set.
+     */
+    public static function activate(): void {
+        delete_option('bs_wizard_seen');
+    }
 
     /**
      * Initialise the plugin.
@@ -125,6 +137,8 @@ final class Plugin {
         SyncController::register();
         EditorController::register();
         MediaController::register();
+        ExportController::register();
+        ExportDownload::register();
 
         /**
          * Lets add-ons register additional REST controllers under the bs/v1

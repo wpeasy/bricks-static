@@ -3,7 +3,7 @@
  * Plugin Name:       Bricks Static
  * Plugin URI:        https://alanblair.co/bricks-static
  * Description:       Generate and serve static HTML versions of Bricks-built pages for performance.
- * Version:           1.0.4
+ * Version:           1.0.5
  * Requires at least: 6.5
  * Tested up to:      7.0
  * Requires PHP:      8.0
@@ -28,7 +28,7 @@ defined('ABSPATH') || exit;
 /**
  * Plugin constants.
  */
-define('BS_VERSION', '1.0.4');
+define('BS_VERSION', '1.0.5');
 define('BS_PLUGIN_FILE', __FILE__);
 define('BS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('BS_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -80,3 +80,10 @@ add_action('init', static function (): void {
 add_action('plugins_loaded', static function (): void {
     Plugin::init();
 });
+
+/**
+ * Reset the first-run wizard flag on (re)activation, so deactivating and
+ * reactivating the plugin — e.g. to re-test onboarding, or after cloning a
+ * site — always shows the setup wizard again.
+ */
+register_activation_hook(__FILE__, [Plugin::class, 'activate']);

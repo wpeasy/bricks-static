@@ -134,6 +134,7 @@ final class Edition {
      *     mediaReplacements:bool,
      *     maxMediaPerPage:int,
      *     gzip:bool,
+     *     gzipAvailable:bool,
      *     sitemap:bool,
      *     prune:bool,
      *     licenseValid:bool
@@ -153,6 +154,9 @@ final class Edition {
             'mediaReplacements'    => true,
             'maxMediaPerPage'      => self::max_media_per_page(),
             'gzip'                 => self::gzip_enabled(),
+            // Whether Export ZIP / Sync can actually produce .gz siblings right
+            // now — the edition gate AND the runtime gate (gzencode() present).
+            'gzipAvailable'        => self::gzip_enabled() && \WPEasy\BricksStatic\Sync\Compressor::available(),
             'sitemap'              => $pro,
             'prune'                => $pro,
             'licenseValid'         => $pro,

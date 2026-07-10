@@ -4,6 +4,7 @@ import type {
   ConnectionResponse,
   DestinationsResponse,
   DiscoveryMode,
+  ExportSnapshot,
   LinkItem,
   MediaItem,
   PagesOverview,
@@ -76,6 +77,7 @@ export const api = {
     request<{ aiAllowChanges: boolean; aiAllowSync: boolean }>('/settings', 'POST', toggles),
   setConcurrentSyncs: (n: number) =>
     request<{ concurrentSyncs: number }>('/settings', 'POST', { concurrentSyncs: n }),
+  setWizardSeen: () => request<{ wizardSeen: boolean }>('/settings', 'POST', { wizardSeen: true }),
   getDestinations: () => request<DestinationsResponse>('/destinations'),
   addDestination: (data: ConnectionInput) => request<DestinationsResponse>('/destinations', 'POST', data),
   updateDestination: (id: string, data: ConnectionInput) => request<DestinationsResponse>(`/destinations/${id}`, 'POST', data),
@@ -103,4 +105,19 @@ export const api = {
     request<{ pages: ReplacementPage[]; page: string; videos: VideoItem[] }>(
       `/videos${page ? `?page=${encodeURIComponent(page)}` : ''}`,
     ),
+  exportStart: (dest: string) => request<ExportSnapshot>('/export/start', 'POST', { dest }),
+  exportTick: () => request<ExportSnapshot>('/export/tick', 'POST', {}),
+  exportStatus: () => request<ExportSnapshot>('/export'),
+  exportCancel: () => request<ExportSnapshot>('/export/cancel', 'POST', {}),
 };
+
+/**
+ * Build a one-time download URL for a finished export. Not a JSON `request()`
+ * call — meant for a plain `<a href>` navigation, so it carries the `wp_rest`
+ * nonce as a query param (WP core's REST cookie auth accepts `?_wpnonce=` as
+ * a fallback to the `X-WP-Nonce` header a `fetch()` would normally send).
+ */
+export function exportDownloadUrl(token: string): string {
+  const { restUrl, nonce } = config();
+  return `${restUrl.replace(/\/$/, '')}/export/download?token=${encodeURIComponent(token)}&_wpnonce=${encodeURIComponent(nonce)}`;
+}

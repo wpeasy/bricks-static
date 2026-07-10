@@ -115,7 +115,11 @@ final class Menu {
             wp_deregister_script('heartbeat');
             // The media replacer opens the WordPress media library (wp.media).
             wp_enqueue_media();
-            self::enqueue_app('src-svelte/dashboard/main.ts', self::SCRIPT_HANDLE);
+            self::enqueue_app('src-svelte/dashboard/main.ts', self::SCRIPT_HANDLE, [
+                // Whether the setup wizard has never been shown/dismissed yet —
+                // dashboard-only, so it never leaks onto the docs page's bsData.
+                'isFirstRun' => get_option('bs_wizard_seen', '0') === '0',
+            ]);
         } elseif ($hook === self::$docs_hook) {
             self::enqueue_app('src-svelte/docs/main.ts', self::DOCS_HANDLE);
         }
@@ -125,10 +129,11 @@ final class Menu {
      * Enqueue a built Svelte app (framework CSS + the entry's CSS chunks + JS),
      * reading the hashed filenames from the Vite manifest, plus the REST data.
      *
-     * @param string $entry_key Vite manifest input key.
-     * @param string $handle    Script handle (also the CSS handle prefix).
+     * @param string               $entry_key Vite manifest input key.
+     * @param string               $handle    Script handle (also the CSS handle prefix).
+     * @param array<string,mixed>  $extra     Extra key/value pairs merged into `bsData`.
      */
-    private static function enqueue_app(string $entry_key, string $handle): void {
+    private static function enqueue_app(string $entry_key, string $handle, array $extra = []): void {
         $entry = self::manifest_entry($entry_key);
         if ($entry === null) {
             add_action('admin_notices', static function (): void {
@@ -149,7 +154,7 @@ final class Menu {
 
         wp_enqueue_script($handle, BS_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BS_VERSION, true);
 
-        wp_localize_script($handle, 'bsData', [
+        wp_localize_script($handle, 'bsData', array_merge([
             'restUrl'      => esc_url_raw(rest_url('bs/v1')),
             'nonce'        => wp_create_nonce('wp_rest'),
             'version'      => BS_VERSION,
@@ -159,7 +164,7 @@ final class Menu {
             'capabilities' => Edition::capabilities(),
             // Translated UI strings for the Svelte bundle (shared/i18n.ts).
             'i18n'         => I18n::all(),
-        ]);
+        ], $extra));
     }
 
     /**

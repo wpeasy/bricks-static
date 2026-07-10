@@ -49,6 +49,8 @@ final class I18n {
             self::richText(),
             self::editor(),
             self::ai(),
+            self::export(),
+            self::wizard(),
             self::common()
         );
     }
@@ -68,6 +70,40 @@ final class I18n {
             'aiAllowChangesHint' => __('Discovery mode and the per-page Include switch. Respects your plan limits.', 'bricks-static'),
             'aiAllowSync'    => __('Allow AI to run syncs', 'bricks-static'),
             'aiAllowSyncHint'=> __('Scan, sync, single-page sync, cancel and reset. These render pages and push to your destinations.', 'bricks-static'),
+        ];
+    }
+
+    /**
+     * First-run setup wizard.
+     *
+     * @return array<string,string>
+     */
+    private static function wizard(): array {
+        return [
+            'wizardBtn'       => __('Wizard', 'bricks-static'),
+            'wizardTitle'     => __('Setup Wizard', 'bricks-static'),
+            'wizardIntro'     => __('A few basics before your first sync — you can change any of these later in Settings.', 'bricks-static'),
+            'wizardBack'      => __('Back', 'bricks-static'),
+            'wizardNext'      => __('Next', 'bricks-static'),
+            'wizardFinish'    => __('Finish & Process', 'bricks-static'),
+            'wizardFinishing' => __('Processing…', 'bricks-static'),
+        ];
+    }
+
+    /**
+     * Export ZIP progress panel.
+     *
+     * @return array<string,string>
+     */
+    private static function export(): array {
+        return [
+            'exportPhasePreparing'  => __('Preparing…', 'bricks-static'),
+            'exportPhaseGzip'       => __('Creating gzip files…', 'bricks-static'),
+            'exportPhasePackaging'  => __('Packaging…', 'bricks-static'),
+            'exportPhaseSaving'     => __('Saving…', 'bricks-static'),
+            'exportPhaseDone'       => __('Export ready', 'bricks-static'),
+            'exportNeedsProcess'    => __('Nothing has been rendered yet. Click Process first, then Export.', 'bricks-static'),
+            'exportCancel'          => __('Cancel', 'bricks-static'),
         ];
     }
 
@@ -137,6 +173,7 @@ final class I18n {
             'freeTextRepl'      => __('Text replacements', 'bricks-static'),
             'freeMediaRepl'     => __('Media replacements — 1 per page', 'bricks-static'),
             'freePerFile'       => __('Per-file & package (zip) deploy', 'bricks-static'),
+            'freeExportZip'     => __('Export ZIP — downloadable, no FTP needed', 'bricks-static'),
             'freeHtaccess'      => __('.htaccess + nginx config, favicon', 'bricks-static'),
             'freeSinglePage'    => __('Single-page sync & WP-CLI', 'bricks-static'),
             'proUnlimitedPages' => __('<strong>Unlimited</strong> pages', 'bricks-static'),
@@ -325,6 +362,10 @@ final class I18n {
             'btnCheckHint'  => __('Preview what a sync would change on this destination — compares the last render, uploads nothing.', 'bricks-static'),
             'btnSync'       => __('Sync', 'bricks-static'),
             'visitSite'     => __('Visit site ↗', 'bricks-static'),
+            'btnExport'     => __('Export ZIP', 'bricks-static'),
+            'btnExporting'  => __('Exporting…', 'bricks-static'),
+            'btnExportHint' => __('Package the current render into a downloadable zip for this destination — an alternative to Sync for manual deploys. Uploads nothing.', 'bricks-static'),
+            'btnDownload'   => __('Download', 'bricks-static'),
         ];
     }
 

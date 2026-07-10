@@ -289,12 +289,20 @@ final class StatusController {
             DeployPool::set_concurrency((int) $params['concurrentSyncs']);
         }
 
+        if (array_key_exists('wizardSeen', $params)) {
+            // Same '1'/'0' string convention as fabEnabled above — flipped once
+            // the setup wizard has been shown (or manually re-run), so it never
+            // auto-opens again.
+            update_option('bs_wizard_seen', empty($params['wizardSeen']) ? '0' : '1', false);
+        }
+
         return new WP_REST_Response([
             'discoveryMode'   => UrlCollector::mode(),
             'fabEnabled'      => get_option('bs_fab_enabled', '1') !== '0',
             'aiAllowChanges'  => AbilityRegistry::changes_enabled(),
             'aiAllowSync'     => AbilityRegistry::sync_enabled(),
             'concurrentSyncs' => DeployPool::concurrency(),
+            'wizardSeen'      => get_option('bs_wizard_seen', '0') !== '0',
         ]);
     }
 }

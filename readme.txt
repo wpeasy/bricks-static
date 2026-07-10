@@ -14,7 +14,7 @@ Render your Bricks-built pages to static HTML and deploy them over SFTP/FTP for 
 
 **Bricks Static** turns the pages you build with the Bricks Builder into plain static HTML and pushes them to any SFTP/FTP host. Serving flat files means no PHP, no database and no plugin stack on the public site — so it's dramatically faster, cheaper to host, and a much smaller attack surface.
 
-It crawls your site, renders each page, collects the CSS/JS/images, rewrites URLs to root-relative, and deploys the result — either file-by-file or as a single zip that's extracted on the destination. A floating "sync this page" button lets you push a single edited page without rebuilding the whole site.
+It crawls your site, renders each page, collects the CSS/JS/images, rewrites URLs to root-relative, and deploys the result — either file-by-file or as a single zip that's extracted on the destination. Prefer to deploy manually? **Export ZIP** packages the same render into a downloadable zip instead. A floating "sync this page" button lets you push a single edited page without rebuilding the whole site.
 
 = Free features =
 
@@ -23,6 +23,7 @@ It crawls your site, renders each page, collects the CSS/JS/images, rewrites URL
 * **Text** replacements per destination
 * **Media** replacements — swap one image per page (Pro lifts the per-page limit)
 * Per-file **and** one-shot package (zip) deploy
+* **Export ZIP** — download the current render as a zip instead of uploading it, for manual deploys (no FTP/SFTP needed)
 * Automatic `.htaccess` generation **plus** a copy-paste nginx snippet
 * Favicon and asset handling
 * "Sync this page" floating button for single-page pushes
@@ -53,6 +54,7 @@ The optional [Bricks Static Pro](https://brxprod.com/bricks-static/) add-on remo
 | Gzip pre-compression | — | Yes |
 | Remote pruning | — | Yes |
 | Sitemap + robots.txt | — | Yes |
+| Export ZIP (downloadable, no FTP) | Plain files + .htaccess | + gzip, sitemap.xml, robots.txt |
 
 == Installation ==
 

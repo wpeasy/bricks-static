@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Drawer, Switch, ThemeCustomizer, Segmented, Select, Slider } from '@wpeasy/ab-ui';
+  import { Button, Drawer, Switch, ThemeCustomizer, Segmented, Select, Slider } from '@wpeasy/ab-ui';
   import { Sun, Moon } from '@wpeasy/ab-ui/icons';
   import DiscoveryToggle from './DiscoveryToggle.svelte';
   import AiToolsPanel from './AiToolsPanel.svelte';
@@ -16,6 +16,7 @@
     onSetFabEnabled,
     onSetAiToggles,
     onSetConcurrentSyncs,
+    onOpenWizard,
   }: {
     open: boolean;
     status: Status | null;
@@ -25,6 +26,8 @@
     onSetFabEnabled: (enabled: boolean) => void;
     onSetAiToggles: (toggles: { aiAllowChanges?: boolean; aiAllowSync?: boolean }) => void;
     onSetConcurrentSyncs: (n: number) => void;
+    /** Re-run the first-run setup wizard (closes this drawer). */
+    onOpenWizard: () => void;
   } = $props();
 
   function setScheme(v: string): void {
@@ -61,9 +64,16 @@
 {#snippet sunIcon()}<Sun />{/snippet}
 {#snippet moonIcon()}<Moon />{/snippet}
 
+{#snippet drawerTitle()}
+  <span class="bs-set__titlerow">
+    {__('settings')}
+    <Button variant="ghost" size="sm" onclick={onOpenWizard}>{__('wizardBtn')}</Button>
+  </span>
+{/snippet}
+
 <!-- portal={false}: stay inside App's .ab-ui[data-theme][data-accent] root so the
      drawer inherits tokens + the live colour scheme/accent. -->
-<Drawer bind:open side="right" title={__('settings')} size={640} portal={false}>
+<Drawer bind:open side="right" title={drawerTitle} size={640} portal={false}>
   <div class="bs-set bs-stack bs-stack--lg">
     <!-- Style (colour scheme + accent theme) -->
     <section class="bs-set__group bs-stack bs-stack--sm">
@@ -158,6 +168,14 @@
   .bs-set__group + .bs-set__group {
     border-top: 1px solid var(--ab-color-border);
     padding-top: var(--ab-space-4);
+  }
+
+  /* Sits inside the Drawer's own <h2>; the button carries its own (normal)
+     weight so it doesn't inherit the heading's semibold. */
+  .bs-set__titlerow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ab-space-3);
   }
 
   .bs-set__h {

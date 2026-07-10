@@ -42,6 +42,10 @@
       body: 'Push just one changed page (plus any new pages it links to, so you never publish a dead link) from a draggable floating button on the front end and inside the Bricks editor — where it saves the editor first.',
     },
     {
+      title: 'Export ZIP',
+      body: 'An "Export ZIP" button next to Check/Sync on each destination packages the current render into a downloadable zip — for hosts you deploy manually, no FTP/SFTP needed. Uses that destination’s configured replacements, same as a real Sync, and never touches its sync stats since nothing is uploaded. Pro zips add gzip .gz files, sitemap.xml and robots.txt.',
+    },
+    {
       title: 'gzip + server config',
       body: 'Pre-compresses text assets and uploads a managed .htaccess that serves them with the right headers; an equivalent nginx snippet is provided for manual paste.',
     },
@@ -86,6 +90,7 @@
               <tr><td>Remote pruning (delete stale files)</td><td>—</td><td>Yes</td></tr>
               <tr><td>Sitemap.xml + robots.txt</td><td>—</td><td>Yes</td></tr>
               <tr><td>Per&#8209;file &amp; package (zip) deploy</td><td>Yes</td><td>Yes</td></tr>
+              <tr><td>Export ZIP (downloadable, no FTP)</td><td>Plain files + .htaccess</td><td>+ gzip, sitemap.xml, robots.txt</td></tr>
               <tr><td>.htaccess + nginx, favicon, single&#8209;page sync, WP&#8209;CLI</td><td>Yes</td><td>Yes</td></tr>
             </tbody>
           </table>
@@ -116,7 +121,7 @@
           <li><strong>Deploy</strong> only what changed (delta against the last push) via package deploy or per-file upload.</li>
         </ol>
         <p class="bs-docs__muted">
-          <strong>Check</strong> is a dry run: it renders and catalogues everything (and lists anything that won’t work on a static host) without uploading. <strong>Sync</strong> renders and uploads. <strong>Reset sync state</strong> forgets every destination’s push record so the next sync re-uploads in full.
+          <strong>Check</strong> is a dry run: it renders and catalogues everything (and lists anything that won’t work on a static host) without uploading. <strong>Sync</strong> renders and uploads. <strong>Export ZIP</strong> packages the current render for one destination into a downloadable zip instead of uploading it — for manual deploys, with no effect on that destination’s sync stats. <strong>Reset sync state</strong> forgets every destination’s push record so the next sync re-uploads in full.
         </p>
       </section>
 
@@ -142,6 +147,11 @@
         <details class="bs-docs__faq">
           <summary>Single-page sync says “No destinations are enabled”</summary>
           <p>Turn on <strong>Include in single-page sync</strong> on at least one destination (its toolbar). Only those destinations receive single-page pushes.</p>
+        </details>
+
+        <details class="bs-docs__faq">
+          <summary>Export ZIP asks me to Process first</summary>
+          <p>Like <strong>Check</strong>, Export ZIP only packages the CURRENT render — it never renders for you. If the page list has changed (or nothing’s been rendered yet), click <strong>Process</strong>, then Export ZIP again.</p>
         </details>
 
         <details class="bs-docs__faq">

@@ -4,7 +4,7 @@
   import { caps } from '../shared/capabilities.svelte';
   import { PURCHASE_URL } from '../shared/upsell';
   import { __, __f } from '../shared/i18n';
-  import type { CheckPreview, DestinationsResponse, DiscoveryMode, Status, SyncSnapshot } from '../shared/types';
+  import type { CheckPreview, DestinationsResponse, DiscoveryMode, ExportSnapshot, Status, SyncSnapshot } from '../shared/types';
   import NoticePanel from './NoticePanel.svelte';
   import DiscoveryToggle from './DiscoveryToggle.svelte';
   import MethodPanel from './MethodPanel.svelte';
@@ -15,8 +15,10 @@
   import ManualRunBanner from './ManualRunBanner.svelte';
   import AllDestinationsPanel from './AllDestinationsPanel.svelte';
   import ProgressPanel from './ProgressPanel.svelte';
+  import ExportProgress from './ExportProgress.svelte';
   import ServerConfigPanel from './ServerConfigPanel.svelte';
   import SettingsDrawer from './SettingsDrawer.svelte';
+  import SetupWizard from './SetupWizard.svelte';
   import { uiPrefs, themeAttr, accentAttr } from '../shared/uiPrefs.svelte';
   import { Badge, Button, ConfirmButton, Tabs, Tooltip, fadeUp, autoContrast } from '@wpeasy/ab-ui';
 
@@ -29,12 +31,16 @@
   // Synchronous (no-render) Check result for the active destination.
   let checkResult = $state<CheckPreview | null>(null);
   let checking = $state(false);
+  // Export ZIP job for the active destination.
+  let exportSnap = $state<ExportSnapshot | null>(null);
+  let exporting = $state(false);
   let manualRun = $state(false);
   let runCommand = $state('');
   let topTab = $state('destinations');
   let activeTab = $state('');
   let loadError = $state('');
   let settingsOpen = $state(false);
+  let wizardOpen = $state(false);
 
   let destinations = $derived(dests?.destinations ?? []);
   let activeDest = $derived(destinations.find((d) => d.id === activeTab) ?? null);
@@ -203,12 +209,27 @@
   async function processPages(): Promise<void> {
     runCommand = buildRunCommand('check', '', false);
     checkResult = null; // a fresh render invalidates the last preview
+    exportSnap = null; // a stale needsProcess/result no longer applies
     try {
       sync = await api.syncStart('check', {});
       await runActiveJob();
     } catch (e) {
       loadError = (e as Error).message;
     }
+  }
+
+  // Setup wizard: Finish runs the exact same Process used elsewhere, then closes
+  // the modal. Opening it (auto on first run, or manually from Settings) is
+  // handled separately — this only covers the Finish action.
+  async function finishWizard(): Promise<void> {
+    await processPages();
+    wizardOpen = false;
+  }
+
+  // Manual re-run from the Settings drawer: close the drawer, open the wizard.
+  function openWizard(): void {
+    settingsOpen = false;
+    wizardOpen = true;
   }
 
   // Check is a read-only preview now: diff the existing render against what was
@@ -234,6 +255,35 @@
     try {
       sync = await api.syncStart('sync', { dest, prune });
       await runActiveJob();
+    } catch (e) {
+      loadError = (e as Error).message;
+    }
+  }
+
+  // Export ZIP: packages the CURRENT render for one destination into a
+  // downloadable zip — no render, no upload. Deliberately simpler than
+  // runActiveJob(): export is pure local file I/O in this same process, so
+  // there's no CLI driver/claim/dispatch to coordinate and no need to
+  // throttle ticks with a sleep.
+  async function startExport(destId: string): Promise<void> {
+    if (exporting) return;
+    exporting = true;
+    try {
+      exportSnap = await api.exportStart(destId);
+      if (exportSnap.needsProcess) return; // same UX as Check's "Process first" prompt
+      while (exportSnap && exportSnap.running) {
+        exportSnap = await api.exportTick();
+      }
+    } catch (e) {
+      loadError = (e as Error).message;
+    } finally {
+      exporting = false;
+    }
+  }
+
+  async function cancelExport(): Promise<void> {
+    try {
+      exportSnap = await api.exportCancel();
     } catch (e) {
       loadError = (e as Error).message;
     }
@@ -307,6 +357,20 @@
       } catch {
         /* ignore */
       }
+
+      // First visit since activation: show the setup wizard, and mark it seen
+      // immediately (not on Finish) so closing early or reloading mid-wizard
+      // never re-triggers it. wp_localize_script booleans arrive as '1'/'' —
+      // truthy check, never `=== true`.
+      const bsData = (window as unknown as { bsData?: { isFirstRun?: unknown } }).bsData;
+      if (bsData?.isFirstRun) {
+        wizardOpen = true;
+        try {
+          await api.setWizardSeen();
+        } catch {
+          /* non-fatal — worst case the wizard reappears next visit */
+        }
+      }
     })();
   });
 </script>
@@ -354,6 +418,7 @@
             <li>{__('freeTextRepl')}</li>
             <li>{__('freeMediaRepl')}</li>
             <li>{__('freePerFile')}</li>
+            <li>{__('freeExportZip')}</li>
             <li>{__('freeHtaccess')}</li>
             <li>{__('freeSinglePage')}</li>
           </ul>
@@ -403,11 +468,25 @@
     onSetFabEnabled={setFabEnabled}
     onSetAiToggles={setAiToggles}
     onSetConcurrentSyncs={setConcurrentSyncs}
+    onOpenWizard={openWizard}
+  />
+
+  <SetupWizard
+    bind:open={wizardOpen}
+    {status}
+    {syncing}
+    onSetDiscoveryMode={setDiscoveryMode}
+    onSetFabEnabled={setFabEnabled}
+    onFinish={finishWizard}
   />
 
   <!-- Global progress for the current/last sync, above the tabs and labelled
        with its target — visible whichever tab is open. -->
   <ProgressPanel snapshot={sync} onRetry={retryUploads} retrying={syncing} />
+
+  <!-- Export ZIP can be triggered from a destination's own toolbar or from the
+       "All destinations" list, so its progress is global too, not per-panel. -->
+  <ExportProgress snapshot={exportSnap} onProcess={processPages} onCancel={cancelExport} />
 
   <Tabs
     bind:value={topTab}
@@ -431,8 +510,10 @@
                     <AllDestinationsPanel
                       {destinations}
                       running={syncing}
+                      exporting={exporting}
                       onSyncAll={(prune) => startSync('all', prune)}
                       onSyncOne={(id, prune) => startSync(id, prune)}
+                      onExportOne={startExport}
                       onSelect={(id) => (activeTab = id)}
                     />
                   </div>
@@ -442,10 +523,12 @@
                     running={syncing}
                     checking={checking}
                     result={checkResult?.destId === activeDest.id ? checkResult : null}
+                    exporting={exporting}
                     onSaved={loadDestinations}
                     onCheck={startCheck}
                     onSync={startSync}
                     onProcess={processPages}
+                    onExport={startExport}
                   />
                   <div class="bs-destrow">
                     <DestinationPanel
@@ -467,20 +550,18 @@
             <ManualRunBanner command={runCommand || status.cli} onDismiss={dismissManualRun} />
           {/if}
 
-          <div class="bs-row bs-row--between bs-controls">
+          <div class="bs-row bs-controls">
+            {#if syncing || sync?.running}
+              <Button variant="ghost" size="sm" onclick={cancelSync}>{__('btnCancel')}</Button>
+            {/if}
+            <ConfirmButton
+              variant="ghost"
+              size="sm"
+              label={__('btnResetSync')}
+              confirmLabel={__('btnConfirmReset')}
+              onconfirm={resetSync}
+            />
             <span class="bs-controls__hint">{__('resetHint')}</span>
-            <div class="bs-row">
-              {#if syncing || sync?.running}
-                <Button variant="ghost" size="sm" onclick={cancelSync}>{__('btnCancel')}</Button>
-              {/if}
-              <ConfirmButton
-                variant="ghost"
-                size="sm"
-                label={__('btnResetSync')}
-                confirmLabel={__('btnConfirmReset')}
-                onconfirm={resetSync}
-              />
-            </div>
           </div>
         {:else}
           <div class="bs-panels">

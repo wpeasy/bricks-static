@@ -5,6 +5,18 @@ All notable changes to **Bricks Static** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2026-07-10
+
+### Added
+- **Export ZIP.** A new "Export ZIP" button next to Check/Sync on each destination (and on the "All destinations" list) packages the CURRENT render into a downloadable zip — an alternative to FTP/SFTP Sync for hosts you deploy manually. Uses the destination's configured Media/Text replacements (same content a real Sync would push); never triggers a render itself (uses the same "Process first" prompt as Check when the render is stale/missing) and never touches that destination's sync/push stats, since nothing is actually uploaded. A progress panel shows preparing → creating gzip files → packaging → saving. Free zips include the plain files plus a cache-control `.htaccess`; Pro adds `.gz` files, `sitemap.xml` and `robots.txt`.
+- **First-run setup wizard.** The dashboard now walks new installs through theme colour, pages-to-include, and enabling the single-page sync button, then runs Process automatically — no more landing on an empty dashboard. Re-run it anytime from a small "Wizard" button in Settings. Reactivating the plugin (e.g. after testing, or on a cloned site) always shows it again.
+
+### Changed
+- The "Reset sync state" button now sits directly beside its explanatory text instead of being split across opposite ends of the row.
+
+### Fixed
+- The Export ZIP "Download" button's text was invisible in some themes — a CSS specificity collision between the shared link-colour rule and the button's own colour painted the text the same shade as its background.
+
 ## [1.0.4] - 2026-07-07
 
 ### Fixed

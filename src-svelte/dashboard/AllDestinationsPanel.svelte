@@ -1,24 +1,30 @@
 <script lang="ts">
-  import { Badge, Checkbox, ConfirmButton } from '@wpeasy/ab-ui';
+  import { Badge, Button, Checkbox, ConfirmButton } from '@wpeasy/ab-ui';
   import type { DestinationDisplay } from '../shared/types';
   import { __, __f } from '../shared/i18n';
 
   let {
     destinations,
     running,
+    exporting = false,
     onSyncAll,
     onSyncOne,
+    onExportOne,
     onSelect,
   }: {
     destinations: DestinationDisplay[];
     running: boolean;
+    /** An Export ZIP is in flight (for any destination) — disables row actions here too. */
+    exporting?: boolean;
     onSyncAll: (prune: boolean) => void;
     onSyncOne: (id: string, prune: boolean) => void;
+    onExportOne: (id: string) => void;
     onSelect: (id: string) => void;
   } = $props();
 
   let prune = $state(false);
   let enabledCount = $derived(destinations.filter((d) => d.enabled).length);
+  let busy = $derived(running || exporting);
 </script>
 
 <section class="bs-card bs-stack bs-stack--sm">
@@ -37,19 +43,22 @@
         <Badge tone={d.status.inSync ? 'success' : d.status.hasPushed ? 'warning' : 'neutral'} variant="soft">
           {d.status.inSync ? __('stInSync') : d.status.hasPushed ? __('stOutOfDate') : __('stNotPushed')}
         </Badge>
+        <Button variant="secondary" size="sm" onclick={() => onExportOne(d.id)} disabled={busy || !d.enabled}>
+          {exporting ? __('btnExporting') : __('btnExport')}
+        </Button>
         <ConfirmButton
           variant="secondary"
           size="sm"
           label={__('btnSync')}
           confirmLabel={__('btnConfirmSync')}
           onconfirm={() => onSyncOne(d.id, prune)}
-          disabled={running || !d.enabled}
+          disabled={busy || !d.enabled}
         />
       </li>
     {/each}
   </ul>
 
-  <Checkbox label={__('pruneOption')} checked={prune ? 1 : 0} disabled={running} onchange={(c) => (prune = c === 1)} />
+  <Checkbox label={__('pruneOption')} checked={prune ? 1 : 0} disabled={busy} onchange={(c) => (prune = c === 1)} />
 
   <div class="bs-row">
     <ConfirmButton
@@ -57,7 +66,7 @@
       label={running ? __('btnWorking') : __f('syncAllN', enabledCount)}
       confirmLabel={__('btnConfirmSyncAll')}
       onconfirm={() => onSyncAll(prune)}
-      disabled={running || enabledCount === 0}
+      disabled={busy || enabledCount === 0}
     />
   </div>
 </section>
@@ -89,7 +98,7 @@
 
   .bs-all__item {
     display: grid;
-    grid-template-columns: 1fr auto auto auto;
+    grid-template-columns: 1fr auto auto auto auto;
     align-items: center;
     gap: var(--ab-space-3);
     padding: var(--ab-space-2) var(--ab-space-3);

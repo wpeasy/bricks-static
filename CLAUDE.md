@@ -284,18 +284,31 @@ The Media subsystem groups by **source attachment**, not by URL: `MediaCollector
 
 ## Render Lifecycle & Dashboard Flow
 
-The render manifest (`Manifest::RENDER_OPTION`) is **only** rebuilt by a render run — nothing renders on post save. The dashboard flow is **Pages-to-include → Process → Check → Sync**:
+The render manifest (`Manifest::RENDER_OPTION`) is **only** rebuilt by a render run — nothing renders on post save. The dashboard flow is **Pages-to-include → Process → Check → Sync** (or **Export ZIP** in place of Sync for a manual/no-FTP deploy):
 
 - **Discovery mode** (`UrlCollector::mode()`): `linked` (home + link crawl, default), `all` (every published page/term), `manual` (per-post `_bs_manual_include`, via `Admin\Editor`'s metabox + list "Static" column + bulk + front-end panel).
 - **Process** = a `check`-type run (`Runner::start('check')`): renders for the current mode, refreshes the manifest, clears the dirty flag. The UI shows **Process** when the render is stale/missing and **View list** when current (`Status.renderCurrent`). View list = `GET /pages-overview` → Included (with `CompatibilityScanner` notices) / Excluded (with reason tags).
 - **Check** = `GET /sync/check?dest=…` → `Runner::preview()`: a **synchronous, no-render** diff of the current render against the destination's pushed manifest. Returns `needsProcess` when the render is stale/missing (it never renders — that's Process's job). Shares `compute_check_preview()` with the in-job `finalize_check_preview()`.
 - **Sync** = `Runner::start('sync')`: deploy + upload (see the deploy section above). A full multi-destination sync renders ONCE then deploys per destination; when eligible (>1 target, `bs_concurrent_syncs`>1, WP-CLI spawn available) the deploy phase **fans out across N `deploy-worker` processes** (`Sync\DeployPool` + `Runner::run_deploy_worker`/`tick_deploy_monitor`) — see the [[concurrent-deploy-pool]] memory. The sequential per-target path is the untouched fallback. Free allows up to **2 destinations** (`Edition::FREE_MAX_DESTINATIONS`).
+- **Export ZIP** (`Export\ExportRunner`, Free+Pro) = a fully separate, lightweight job/option (`bs_export_job`) from Sync's `Job`/`Runner` — packages the destination-scoped deploy manifest (`Runner::deploy_manifest_for()`, the same replacements a real Sync would apply) into a downloadable zip, batched across `preparing → gzip → packaging → saving → done` ticks. Uses the CURRENT render only (`Runner::render_is_current()`, same `needsProcess` contract as Check — never renders itself), and never touches a destination's push-manifest/stats since nothing is uploaded. Mutually exclusive with Sync/Check in both directions. Download is a single-use transient-token `GET /export/download` REST route (deliberately not `admin_post_*`, to keep SECURITY_PATTERNS.md's "REST-only" invariant accurate). Free zips ship plain files + `.htaccess`; Pro adds `.gz` siblings, `sitemap.xml`/`robots.txt` — both for free, since Free's render never contains sitemap/robots in the first place (`Pipeline::extra_file_emitters()` is Pro-only).
 
 **Content-change tracking** (`Sync\ChangeTracker`, init on `init`): hooks `save_post`/`transition_post_status`/`deleted|trashed|untrashed_post`/`updated|added_post_meta` (only `_bricks*` keys) **and `wp_update_nav_menu`** (a menu edit changes the link graph + every page's chrome). It sets a dirty flag (`mark_dirty`) that `Runner::in_sync()` treats as out-of-sync and that flips `renderCurrent`; `mark_rendered($mode)` clears it at the end of a full render and records the mode. `UrlCollector::published_excluded_count()` powers the "*N not in export*" hint (published pages absent from the render). **Never auto-render on save** — flag-and-prompt only.
 
 **Head cleaning** (`Render\HeadCleaner::clean()`, gated by `bs_clean_head`) runs in `Runner::tick_render` on the rendered HTML: strips WordPress-only `<head>` links (feeds, oEmbed, RSD, WLW, shortlink, `wp-json`) and all generator metas, then injects one `Bricks Sync <ver> by BRXProd` generator. SEO/social meta is preserved. Operate on the HTML string at this choke point — render-time `remove_action`/output-buffering is unreliable.
 
 **Timeouts** are filterable so a bump can't trip the watchdog: `bs_render_timeout` (page, 60s), `bs_asset_timeout` (dynamic asset fetch, 60s), `bs_package_timeout` (remote extract, 120s), `bs_stale_seconds` (`Runner` no-progress reaper, 90s). These bound *fetch/render during caching*, not upload (package mode bundles to one zip).
+
+---
+
+## First-Run Setup Wizard (`SetupWizard.svelte`, Free)
+
+A 3-step onboarding flow (theme colour, pages-to-include, enable single-page sync) built on ab-ui's `Wizard` component (`orientation="vertical"` — horizontal wraps the longer step labels badly), mounted globally in `App.svelte` alongside `SettingsDrawer`, not per-panel. Finish calls the same `processPages()` used everywhere else (Process), then closes.
+
+- **First-run detection**: option `bs_wizard_seen` ('1'/'0' string, same convention as `bs_fab_enabled`) — absence/`'0'` means unseen. No polling; computed once into `bsData.isFirstRun` (`Admin\Menu::enqueue_app()`'s new `$extra` param, dashboard entry only — never leaks onto the docs page's `bsData`).
+- **Marked seen at open time, not at Finish** — so closing early or reloading mid-wizard never re-triggers it. `POST /settings {wizardSeen: true}` mirrors the `fabEnabled` handler in `StatusController::save_settings()` exactly.
+- **`Plugin::activate()` (`register_activation_hook` in `bricks-static.php`) resets `bs_wizard_seen`** — deactivating/reactivating the plugin (re-testing, or a cloned site that already has the option set) always shows the wizard again. This is the *only* activation hook in the plugin.
+- **Manual re-run**: a small "Wizard" button lives in `SettingsDrawer`'s Drawer `title` (which accepts a `Snippet`, not just a string — the same trick works for any ab-ui `Drawer`/`Modal` header that needs an extra action button beside the title text).
+- `lib/Modal.svelte` (the project's thin ab-ui Modal wrapper) gained an optional `size` prop (`'sm'|'md'|'lg'|'near'|'full'`) that overrides the older boolean `wide` prop when set — added because the wizard needs `'lg'`, not `wide`'s `'near'` (near-fullscreen) or the default `'md'`. Fully backward compatible; every existing `wide` caller is untouched.
 
 ---
 

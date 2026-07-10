@@ -54,6 +54,17 @@ final class Paths {
     }
 
     /**
+     * Absolute path to the Export ZIP staging directory (no trailing slash).
+     *
+     * A subdirectory of the cache dir, so it inherits the same `.htaccess`
+     * "deny all" guard written by {@see write_guards()} — built zips are only
+     * ever served through the gated REST download endpoint, never directly.
+     */
+    public static function export_dir(): string {
+        return self::cache_dir() . '/exports';
+    }
+
+    /**
      * Create the cache directory, output subdir, and access guards if needed.
      *
      * @return bool True if the directories exist and are writable.

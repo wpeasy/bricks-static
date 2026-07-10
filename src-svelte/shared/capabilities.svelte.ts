@@ -18,6 +18,8 @@ export interface Capabilities {
   /** Media replacement is a Free feature; this is the per-page cap (Pro unlimited). */
   maxMediaPerPage: number;
   gzip: boolean;
+  /** Whether Export ZIP/Sync can actually produce .gz siblings right now — the edition gate AND the runtime gzencode() gate. */
+  gzipAvailable: boolean;
   sitemap: boolean;
   prune: boolean;
   licenseValid: boolean;
@@ -36,6 +38,7 @@ const FREE_DEFAULTS: Capabilities = {
   advancedReplacements: false,
   maxMediaPerPage: 1,
   gzip: false,
+  gzipAvailable: false,
   sitemap: false,
   prune: false,
   licenseValid: false,
@@ -57,6 +60,7 @@ function normalize(raw: unknown): Capabilities {
     advancedReplacements: !!r.advancedReplacements,
     maxMediaPerPage: Math.max(1, Number(r.maxMediaPerPage) || 1),
     gzip: !!r.gzip,
+    gzipAvailable: !!r.gzipAvailable,
     sitemap: !!r.sitemap,
     prune: !!r.prune,
     licenseValid: !!r.licenseValid,

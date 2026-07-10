@@ -10,10 +10,12 @@
     running,
     checking = false,
     result = null,
+    exporting = false,
     onSaved,
     onCheck,
     onSync,
     onProcess,
+    onExport,
   }: {
     destination: DestinationDisplay;
     running: boolean;
@@ -21,11 +23,14 @@
     checking?: boolean;
     /** Last Check preview for this destination, or null. */
     result?: CheckPreview | null;
+    /** An Export ZIP is in flight (for any destination) — disables run buttons here too. */
+    exporting?: boolean;
     onSaved: () => void;
     onCheck: (id: string) => void;
     onSync: (id: string, prune: boolean) => void;
     /** Run a Process (render) so a stale page list/preview becomes accurate. */
     onProcess: () => void;
+    onExport: (id: string) => void;
   } = $props();
 
   const d = untrack(() => destination);
@@ -34,7 +39,7 @@
   let saving = $state(false);
 
   let connected = $derived(destination.status.connected);
-  let busy = $derived(saving || running || checking);
+  let busy = $derived(saving || running || checking || exporting);
 
   // Why the run buttons are off (a disabled destination is never synced).
   let blockedReason = $derived(!enabled ? __('enableFirst') : !connected ? __('testConnFirst') : '');
@@ -90,6 +95,11 @@
     {:else}
       <ConfirmButton variant="primary" label={__('btnSync')} confirmLabel={__('btnConfirmSync')} onconfirm={() => onSync(d.id, false)} disabled={!canRun} />
     {/if}
+    <Tooltip content={blockedReason || __('btnExportHint')} placement="bottom">
+      <Button variant="secondary" onclick={() => onExport(d.id)} disabled={!canRun}>
+        {exporting ? __('btnExporting') : __('btnExport')}
+      </Button>
+    </Tooltip>
     {#if url}
       <a class="bs-dtoolbar__link" href={url} target="_blank" rel="noopener noreferrer">{__('visitSite')}</a>
     {/if}

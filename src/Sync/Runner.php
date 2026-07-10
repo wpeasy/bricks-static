@@ -70,6 +70,10 @@ final class Runner {
             throw new \RuntimeException('The staging cache directory is not writable: ' . Paths::cache_dir());
         }
 
+        if (\WPEasy\BricksStatic\Export\ExportRunner::is_running()) {
+            throw new \RuntimeException(__('An Export ZIP is currently running — wait for it to finish, then try again.', 'bricks-static'));
+        }
+
         // Single-page sync: push ONE changed page (and only NEW pages it links to),
         // merging into the existing render — not a full-site rebuild. So we keep the
         // existing cache + manifest and never prune.
@@ -1073,6 +1077,18 @@ final class Runner {
      * @param string $dest_id Destination id ('' or 'all' → primary).
      * @return array<string,mixed>
      */
+    /**
+     * Whether the current render manifest still reflects the current
+     * discovery mode + content — i.e. Process/Sync would have nothing new to
+     * render. Shared by {@see preview()} (Check) and Export ZIP, which both
+     * need the identical "needsProcess" gate.
+     */
+    public static function render_is_current(): bool {
+        return !empty(Manifest::load(Manifest::RENDER_OPTION))
+            && !ChangeTracker::is_dirty()
+            && ChangeTracker::rendered_mode() === UrlCollector::mode();
+    }
+
     public static function preview(string $dest_id): array {
         if ($dest_id === '' || $dest_id === 'all') {
             $dest_id = Destinations::primary()->id();
@@ -1083,9 +1099,7 @@ final class Runner {
         // Mirrors StatusController's renderCurrent: a render exists AND still
         // reflects the current mode + content (the page list is accurate).
         $has_rendered   = !empty(Manifest::load(Manifest::RENDER_OPTION));
-        $render_current = $has_rendered
-            && !ChangeTracker::is_dirty()
-            && ChangeTracker::rendered_mode() === UrlCollector::mode();
+        $render_current = self::render_is_current();
 
         if (!$render_current) {
             return [
@@ -1371,6 +1385,22 @@ final class Runner {
 
         $job->data['phase']   = 'done';
         $job->data['message'] = self::done_message($job);
+    }
+
+    /**
+     * Public seam for Export ZIP: the destination-scoped deploy manifest (base
+     * render + that destination's active replacers + sitemap/robots origin
+     * rewrite) — the same content a real Sync would push. Pure passthrough to
+     * {@see build_deploy_manifest()}; see its docblock for side effects (it
+     * writes into cache/bricks-static/deploy/{destId}/ when replacers are
+     * active — the same dir a real Sync already uses, not export-specific).
+     *
+     * @param array<string,array{size:int,hash:string,src:string}> $base    Base render manifest.
+     * @param string                                                $dest_id Target destination id.
+     * @return array<string,array{size:int,hash:string,src:string}>
+     */
+    public static function deploy_manifest_for(array $base, string $dest_id): array {
+        return self::build_deploy_manifest($base, $dest_id);
     }
 
     /**
