@@ -5,6 +5,11 @@ All notable changes to **Bricks Static** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **"Served from sub-path" is now honoured.** The destination `basePath` setting (labelled *Served from sub-path (optional)*) was defined and shown in the dashboard but never consumed by the exporter, so a site installed under a sub-directory — e.g. a dev host that serves the site at `/mysite/` — always baked that prefix into the static output: files landed under `/mysite/` on the destination and the destination root returned a 404. The exporter now remaps the source home sub-path (the path of `home_url()`) to the configured base path in both the file layout and every internal URL. With the default base `/`, `/mysite/about/` becomes `/about/`, so the static copy serves correctly from the destination root; a base of `/blog` prefixes paths accordingly. The remap covers plain, JSON-escaped (`\/`) and HTML-entity-quoted (`&quot;`) URL forms, and is anchored so external URLs and same-prefix siblings (`/mysite-2`) are left untouched. Sitemaps and `robots.txt` (absolute URLs) are remapped too.
+
 ## [1.0.5] - 2026-07-10
 
 ### Added

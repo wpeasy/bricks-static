@@ -10,12 +10,63 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Support;
 
+use WPEasy\BricksStatic\Settings\Settings;
+
 defined('ABSPATH') || exit;
 
 /**
  * Pure URL utilities shared by discovery, rendering, and rewriting.
  */
 final class Url {
+
+    /**
+     * The site's home sub-path — the path component of home_url(), normalised to
+     * a leading-slash prefix with no trailing slash. Empty string when the site is
+     * installed at the domain root.
+     *
+     * On this platform the dev host mounts each site under /<name>/, so home_url()
+     * carries that prefix; it must be stripped from the static output (which is
+     * served from the destination's own root, or its configured sub-path).
+     */
+    public static function home_base(): string {
+        $path = (string) (wp_parse_url((string) home_url(), PHP_URL_PATH) ?? '');
+        $path = '/' . trim($path, '/');
+
+        return $path === '/' ? '' : $path;
+    }
+
+    /**
+     * The configured "Served from sub-path" (basePath) — where the destination
+     * serves the static site from — normalised to "" (domain root) or "/sub"
+     * (leading slash, no trailing slash).
+     */
+    public static function base_path(): string {
+        $base = '/' . trim((string) Settings::get('basePath'), '/');
+
+        return $base === '/' ? '' : $base;
+    }
+
+    /**
+     * Remap a site path from the source home sub-path to the configured base path,
+     * so static output is rooted where the destination actually serves it. With the
+     * default base ("/") this simply strips the dev home prefix:
+     * "/test-for-vid/about/" → "/about/". With a base of "/blog" it becomes
+     * "/blog/about/". A path outside the home sub-path is returned unchanged (bar
+     * the base prefix).
+     *
+     * @param string $path A leading-slash URL path (no scheme/host).
+     */
+    public static function remap_site_path(string $path): string {
+        $home = self::home_base();
+        if ($home !== '' && ($path === $home || strpos($path, $home . '/') === 0)) {
+            $path = substr($path, strlen($home));
+        }
+
+        $path = '/' . ltrim($path, '/');
+        $base = self::base_path();
+
+        return $base === '' ? $path : $base . ($path === '/' ? '/' : $path);
+    }
 
     /**
      * Scheme+host origin prefixes for this site (http/https, www/non-www,
@@ -130,6 +181,7 @@ final class Url {
         $path  = (string) (wp_parse_url($url, PHP_URL_PATH) ?? '');
         $query = wp_parse_url($url, PHP_URL_QUERY);
         $path  = rawurldecode($path);
+        $path  = self::remap_site_path($path);
 
         if ($path === '' || $path === '/') {
             return 'index.html';

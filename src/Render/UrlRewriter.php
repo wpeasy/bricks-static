@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Render;
 
+use WPEasy\BricksStatic\Support\Url;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -47,7 +49,64 @@ final class UrlRewriter {
 
         // Replacing the origin with '' leaves the following path (escaped or not):
         // "https://host/about" → "/about", "https:\/\/host\/x" → "\/x".
-        return str_replace($search, '', $content);
+        $content = str_replace($search, '', $content);
+
+        // Now remap the source home sub-path to the configured "served from" base
+        // path, so e.g. "/test-for-vid/about/" becomes "/about/" (default base "/").
+        return self::apply_base_path($content);
+    }
+
+    /**
+     * Remap the source home sub-path (home_url()'s path, e.g. "/test-for-vid") to
+     * the configured base path in already-root-relative document URLs.
+     *
+     * Each occurrence must be preceded by a URL-context delimiter (quote, paren,
+     * "=", comma or whitespace), so only path-initial matches are touched — an
+     * external URL such as https://other.com/test-for-vid/x is left intact because
+     * its sub-path is preceded by the host, not a delimiter. Handles both plain
+     * ("/x") and JSON-escaped ("\/x") slash forms found in inline scripts/JSON-LD.
+     *
+     * @param string $content HTML or CSS with root-relative URLs.
+     */
+    private static function apply_base_path(string $content): string {
+        $home = Url::home_base();
+        if ($home === '') {
+            return $content; // Site installed at domain root — nothing to strip.
+        }
+
+        $base = Url::base_path();
+        // Delimiters that can precede a path-initial URL, including ";" for
+        // HTML-entity-encoded quotes (e.g. url(&quot;/path…) in data-style attrs).
+        $pre  = '(?<=[\'"(=,;\s])';
+
+        // [ separator, escaped home sub-path, escaped base path ] for plain and
+        // JSON-escaped forms.
+        $forms = [
+            ['/',   $home,                          $base],
+            ['\\/', str_replace('/', '\\/', $home), str_replace('/', '\\/', $base)],
+        ];
+
+        foreach ($forms as [$sep, $hb, $bp]) {
+            $rep_sep = preg_quote($sep, '#');
+            $rep     = $bp === '' ? $sep : $bp . $sep;
+
+            // "/test-for-vid/…" → base + "/…" (the trailing slash is a safe boundary).
+            $content = (string) preg_replace(
+                '#' . $pre . preg_quote($hb, '#') . $rep_sep . '#',
+                $rep,
+                $content
+            );
+
+            // Bare home link ("/test-for-vid" with no further path) → base + "/".
+            // Negative lookahead keeps a sibling like "/test-for-vid-2" untouched.
+            $content = (string) preg_replace(
+                '#' . $pre . preg_quote($hb, '#') . '(?![\w' . $rep_sep . '-])#',
+                $rep,
+                $content
+            );
+        }
+
+        return $content;
     }
 
     /**
@@ -91,7 +150,27 @@ final class UrlRewriter {
             $replace[] = '\/\/' . $authority;
         }
 
-        return str_replace($search, $replace, $content);
+        $content = str_replace($search, $replace, $content);
+
+        // Strip the source home sub-path so absolute destination URLs point at the
+        // configured base ("/test-for-vid/about/" → "/about/"). Anchored to the
+        // destination origin, so nothing else is affected.
+        $home = Url::home_base();
+        if ($home === '') {
+            return $content;
+        }
+
+        $base = Url::base_path();
+        foreach ([$origin, '//' . $authority] as $anchor) {
+            $content = str_replace($anchor . $home . '/', $anchor . $base . '/', $content);
+            $content = (string) preg_replace(
+                '#' . preg_quote($anchor . $home, '#') . '(?![\w/-])#',
+                $anchor . $base . '/',
+                $content
+            );
+        }
+
+        return $content;
     }
 
     /**
