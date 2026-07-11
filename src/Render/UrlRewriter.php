@@ -75,9 +75,11 @@ final class UrlRewriter {
         }
 
         $base = Url::base_path();
-        // Delimiters that can precede a path-initial URL, including ";" for
-        // HTML-entity-encoded quotes (e.g. url(&quot;/path…) in data-style attrs).
-        $pre  = '(?<=[\'"(=,;\s])';
+        // A path-initial URL is either at the very start of the string (\A — this
+        // method also runs on standalone URLs like wp_get_attachment_url(), not just
+        // documents) or preceded by a URL-context delimiter. ";" covers HTML-entity
+        // quotes (e.g. url(&quot;/path…) in data-style attributes).
+        $pre  = '(?:\A|(?<=[\'"(=,;\s]))';
 
         // [ separator, escaped home sub-path, escaped base path ] for plain and
         // JSON-escaped forms.
