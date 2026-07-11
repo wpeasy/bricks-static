@@ -1,15 +1,21 @@
 # Changelog
 
-## v1.0.5 (2026-07-10)
+## v1.0.6 (2026-07-11)
 
 ### New
-Each destination now has an "Export ZIP" button (also available from the "All destinations" list) that packages your site into a downloadable zip file instead of uploading it — handy if you deploy manually rather than over FTP/SFTP. It always reflects your current site, so if something's changed since your last render you'll be asked to run Process first. Free downloads include your pages plus a basic `.htaccess` file; nothing is uploaded anywhere, so it never affects a destination's sync status.
+When a sync ends in error, its status badge is now clickable and opens a window showing the real reason it failed — including which destination(s) failed and why, plus a list of any individual files that ran into trouble. Previously you only saw a generic "some destinations failed" message with no way to see more.
 
 ### New
-New installs now walk you through a quick setup wizard the first time you open the dashboard: pick a colour theme, choose which pages to include, and decide whether to enable the single-page sync button. Finishing the wizard automatically processes your site so you're not left looking at an empty dashboard. You can re-run it anytime from the small "Wizard" button in Settings.
+The Images panel now shows a row of tags for every page that already has a saved image swap, along with how many swaps are on it, so you can see at a glance which pages need attention and jump straight to one instead of picking blind from the page list.
 
 ### Fixed
-The "Download" button on a finished Export ZIP could show no visible text in some colour themes, caused by a styling conflict between two colour rules.
+Destinations set to serve the site from a sub-folder (the "Served from sub-path" option) now actually work. Previously this setting was shown in the dashboard but had no effect, so a site meant to be served from something like `/mysite/` still had that path baked into every link and file, and the destination's root page would 404. Static exports now correctly rewrite the site's paths and links to match the folder you configured.
 
 ### Improved
-The "Reset sync state" button and its explanation now sit next to each other instead of being spread across opposite ends of the screen.
+The "Media" panel and its labels have been renamed to "Images" throughout the dashboard — clearer wording, since this feature only ever swaps images.
+
+### Improved
+A failed sync's summary message now names the specific destination(s) that failed instead of a generic "some destinations failed to deploy."
+
+### Improved
+A failed sync's status badge is now shown in red, distinct from the amber used for a plain cancellation — previously both looked the same, making it hard to tell a real failure from a sync you simply stopped yourself.

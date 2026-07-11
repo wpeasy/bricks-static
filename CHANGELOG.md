@@ -5,7 +5,16 @@ All notable changes to **Bricks Static** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.6] - 2026-07-11
+
+### Added
+- **Sync error details.** When a sync ends in error, its status badge is now clickable and opens a modal with the real failure reason(s) — per-destination messages for a multi-destination sync, plus the per-file error list. Previously only a generic "some destinations failed" summary was visible at a glance; a failing status badge is now visually distinct (red) from a plain cancellation (amber), which used to share the same colour.
+- **"Pages with replacements" quick-jump.** The Images panel now shows a row of tags for every page that already has at least one saved swap (with its count), so you can see at a glance which pages need attention and jump straight to one instead of picking blind from the page selector.
+
+### Changed
+- **"Media" renamed to "Images"** throughout the dashboard (panel title, replacer labels, empty-state and cap-reached messages) — the feature only ever swaps images, so this removes ambiguity with document/file "media" in WordPress' own terminology.
+- The Replacements accordion no longer shows an aggregate count badge for Images (or Pro's Videos) — the count is now visible per-page via the quick-jump tags above, which shows *where*, not just *how many*.
+- A failed sync's summary message now names the destination(s) that actually failed (e.g. "Failed to deploy to Production — click the status badge for details") instead of a generic "some destinations failed to deploy."
 
 ### Fixed
 - **"Served from sub-path" is now honoured.** The destination `basePath` setting (labelled *Served from sub-path (optional)*) was defined and shown in the dashboard but never consumed by the exporter, so a site installed under a sub-directory — e.g. a dev host that serves the site at `/mysite/` — always baked that prefix into the static output: files landed under `/mysite/` on the destination and the destination root returned a 404. The exporter now remaps the source home sub-path (the path of `home_url()`) to the configured base path in both the file layout and every internal URL. With the default base `/`, `/mysite/about/` becomes `/about/`, so the static copy serves correctly from the destination root; a base of `/blog` prefixes paths accordingly. The remap covers plain, JSON-escaped (`\/`) and HTML-entity-quoted (`&quot;`) URL forms, and is anchored so external URLs and same-prefix siblings (`/mysite-2`) are left untouched. Sitemaps and `robots.txt` (absolute URLs) are remapped too.

@@ -65,7 +65,11 @@
 {#snippet titleInner(e: ReplacementEntry)}
   <span class="bs-rp__head">
     <span class="bs-rp__name">{__(TITLE_KEY[e.key] ?? '') || e.title}</span>
-    {#if count(e) > 0}<Badge tone="primary" variant="soft">{count(e)}</Badge>{/if}
+    <!-- Images/Videos show per-page badges inside their own panel instead — a
+         single aggregate count here told you SOMETHING needed attention but
+         not WHERE, so it's dropped for these two per-page entries. Text/Links
+         are whole-export (not per-page), so their aggregate count stays. -->
+    {#if count(e) > 0 && e.key !== 'media' && e.key !== 'videos'}<Badge tone="primary" variant="soft">{count(e)}</Badge>{/if}
     {#if locked(e)}<ProBadge />{/if}
   </span>
 {/snippet}

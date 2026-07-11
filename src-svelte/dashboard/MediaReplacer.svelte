@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
-  import { Button, Select, Tooltip } from '@wpeasy/ab-ui';
+  import { Button, Select, Tag, Tooltip } from '@wpeasy/ab-ui';
   import { api } from '../shared/api';
   import type { MediaItem, MediaReplacement, DestinationDisplay, ReplacementPage } from '../shared/types';
   import { __, __f } from '../shared/i18n';
@@ -64,6 +64,17 @@
   }
 
   const pageOptions = $derived(pages.map((p) => ({ value: p.value, label: p.label })));
+
+  // Pages that already have at least one saved swap, with their count — lets the
+  // user see AT A GLANCE which pages need attention and jump straight to one,
+  // instead of a single aggregate count that says "something" but not "where".
+  const pagesWithSwaps = $derived.by(() => {
+    const counts: Record<string, number> = {};
+    for (const r of replacements) counts[r.page] = (counts[r.page] ?? 0) + 1;
+    return pages
+      .filter((p) => (counts[p.value] ?? 0) > 0)
+      .map((p) => ({ value: p.value, label: p.label, count: counts[p.value] }));
+  });
 
   // The swaps saved for the currently selected page, keyed by original URL.
   const pageSwaps = $derived.by(() => {
@@ -132,6 +143,21 @@
   {:else if pages.length === 0}
     <p class="bs-media__note">{__('noRenderForMedia')}</p>
   {:else}
+    {#if pagesWithSwaps.length > 0}
+      <div class="bs-media__pagebadges">
+        <span class="bs-media__pagebadges-label">{__('mediaPagesWithSwaps')}</span>
+        {#each pagesWithSwaps as p (p.value)}
+          <Tag
+            size="sm"
+            tone="primary"
+            variant={selectedPage === p.value ? 'solid' : 'soft'}
+            label={p.count > 1 ? `${p.label} (${p.count})` : p.label}
+            onclick={() => (selectedPage = p.value)}
+          />
+        {/each}
+      </div>
+    {/if}
+
     <div class="bs-media__picker">
       <Select
         label={__('mediaSelectPage')}
@@ -222,6 +248,18 @@
     gap: var(--ab-space-3);
     font-size: var(--ab-text-sm);
     font-weight: var(--ab-weight-medium);
+    color: var(--ab-color-text-muted);
+  }
+
+  .bs-media__pagebadges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ab-space-2);
+  }
+
+  .bs-media__pagebadges-label {
+    font-size: var(--ab-text-xs);
     color: var(--ab-color-text-muted);
   }
 

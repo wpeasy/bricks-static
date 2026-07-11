@@ -4,6 +4,7 @@
   import { caps } from '../shared/capabilities.svelte';
   import { PURCHASE_URL } from '../shared/upsell';
   import { __, __f } from '../shared/i18n';
+  import Modal from '../lib/Modal.svelte';
 
   let {
     snapshot,
@@ -98,16 +99,29 @@
   };
 
   let tone = $derived(
-    snapshot?.phase === 'error' || snapshot?.phase === 'cancelled'
-      ? 'warn'
-      : snapshot?.phase === 'done'
-        ? 'ok'
-        : 'active',
+    snapshot?.phase === 'error'
+      ? 'err'
+      : snapshot?.phase === 'cancelled'
+        ? 'warn'
+        : snapshot?.phase === 'done'
+          ? 'ok'
+          : 'active',
   );
-  // Map our run-tone to ab-ui's Progress/Badge tones.
+  // Map our run-tone to ab-ui's Progress/Badge tones. 'error' gets its own
+  // danger colour, distinct from 'cancelled' (warning) — they used to share
+  // one colour, which made a real failure look no different from a plain cancel.
   let abTone = $derived<'primary' | 'success' | 'warning' | 'danger'>(
-    tone === 'ok' ? 'success' : tone === 'warn' ? 'warning' : 'primary',
+    tone === 'ok' ? 'success' : tone === 'err' ? 'danger' : tone === 'warn' ? 'warning' : 'primary',
   );
+
+  // Error-details modal: the top badge/message is necessarily a one-line
+  // summary; click it to see the full picture — the per-destination failure
+  // reasons (parallel sync) and the per-file error list, both already present
+  // in the snapshot but previously only shown in a buried <details>.
+  let detailsOpen = $state(false);
+  let failedTargets = $derived((snapshot?.parallelTargets ?? []).filter((t) => t.status === 'error'));
+  let hasErrorDetail = $derived(snapshot?.phase === 'error' && (!!snapshot?.message || failedTargets.length > 0 || (snapshot?.errors?.length ?? 0) > 0));
+
   function humanBytes(bytes: number): string {
     if (!bytes) return '0 B';
     const units = ['B', 'KB', 'MB', 'GB'];
@@ -121,7 +135,15 @@
     <div class="bs-row bs-row--between">
       <h2>{__('progress')}{#if destLabel}<span class="bs-progress__dest"> · {destLabel}</span>{/if}</h2>
       <div class="bs-progress__head-right">
-        <Badge tone={abTone} variant="soft">{phaseLabel}</Badge>
+        {#if hasErrorDetail}
+          <Tooltip content={__('btnViewErrorDetails')} placement="bottom">
+            <button type="button" class="bs-progress__badgebtn" onclick={() => (detailsOpen = true)}>
+              <Badge tone={abTone} variant="soft">{phaseLabel}</Badge>
+            </button>
+          </Tooltip>
+        {:else}
+          <Badge tone={abTone} variant="soft">{phaseLabel}</Badge>
+        {/if}
         {#if finished}
           <Tooltip content={__('btnDismiss')} placement="bottom-end">
             <Button variant="ghost" size="sm" onclick={dismiss} aria-label={__('btnDismiss')}>×</Button>
@@ -258,6 +280,34 @@
       </details>
     {/if}
   </section>
+
+  <Modal bind:open={detailsOpen} title={__('errorDetailsTitle')}>
+    <div class="bs-progress__errdetail bs-stack bs-stack--sm">
+      {#if snapshot.message}<p>{snapshot.message}</p>{/if}
+
+      {#if failedTargets.length > 0}
+        <div class="bs-progress__errtargets">
+          {#each failedTargets as t (t.destId)}
+            <div class="bs-progress__errtarget">
+              <strong>{t.name}</strong>
+              <p>{t.message || __('noErrorDetail')}</p>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      {#if snapshot.errors && snapshot.errors.length > 0}
+        <details open>
+          <summary>{__f('summaryErrors', snapshot.errorCount ?? 0)}</summary>
+          <ul class="bs-progress__list">
+            {#each snapshot.errors as e}
+              <li><code>{e.url}</code> — {e.error}</li>
+            {/each}
+          </ul>
+        </details>
+      {/if}
+    </div>
+  </Modal>
 {/if}
 
 <style>
@@ -273,6 +323,54 @@
     display: flex;
     align-items: center;
     gap: var(--ab-space-2);
+  }
+
+  /* Strip button chrome so the badge inside still looks like a badge — just
+     an interactive one (cursor + hover lift) that opens the error-details modal. */
+  .bs-progress__badgebtn {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: none;
+    cursor: pointer;
+    line-height: 0;
+    transition: transform var(--ab-duration-fast, 120ms) var(--ab-ease-standard, ease);
+  }
+
+  .bs-progress__badgebtn:hover {
+    transform: translateY(-1px);
+  }
+
+  .bs-progress__errdetail p {
+    margin: 0;
+    font-size: var(--ab-text-sm);
+    color: var(--ab-color-text);
+  }
+
+  .bs-progress__errtargets {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ab-space-2);
+  }
+
+  .bs-progress__errtarget {
+    padding: var(--ab-space-3);
+    border: 1px solid var(--ab-color-danger);
+    border-radius: var(--ab-radius-md);
+    background: color-mix(in srgb, var(--ab-color-danger) 7%, var(--ab-color-surface));
+  }
+
+  .bs-progress__errtarget strong {
+    display: block;
+    margin-bottom: var(--ab-space-1);
+    color: var(--ab-color-text);
+    font-size: var(--ab-text-sm);
+  }
+
+  .bs-progress__errtarget p {
+    margin: 0;
+    font-size: var(--ab-text-sm);
+    color: var(--ab-color-text-muted);
   }
 
   .bs-progress__msg {

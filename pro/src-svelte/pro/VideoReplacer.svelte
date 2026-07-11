@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
-  import { Button, Input, Select } from '@wpeasy/ab-ui';
+  import { Button, Input, Select, Tag } from '@wpeasy/ab-ui';
   import { api } from '../../../src-svelte/shared/api';
   import type { VideoItem, VideoReplacement, DestinationDisplay, ReplacementPage } from '../../../src-svelte/shared/types';
   import { __ } from '../../../src-svelte/shared/i18n';
@@ -57,6 +57,17 @@
   }
 
   const pageOptions = $derived(pages.map((p) => ({ value: p.value, label: p.label })));
+
+  // Pages that already have at least one saved swap, with their count — lets the
+  // user see AT A GLANCE which pages need attention and jump straight to one,
+  // instead of a single aggregate count that says "something" but not "where".
+  const pagesWithSwaps = $derived.by(() => {
+    const counts: Record<string, number> = {};
+    for (const r of replacements) counts[r.page] = (counts[r.page] ?? 0) + 1;
+    return pages
+      .filter((p) => (counts[p.value] ?? 0) > 0)
+      .map((p) => ({ value: p.value, label: p.label, count: counts[p.value] }));
+  });
 
   const pageSwaps = $derived.by(() => {
     const map: Record<string, VideoReplacement> = {};
@@ -162,6 +173,21 @@
   {:else if pages.length === 0}
     <p class="bs-vids__note">{__('noRenderForMedia')}</p>
   {:else}
+    {#if pagesWithSwaps.length > 0}
+      <div class="bs-vids__pagebadges">
+        <span class="bs-vids__pagebadges-label">{__('mediaPagesWithSwaps')}</span>
+        {#each pagesWithSwaps as p (p.value)}
+          <Tag
+            size="sm"
+            tone="primary"
+            variant={selectedPage === p.value ? 'solid' : 'soft'}
+            label={p.count > 1 ? `${p.label} (${p.count})` : p.label}
+            onclick={() => (selectedPage = p.value)}
+          />
+        {/each}
+      </div>
+    {/if}
+
     <div class="bs-vids__picker">
       <Select
         label={__('videoSelectPage')}
@@ -245,6 +271,18 @@
 
   .bs-vids__hint {
     margin: 0;
+    font-size: var(--ab-text-xs);
+    color: var(--ab-color-text-muted);
+  }
+
+  .bs-vids__pagebadges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ab-space-2);
+  }
+
+  .bs-vids__pagebadges-label {
     font-size: var(--ab-text-xs);
     color: var(--ab-color-text-muted);
   }

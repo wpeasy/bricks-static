@@ -58,7 +58,7 @@ final class I18n {
      */
     private static function media(): array {
         return [
-            'mediaReplacer'      => __('Media replacer', 'bricks-static-pro'),
+            'mediaReplacer'      => __('Image Replacer', 'bricks-static-pro'),
             /* translators: %d is an item count (singular). */
             'nItem'              => __('%d item', 'bricks-static-pro'),
             /* translators: %d is an item count (plural). */
@@ -66,10 +66,10 @@ final class I18n {
             /* translators: %d is a count of swapped items. */
             'nSwapped'           => __(', %d swapped', 'bricks-static-pro'),
             'chooseReplacement'  => __('Choose a replacement', 'bricks-static-pro'),
-            'useThisMedia'       => __('Use this media', 'bricks-static-pro'),
+            'useThisMedia'       => __('Use this image', 'bricks-static-pro'),
             'phSearchNameAlt'    => __('Search name or alt…', 'bricks-static-pro'),
-            'loadingMedia'       => __('Loading media…', 'bricks-static-pro'),
-            'noMediaYet'         => __('No media found yet — run a Check or Sync first so the pages are rendered.', 'bricks-static-pro'),
+            'loadingMedia'       => __('Loading images…', 'bricks-static-pro'),
+            'noMediaYet'         => __('No images found yet — run a Check or Sync first so the pages are rendered.', 'bricks-static-pro'),
             'clickToReplace'     => __('Click to replace', 'bricks-static-pro'),
             'noAlt'              => __('— no alt —', 'bricks-static-pro'),
             /* translators: %1$d is a page count, %2$s the comma-joined page list. */
@@ -77,7 +77,7 @@ final class I18n {
             /* translators: %1$d is a page count (plural), %2$s the comma-joined page list. */
             'nPagesListPlural'   => __('%1$d pages: %2$s', 'bricks-static-pro'),
             'replacedWith'       => __('↳ replaced with', 'bricks-static-pro'),
-            'noMediaMatch'       => __('No media match the current filter.', 'bricks-static-pro'),
+            'noMediaMatch'       => __('No images match the current filter.', 'bricks-static-pro'),
             /* translators: %d is the number of size variants covered by one swap. */
             'nSizes'             => __('%d sizes', 'bricks-static-pro'),
             'mediaNotInLibrary'  => __('not in library', 'bricks-static-pro'),

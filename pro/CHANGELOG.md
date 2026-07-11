@@ -9,6 +9,14 @@ Bricks Static Pro is an add-on that requires the free **Bricks Static** plugin.
 Its changelog is kept separate from Free's (`../CHANGELOG.md`); each release notes
 only Pro-facing changes. Compatibility with Free is declared by `BSP_MIN_FREE`.
 
+## [1.0.5] - 2026-07-11
+
+### Added
+- **"Pages with replacements" quick-jump** for the Video replacer, matching Free's new Images panel — a row of tags for every page with a saved video swap (with its count), to jump straight to one instead of picking blind.
+
+### Changed
+- **"Media replacer" renamed to "Image Replacer"** in the dictionary strings shared with Free's Images panel (labels, empty-state and "use this" wording) — no functional change.
+
 ## [1.0.4] - 2026-07-10
 
 ### Added

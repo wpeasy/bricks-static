@@ -924,10 +924,22 @@ final class Runner {
         }
 
         if ($agg['allFinished']) {
-            $job->data['phase']   = $agg['anyError'] ? 'error' : 'done';
-            $job->data['message'] = $agg['anyError']
-                ? 'Some destinations failed to deploy — re-run Sync to retry.'
-                : self::done_message($job);
+            $job->data['phase'] = $agg['anyError'] ? 'error' : 'done';
+            if ($agg['anyError']) {
+                // Name the destination(s) that actually failed — each one's own
+                // message (the real reason, e.g. "FTPS authentication failed")
+                // is still available per-target in parallelTargets for the UI's
+                // error-details view; this top-level line is just the summary.
+                $failed_names = array_values(array_map(
+                    static fn(array $t): string => (string) $t['name'],
+                    array_filter($agg['perTarget'], static fn(array $t): bool => ($t['status'] ?? '') === 'error')
+                ));
+                $job->data['message'] = $failed_names !== []
+                    ? sprintf('Failed to deploy to %s — click the status badge for details.', implode(', ', $failed_names))
+                    : 'Some destinations failed to deploy — re-run Sync to retry.';
+            } else {
+                $job->data['message'] = self::done_message($job);
+            }
             DeployPool::cleanup($targets);
             $job->save();
             return;
