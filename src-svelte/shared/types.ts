@@ -181,6 +181,8 @@ export interface Status {
   lastTest: LastTest | null;
   method: Method;
   isLocal: boolean;
+  /** False when WordPress is on "Plain" permalinks — nothing can be exported. */
+  prettyPermalinks: boolean;
   cli: string;
   wpCli: WpCliInfo;
   discoveryMode: DiscoveryMode;
@@ -286,8 +288,6 @@ export interface SyncSnapshot {
   running?: boolean;
   cliAlive?: boolean;
   driver?: 'cli' | 'browser';
-  /** True when a full sync stopped at the Free page cap (more pages need Pro). */
-  pageLimitHit?: boolean;
   /** A package-configured destination fell back to file-by-file (runtime has no zip). */
   zipUnavailable?: boolean;
   /** Reason a package deploy was attempted but fell back to file-by-file (''=n/a). */
@@ -333,7 +333,7 @@ export interface ExportSnapshot {
   message?: string;
   gzipDone?: number;
   gzipTotal?: number;
-  /** Set when gzip was expected (Pro) but the server's PHP lacks gzencode(). */
+  /** Set when gzip was expected but the server's PHP lacks gzencode(). */
   gzipNotice?: string;
   packDone?: number;
   packTotal?: number;

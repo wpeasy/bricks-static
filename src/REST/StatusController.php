@@ -18,7 +18,6 @@ use WPEasy\BricksStatic\Render\CompatibilityScanner;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Sync\ChangeTracker;
 use WPEasy\BricksStatic\Sync\DeployPool;
-use WPEasy\BricksStatic\Support\Edition;
 use WPEasy\BricksStatic\Support\Environment;
 use WPEasy\BricksStatic\Support\Paths;
 use WPEasy\BricksStatic\Support\Url;
@@ -97,6 +96,9 @@ final class StatusController {
             ] : null,
             'method'    => MethodResolver::resolve(),
             'isLocal'   => Environment::is_local(),
+            // Plain permalinks put every page on the site root as a query string,
+            // so nothing can be mapped to a file. The dashboard blocks-warns on it.
+            'prettyPermalinks' => Environment::pretty_permalinks(),
             'cli'       => Environment::cli_command(),
             'wpCli'     => Environment::wp_cli(),
             'discoveryMode' => UrlCollector::mode(),
@@ -121,9 +123,6 @@ final class StatusController {
             'aiAvailable'   => function_exists('wp_register_ability'),
             'aiAllowChanges' => AbilityRegistry::changes_enabled(),
             'aiAllowSync'    => AbilityRegistry::sync_enabled(),
-            // Live edition/capability map — keeps the UI in step with a license
-            // change between page loads.
-            'capabilities'  => Edition::capabilities(),
         ]);
     }
 
@@ -131,7 +130,7 @@ final class StatusController {
      * GET /pages-overview — split published pages/posts into those that are in
      * the last render (Included) and those that are not (Excluded). Buckets by
      * the actual render manifest, so it reflects the export under any discovery
-     * mode (and excludes pages dropped by the Free page cap).
+     * mode.
      */
     public static function pages_overview(): WP_REST_Response {
         $render   = Manifest::load(Manifest::RENDER_OPTION);
@@ -238,20 +237,24 @@ final class StatusController {
             return [__('Not published', 'bricks-static')];
         }
 
+        // Plain permalinks: the page's URL is a query string on the site root
+        // (/?page_id=9), which has no static file path — the real reason it is
+        // out, whatever the discovery mode says.
+        if (!Environment::pretty_permalinks()) {
+            return [__('Plain permalinks', 'bricks-static')];
+        }
+
         if ($mode === 'manual') {
             if (!UrlCollector::is_included($post_id)) {
                 return [__('Not included', 'bricks-static')];
-            }
-            if (!UrlCollector::is_effective($post_id)) {
-                return [__('Over plan limit', 'bricks-static')];
             }
             return [__('Not rendered', 'bricks-static')];
         }
 
         if ($mode === 'all') {
-            // Every published page is seeded in "all" mode, so absence means the
-            // Free page cap dropped it (or, on Pro, a render error).
-            return [Edition::is_pro() ? __('Not rendered', 'bricks-static') : __('Over plan limit', 'bricks-static')];
+            // Every published page is seeded in "all" mode, so absence means a
+            // render error.
+            return [__('Not rendered', 'bricks-static')];
         }
 
         // 'linked' — published but not reachable by the home-page crawl.

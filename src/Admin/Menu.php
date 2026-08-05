@@ -11,7 +11,6 @@ declare(strict_types=1);
 namespace WPEasy\BricksStatic\Admin;
 
 use WPEasy\BricksStatic\Support\Assets;
-use WPEasy\BricksStatic\Support\Edition;
 use WPEasy\BricksStatic\Support\I18n;
 
 defined('ABSPATH') || exit;
@@ -155,30 +154,12 @@ final class Menu {
         wp_enqueue_script($handle, BS_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BS_VERSION, true);
 
         wp_localize_script($handle, 'bsData', array_merge([
-            'restUrl'      => esc_url_raw(rest_url('bs/v1')),
-            'nonce'        => wp_create_nonce('wp_rest'),
-            'version'      => BS_VERSION,
-            // Boot snapshot of the edition/capability map. The live source of
-            // truth is /status (re-read on poll), so a license change reflects
-            // without a hard reload.
-            'capabilities' => Edition::capabilities(),
+            'restUrl' => esc_url_raw(rest_url('bs/v1')),
+            'nonce'   => wp_create_nonce('wp_rest'),
+            'version' => BS_VERSION,
             // Translated UI strings for the Svelte bundle (shared/i18n.ts).
-            'i18n'         => I18n::all(),
+            'i18n'    => I18n::all(),
         ], $extra));
-    }
-
-    /**
-     * The dashboard page hook suffix (for add-ons that enqueue onto our page).
-     */
-    public static function dashboard_hook(): string {
-        return self::$page_hook;
-    }
-
-    /**
-     * The dashboard menu slug (parent slug for add-on submenus).
-     */
-    public static function dashboard_slug(): string {
-        return self::MENU_SLUG;
     }
 
     /**

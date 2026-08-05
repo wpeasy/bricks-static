@@ -31,13 +31,63 @@ final class PageRenderer {
     public const USER_AGENT_PREFIX = 'BricksStatic/';
 
     /**
+     * Header carrying the per-site shared secret on loopback render requests.
+     * Reaches PHP as `$_SERVER['HTTP_X_BS_RENDER_TOKEN']`.
+     */
+    public const TOKEN_HEADER = 'X-BS-Render-Token';
+
+    /**
+     * Option holding that shared secret (not autoloaded).
+     */
+    private const TOKEN_OPTION = 'bs_render_token';
+
+    /**
      * Whether the CURRENT request is one of our loopback render requests.
      * Lets render-time hooks (e.g. stripping the emoji loader) apply only to the
      * static output, never to the live front end.
+     *
+     * User-agent only, so it is trivially spoofable — fine for cosmetic tweaks to
+     * the captured output, NOT for anything that changes what a visitor may see.
+     * Use {@see is_trusted_render_request()} for those.
      */
     public static function is_render_request(): bool {
         $ua = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '';
         return strpos($ua, self::USER_AGENT_PREFIX) === 0;
+    }
+
+    /**
+     * Whether the CURRENT request is a render request that proves it came from
+     * this site, by presenting the shared secret. Required before letting a
+     * request past a gate the site owner put up (maintenance / coming-soon mode),
+     * so a passer-by can't read a hidden site by copying our user agent.
+     */
+    public static function is_trusted_render_request(): bool {
+        if (!self::is_render_request()) {
+            return false;
+        }
+
+        $sent = isset($_SERVER['HTTP_X_BS_RENDER_TOKEN'])
+            ? sanitize_text_field(wp_unslash($_SERVER['HTTP_X_BS_RENDER_TOKEN']))
+            : '';
+
+        // Read only — never mint a token on an inbound request.
+        $token = (string) get_option(self::TOKEN_OPTION, '');
+
+        return $sent !== '' && $token !== '' && hash_equals($token, $sent);
+    }
+
+    /**
+     * The site's render token, generated on first use.
+     */
+    public static function token(): string {
+        $token = (string) get_option(self::TOKEN_OPTION, '');
+
+        if ($token === '') {
+            $token = wp_generate_password(40, false, false);
+            update_option(self::TOKEN_OPTION, $token, false);
+        }
+
+        return $token;
     }
 
     /**
@@ -115,7 +165,9 @@ final class PageRenderer {
             'redirection' => 5,
             'sslverify'   => self::should_verify_ssl(),
             'user-agent'  => self::USER_AGENT_PREFIX . BS_VERSION,
-            'headers'     => [],
+            // Proves the request originated here, so it may pass gates the site
+            // owner put up for visitors (see is_trusted_render_request()).
+            'headers'     => [self::TOKEN_HEADER => self::token()],
         ];
 
         /**

@@ -1,14 +1,8 @@
 <h1>Changelog</h1>
-<h2>v1.0.6 (2026-07-11)</h2>
-<h3>New</h3>
-<p>When a sync ends in error, its status badge is now clickable and opens a window showing the real reason it failed — including which destination(s) failed and why, plus a list of any individual files that ran into trouble. Previously you only saw a generic "some destinations failed" message with no way to see more.</p>
-<h3>New</h3>
-<p>The Images panel now shows a row of tags for every page that already has a saved image swap, along with how many swaps are on it, so you can see at a glance which pages need attention and jump straight to one instead of picking blind from the page list.</p>
+<h2>v2.0.1 (2026-08-05)</h2>
 <h3>Fixed</h3>
-<p>Destinations set to serve the site from a sub-folder (the "Served from sub-path" option) now actually work. Previously this setting was shown in the dashboard but had no effect, so a site meant to be served from something like <code>/mysite/</code> still had that path baked into every link and file, and the destination's root page would 404. Static exports now correctly rewrite the site's paths and links to match the folder you configured — including standalone image URLs, so the Images panel's thumbnails and swaps also work correctly on a sub-folder install.</p>
+<p>If your site had Bricks' maintenance or coming-soon mode switched on, every page was captured as the holding screen and published that way over your whole live site. Worse, it happened silently — coming-soon mode returns a normal &quot;page loaded&quot; response, so the sync reported success. Bricks Static now renders the real pages straight through the gate. Your site stays hidden from visitors the entire time: the bypass is signed with a private key unique to your site, so only a render your own site started gets through, and simply imitating the plugin isn't enough.</p>
+<h3>Fixed</h3>
+<p>Sites using the &quot;Plain&quot; permalink setting no longer produce a broken export. In that mode every page shares the same address, so all of them were being written over the top of your home page. The dashboard now warns you before you export, with a direct link to your Permalink settings, and the pages list tells you &quot;Plain permalinks&quot; is the reason pages are being left out.</p>
 <h3>Improved</h3>
-<p>The "Media" panel and its labels have been renamed to "Images" throughout the dashboard — clearer wording, since this feature only ever swaps images.</p>
-<h3>Improved</h3>
-<p>A failed sync's summary message now names the specific destination(s) that failed instead of a generic "some destinations failed to deploy."</p>
-<h3>Improved</h3>
-<p>A failed sync's status badge is now shown in red, distinct from the amber used for a plain cancellation — previously both looked the same, making it hard to tell a real failure from a sync you simply stopped yourself.</p>
+<p>When a page is skipped, the reason now points at the likely cause instead of just showing a bare error number. A skipped page will tell you if it looks like maintenance mode, a security plugin or firewall, or password protection — so you're not left searching your server logs for a setting you changed yourself.</p>

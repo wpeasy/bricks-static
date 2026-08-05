@@ -1,14 +1,14 @@
 <?php
 /**
- * Link deploy replacer (Pro) — rewrites <a>/<button> href targets at deploy time.
+ * Link deploy replacer — rewrites <a>/<button> href targets at deploy time.
  *
- * @package WPEasy\BricksStaticPro
+ * @package WPEasy\BricksStatic
  * @since   0.0.4
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStaticPro\Render;
+namespace WPEasy\BricksStatic\Render;
 
 use WPEasy\BricksStatic\Settings\Destination;
 use WPEasy\BricksStatic\Sync\DeployReplacer;

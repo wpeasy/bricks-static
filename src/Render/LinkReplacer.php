@@ -2,13 +2,13 @@
 /**
  * Per-destination link (href) swapping in rendered HTML.
  *
- * @package WPEasy\BricksStaticPro
+ * @package WPEasy\BricksStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStaticPro\Render;
+namespace WPEasy\BricksStatic\Render;
 
 defined('ABSPATH') || exit;
 

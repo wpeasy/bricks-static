@@ -21,7 +21,6 @@ use WPEasy\BricksStatic\Render\HeadCleaner;
 use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Render\StableHash;
 use WPEasy\BricksStatic\Render\UrlRewriter;
-use WPEasy\BricksStatic\Support\Edition;
 use WPEasy\BricksStatic\Support\Paths;
 use WPEasy\BricksStatic\Support\Url;
 use WPEasy\BricksStatic\Transport\TransportFactory;
@@ -89,8 +88,8 @@ final class Runner {
         self::release_driver();
 
         $job = Job::create($type);
-        // Pruning is a Pro capability; never prune on a single-page sync.
-        $job->data['prune'] = !$single && !empty($options['prune']) && Edition::capabilities()['prune'];
+        // Never prune on a single-page sync — it's incremental, not a full rebuild.
+        $job->data['prune'] = !$single && !empty($options['prune']);
 
         // A "check" run is a dry-run preview of what would sync to one destination.
         if ($type !== 'sync') {
@@ -154,10 +153,7 @@ final class Runner {
             }
         }
 
-        // Free renders at most maxPages page documents per full sync (assets,
-        // sitemaps, robots and favicon don't count). Single-page sync is
-        // incremental and not separately capped — the next full sync re-enforces.
-        $job->data['pageLimit']    = $single ? PHP_INT_MAX : Edition::max_pages();
+        $job->data['pageLimit']    = PHP_INT_MAX;
         $job->data['pageLimitHit'] = false;
 
         $job->data['phase']            = 'render';
@@ -548,6 +544,27 @@ final class Runner {
     }
 
     /**
+     * Skip reason for a non-200 render/fetch, with a hint for the statuses that
+     * have a specific, fixable cause — otherwise "HTTP 503" alone sends people
+     * hunting through server logs for a switch they flipped themselves.
+     *
+     * @param int $code HTTP status code.
+     */
+    private static function http_skip_reason(int $code): string {
+        $hints = [
+            // Bricks serves its maintenance screen with 503; other maintenance
+            // plugins and WAFs use 403/401 for the same "site is closed" state.
+            503 => __('site is in maintenance mode, or temporarily unavailable', 'bricks-static'),
+            403 => __('blocked — maintenance mode, a security plugin, or a firewall', 'bricks-static'),
+            401 => __('password protected, or behind HTTP authentication', 'bricks-static'),
+        ];
+
+        $reason = 'HTTP ' . $code;
+
+        return isset($hints[$code]) ? $reason . ' (' . $hints[$code] . ')' : $reason;
+    }
+
+    /**
      * Render a batch of queued pages.
      *
      * @param Job $job Active job.
@@ -570,7 +587,7 @@ final class Runner {
                 $result = PageRenderer::render($url);
 
                 if ($result['code'] !== 200) {
-                    $job->skip($url, 'HTTP ' . $result['code']);
+                    $job->skip($url, self::http_skip_reason((int) $result['code']));
                     continue;
                 }
 
@@ -691,7 +708,7 @@ final class Runner {
                 // No source file (dynamic asset): fetch and cache it.
                 $result = PageRenderer::fetch_asset($url);
                 if ($result['code'] !== 200) {
-                    $job->skip($url, 'HTTP ' . $result['code']);
+                    $job->skip($url, self::http_skip_reason((int) $result['code']));
                     continue;
                 }
                 // A page that slipped into the asset queue must not be written.
@@ -1124,9 +1141,7 @@ final class Runner {
             ];
         }
 
-        // Removals only happen on sync when pruning is available (a Pro
-        // capability), so only surface them in the preview when it could apply.
-        $preview = self::compute_check_preview($dest_id, !empty(Edition::capabilities()['prune']));
+        $preview = self::compute_check_preview($dest_id, true);
         $preview['needsProcess'] = false;
         $preview['message']      = self::check_message($preview);
 

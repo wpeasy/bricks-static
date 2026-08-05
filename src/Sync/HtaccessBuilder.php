@@ -10,8 +10,6 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Sync;
 
-use WPEasy\BricksStatic\Support\Edition;
-
 defined('ABSPATH') || exit;
 
 /**
@@ -123,14 +121,13 @@ final class HtaccessBuilder {
 
     /**
      * The rule body (without markers). The pre-compressed gzip rules are emitted
-     * only when gzip is enabled (Pro); Free ships cache rules for plain files.
+     * only when the host can actually produce .gz siblings.
      */
     private static function rules(): string {
         $assets = self::ASSET_EXT;
 
-        // mod_rewrite gzip-serving block — Pro only.
         $rewrite = '';
-        if (Edition::gzip_enabled()) {
+        if (Compressor::available()) {
             $rewrite = <<<HTACCESS
 
 
@@ -150,9 +147,9 @@ final class HtaccessBuilder {
 HTACCESS;
         }
 
-        // Pre-compressed Content-Encoding/Type headers — Pro only. Without them a
-        // .gz sibling would be served as an undecodable binary blob.
-        $precompressed = Edition::gzip_enabled() ? "\n" . self::precompressed_headers() . "\n" : '';
+        // Pre-compressed Content-Encoding/Type headers. Without them a .gz
+        // sibling would be served as an undecodable binary blob.
+        $precompressed = Compressor::available() ? "\n" . self::precompressed_headers() . "\n" : '';
 
         return <<<HTACCESS
 DirectoryIndex index.html
@@ -177,8 +174,8 @@ HTACCESS;
     public static function nginx(): string {
         $assets = self::ASSET_EXT;
 
-        // Pre-compressed serving is a Pro capability; omit it in Free.
-        $gzip = Edition::gzip_enabled()
+        // Omit the gzip_static directive when the host can't produce .gz siblings.
+        $gzip = Compressor::available()
             ? "\n# Serve pre-compressed .gz when available.\ngzip_static on;\n"
             : '';
 

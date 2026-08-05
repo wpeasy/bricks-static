@@ -1,10 +1,7 @@
 <script lang="ts">
-  import { caps } from '../shared/capabilities.svelte';
-
   const version = (window as unknown as { bsData?: { version?: string } }).bsData?.version ?? '';
 
   const sections = [
-    { id: 'free-vs-pro', label: 'Free vs Pro' },
     { id: 'features', label: 'Features' },
     { id: 'how', label: 'How it works' },
     { id: 'issues', label: 'Common issues' },
@@ -31,7 +28,7 @@
     },
     {
       title: 'Per-destination replacements',
-      body: 'Text (plain or rich HTML) and Media (pick a page, then swap one of its images — responsive srcset variants rebuilt automatically) are included free; Links (rewrite <a>/button targets) and Videos (swap embeds/local files) are Pro. Media and Videos are per-page; each destination gets its own set, grouped in a one-open-at-a-time accordion.',
+      body: 'Text (plain or rich HTML), Media (pick a page, then swap any of its images — responsive srcset variants rebuilt automatically), Links (rewrite <a>/button targets) and Videos (swap embeds/local files) — all included, no limits. Media and Videos are per-page; each destination gets its own set, grouped in a one-open-at-a-time accordion.',
     },
     {
       title: 'Sitemaps, robots.txt & favicon',
@@ -43,7 +40,7 @@
     },
     {
       title: 'Export ZIP',
-      body: 'An "Export ZIP" button next to Check/Sync on each destination packages the current render into a downloadable zip — for hosts you deploy manually, no FTP/SFTP needed. Uses that destination’s configured replacements, same as a real Sync, and never touches its sync stats since nothing is uploaded. Pro zips add gzip .gz files, sitemap.xml and robots.txt.',
+      body: 'An "Export ZIP" button next to Check/Sync on each destination packages the current render into a downloadable zip — for hosts you deploy manually, no FTP/SFTP needed. Uses that destination’s configured replacements, same as a real Sync, and never touches its sync stats since nothing is uploaded. Includes gzip .gz files, sitemap.xml and robots.txt.',
     },
     {
       title: 'gzip + server config',
@@ -67,36 +64,6 @@
     </nav>
 
     <div class="bs-docs__content bs-stack bs-stack--lg">
-      <!-- Free vs Pro -->
-      <section id="free-vs-pro" class="bs-docs__section bs-stack bs-stack--sm">
-        <h2>Free vs Pro</h2>
-        <p>
-          Bricks Static (this plugin) is free and fully functional for small sites.
-          <a href="https://brxprod.com/bricks-static" target="_blank" rel="noopener noreferrer">Bricks Static Pro</a>
-          is an optional add-on that removes the limits and adds advanced tooling.
-        </p>
-        <div class="bs-docs__tablewrap">
-          <table class="bs-docs__table">
-            <thead>
-              <tr><th>Feature</th><th>Free</th><th>Pro</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>Pages per sync</td><td>{caps.freeMaxPages}</td><td>Unlimited</td></tr>
-              <tr><td>Destinations</td><td>{caps.freeMaxDestinations}</td><td>Unlimited + sync&#8209;all</td></tr>
-              <tr><td>Text replacements</td><td>Yes</td><td>Yes</td></tr>
-              <tr><td>Media replacements (per page)</td><td>1 per page</td><td>Unlimited</td></tr>
-              <tr><td>Link / Video replacements</td><td>—</td><td>Yes</td></tr>
-              <tr><td>Gzip pre&#8209;compression (.gz)</td><td>—</td><td>Yes</td></tr>
-              <tr><td>Remote pruning (delete stale files)</td><td>—</td><td>Yes</td></tr>
-              <tr><td>Sitemap.xml + robots.txt</td><td>—</td><td>Yes</td></tr>
-              <tr><td>Per&#8209;file &amp; package (zip) deploy</td><td>Yes</td><td>Yes</td></tr>
-              <tr><td>Export ZIP (downloadable, no FTP)</td><td>Plain files + .htaccess</td><td>+ gzip, sitemap.xml, robots.txt</td></tr>
-              <tr><td>.htaccess + nginx, favicon, single&#8209;page sync, WP&#8209;CLI</td><td>Yes</td><td>Yes</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
       <!-- Features -->
       <section id="features" class="bs-docs__section">
         <h2>Features</h2>
@@ -301,37 +268,6 @@ wp bricks-static sync --prune    # also remove remote files no longer present</p
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: var(--ab-space-4);
-  }
-
-  .bs-docs__tablewrap {
-    overflow-x: auto;
-  }
-
-  .bs-docs__table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: var(--ab-text-sm);
-  }
-
-  .bs-docs__table th,
-  .bs-docs__table td {
-    padding: var(--ab-space-2) var(--ab-space-3);
-    border: 1px solid var(--ab-color-border);
-    text-align: left;
-    vertical-align: top;
-  }
-
-  .bs-docs__table thead th {
-    background: var(--ab-color-bg);
-    font-weight: var(--ab-weight-semibold);
-  }
-
-  .bs-docs__table td:nth-child(2),
-  .bs-docs__table th:nth-child(2),
-  .bs-docs__table td:nth-child(3),
-  .bs-docs__table th:nth-child(3) {
-    width: 22%;
-    white-space: nowrap;
   }
 
   .bs-docs__feature {

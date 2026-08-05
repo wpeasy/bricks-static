@@ -34,7 +34,6 @@ use WP_Error;
 use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Render\AssetExtractor;
 use WPEasy\BricksStatic\Settings\Destinations;
-use WPEasy\BricksStatic\Support\Edition;
 use WPEasy\BricksStatic\Support\Environment;
 use WPEasy\BricksStatic\Support\Url;
 use WPEasy\BricksStatic\CLI\Background;
@@ -176,7 +175,7 @@ final class AbilityRegistry {
             ]);
             self::register('set-page-include', [
                 'label'           => __('Include or exclude a page', 'bricks-static'),
-                'description'     => __('In manual discovery mode, sets whether a single post is included in the static export. Respects the Free page limit.', 'bricks-static'),
+                'description'     => __('In manual discovery mode, sets whether a single post is included in the static export.', 'bricks-static'),
                 'execute_callback' => [self::class, 'set_page_include'],
                 'permission'      => 'changes',
                 'input_schema'    => [
@@ -191,7 +190,7 @@ final class AbilityRegistry {
             ]);
             self::register('include-pages', [
                 'label'           => __('Include multiple pages', 'bricks-static'),
-                'description'     => __('In manual discovery mode, includes a batch of posts (e.g. the cascade when enabling a page that links to others). Respects the Free page limit and reports any skipped.', 'bricks-static'),
+                'description'     => __('In manual discovery mode, includes a batch of posts (e.g. the cascade when enabling a page that links to others).', 'bricks-static'),
                 'execute_callback' => [self::class, 'include_pages'],
                 'permission'      => 'changes',
                 'input_schema'    => [
@@ -252,14 +251,6 @@ final class AbilityRegistry {
                 'destructive'     => true,
             ]);
         }
-
-        /**
-         * Fires after Free registers its abilities, letting the Pro addon add its
-         * own (e.g. prune) onto the same category. Mirrors `bs_register_rest_routes`.
-         *
-         * @param string $namespace The Free ability namespace/category slug.
-         */
-        do_action('bs_register_abilities', self::NS);
     }
 
     // ====================================================================
@@ -356,7 +347,6 @@ final class AbilityRegistry {
             'inSync'        => $has_pushed && Runner::in_sync($primary->id(), $primary),
             'discoveryMode' => UrlCollector::mode(),
             'method'        => MethodResolver::resolve(),
-            'edition'       => Edition::is_pro() ? 'pro' : 'free',
             'isLocal'       => Environment::is_local(),
         ];
     }
@@ -419,8 +409,6 @@ final class AbilityRegistry {
             'mode'          => $mode,
             'includedCount' => UrlCollector::effective_count(),
             'savedCount'    => UrlCollector::included_count(),
-            'maxPages'      => Edition::max_pages(),
-            'unlimited'     => Edition::is_pro(),
             'pages'         => $pages,
         ];
     }
@@ -540,8 +528,7 @@ final class AbilityRegistry {
         }
 
         return [
-            'maxDestinations' => Edition::max_destinations(),
-            'destinations'    => $list,
+            'destinations' => $list,
         ];
     }
 
@@ -582,16 +569,6 @@ final class AbilityRegistry {
             return new WP_Error('bs_forbidden', __('You cannot edit this post.', 'bricks-static'));
         }
 
-        // Storage-layer Free page cap (matches the REST controller).
-        if (
-            $include
-            && !Edition::is_pro()
-            && !UrlCollector::is_effective($post_id)
-            && UrlCollector::effective_count() >= Edition::max_pages()
-        ) {
-            return new WP_Error('bs_limit', __('Free plan page limit reached.', 'bricks-static'));
-        }
-
         update_post_meta($post_id, UrlCollector::INCLUDE_META, $include ? '1' : '0');
 
         return self::include_payload($include);
@@ -603,8 +580,6 @@ final class AbilityRegistry {
      */
     public static function include_pages($input): array {
         $ids = is_array($input) ? array_map('intval', (array) ($input['postIds'] ?? [])) : [];
-        $pro = Edition::is_pro();
-        $max = Edition::max_pages();
 
         $included = [];
         $skipped  = [];
@@ -613,10 +588,6 @@ final class AbilityRegistry {
                 continue;
             }
             if (UrlCollector::is_included($pid)) {
-                continue;
-            }
-            if (!$pro && UrlCollector::effective_count() >= $max) {
-                $skipped[] = $pid;
                 continue;
             }
             update_post_meta($pid, UrlCollector::INCLUDE_META, '1');
@@ -726,8 +697,6 @@ final class AbilityRegistry {
             'included'      => $included,
             'includedCount' => UrlCollector::effective_count(),
             'savedCount'    => UrlCollector::included_count(),
-            'maxPages'      => Edition::max_pages(),
-            'unlimited'     => Edition::is_pro(),
         ];
     }
 

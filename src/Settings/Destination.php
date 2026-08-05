@@ -11,7 +11,6 @@ declare(strict_types=1);
 namespace WPEasy\BricksStatic\Settings;
 
 use WPEasy\BricksStatic\Support\Crypto;
-use WPEasy\BricksStatic\Support\Edition;
 
 defined('ABSPATH') || exit;
 
@@ -245,17 +244,16 @@ final class Destination {
             $this->data['replacements'] = self::sanitize_replacements($input['replacements']);
         }
         if (array_key_exists('mediaReplacements', $input) && is_array($input['mediaReplacements'])) {
-            // Media is a Free feature capped per page (Pro lifts the cap).
             $this->data['mediaReplacements'] = self::sanitize_page_replacements(
                 $input['mediaReplacements'],
-                Edition::max_media_per_page()
+                PHP_INT_MAX
             );
         }
         if (array_key_exists('linkReplacements', $input) && is_array($input['linkReplacements'])) {
             $this->data['linkReplacements'] = self::sanitize_link_replacements($input['linkReplacements']);
         }
         if (array_key_exists('videoReplacements', $input) && is_array($input['videoReplacements'])) {
-            // Same per-page shape as media; Pro-only, so no per-page cap.
+            // Same per-page shape as media — no per-page cap.
             $this->data['videoReplacements'] = self::sanitize_page_replacements(
                 $input['videoReplacements'],
                 PHP_INT_MAX

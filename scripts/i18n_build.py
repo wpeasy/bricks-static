@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-i18n build helper for Bricks Static (Free + Pro).
+i18n build helper for Bricks Static.
 
 Two modes:
 
-  extract   Read both .pot files, print a JSON array of unique translatable
+  extract   Read the .pot file, print a JSON array of unique translatable
             source strings (msgid, plus msgid_plural where present). URLs,
             e-mail/author headers and pure-metadata are skipped so the
             machine-translation pass only sees real UI copy.
 
-  assemble  Read both .pot files + one JSON dict per locale
+  assemble  Read the .pot file + one JSON dict per locale
             (scripts/i18n/<locale>.json mapping source string -> translation,
             and "<source>\\x00<plural>" -> [one, many] for plurals), then write
             languages/<domain>-<locale>.po and compile the matching .mo.
@@ -29,7 +29,6 @@ JSON_DIR = Path(__file__).resolve().parent / "i18n"
 # (pot path, output .po/.mo dir, textdomain)
 DOMAINS = [
     (ROOT / "languages" / "bricks-static.pot", ROOT / "languages", "bricks-static"),
-    (ROOT / "pro" / "languages" / "bricks-static-pro.pot", ROOT / "pro" / "languages", "bricks-static-pro"),
 ]
 
 LOCALES = {
@@ -53,7 +52,7 @@ def is_translatable(entry) -> bool:
         return False
     if "@" in m and " " in m and "." in m.split("@")[-1]:  # author "Name <email>"
         return False
-    if m in ("bricks-static", "bricks-static-pro"):
+    if m in ("bricks-static",):
         return False
     return True
 

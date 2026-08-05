@@ -17,11 +17,7 @@ interface EditorData {
   pageUrl: string;
   published: boolean | string;
   included: boolean | string;
-  effective?: boolean | string;
   includedCount?: number;
-  savedCount?: number;
-  maxPages?: number;
-  unlimited?: boolean | string;
   i18n?: Record<string, string>;
 }
 
@@ -31,9 +27,6 @@ interface ListData {
   manualMode?: boolean | string;
   fabEnabled?: boolean | string;
   includedCount?: number;
-  savedCount?: number;
-  maxPages?: number;
-  unlimited?: boolean | string;
 }
 
 const win = window as unknown as { bsEditorData?: EditorData; bsListData?: ListData };
@@ -51,9 +44,6 @@ if (list && list.restUrl) {
       manualMode: !!list.manualMode,
       fabEnabled: !!list.fabEnabled,
       includedCount: Number(list.includedCount) || 0,
-      savedCount: Number(list.savedCount) || 0,
-      maxPages: Number(list.maxPages) || 0,
-      unlimited: !!list.unlimited,
     },
   });
 }
@@ -78,11 +68,7 @@ if (data && data.restUrl) {
         pageUrl: data.pageUrl,
         published: !!data.published,
         included: !!data.included,
-        effective: !!data.effective,
         includedCount: Number(data.includedCount) || 0,
-        savedCount: Number(data.savedCount) || 0,
-        maxPages: Number(data.maxPages) || 0,
-        unlimited: !!data.unlimited,
       },
     });
   }

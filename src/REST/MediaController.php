@@ -13,13 +13,12 @@ namespace WPEasy\BricksStatic\REST;
 use WP_REST_Request;
 use WP_REST_Response;
 use WPEasy\BricksStatic\Media\MediaCollector;
-use WPEasy\BricksStatic\Support\Edition;
 
 defined('ABSPATH') || exit;
 
 /**
- * Serves the exported page list and the images on a chosen page, plus the
- * per-page media-replacement cap, for the (Free) media replacer UI.
+ * Serves the exported page list and the images on a chosen page for the media
+ * replacer UI.
  */
 final class MediaController {
 
@@ -57,10 +56,9 @@ final class MediaController {
         $page = (string) $request->get_param('page');
 
         return new WP_REST_Response([
-            'pages'      => MediaCollector::pages(),
-            'page'       => $page,
-            'media'      => $page !== '' ? MediaCollector::collect($page) : [],
-            'maxPerPage' => Edition::max_media_per_page(),
+            'pages' => MediaCollector::pages(),
+            'page'  => $page,
+            'media' => $page !== '' ? MediaCollector::collect($page) : [],
         ]);
     }
 }

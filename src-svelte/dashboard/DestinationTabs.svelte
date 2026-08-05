@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Tooltip } from '@wpeasy/ab-ui';
   import type { DestinationDisplay } from '../shared/types';
-  import { canAddDestination } from '../shared/capabilities.svelte';
   import { __ } from '../shared/i18n';
 
   let {
@@ -19,8 +18,6 @@
   } = $props();
 
   let showAll = $derived(destinations.length > 1);
-  // Multiple destinations are a Pro capability; the cap is 1 in Free.
-  let canAdd = $derived(canAddDestination(destinations.length));
 
   // Inline rename: double-click a tab to turn it into a text field.
   // ab-ui Tabs can't host an inline <input>, so this strip stays bespoke.
@@ -75,13 +72,7 @@
       </Tooltip>
     {/if}
   {/each}
-  {#if canAdd}
-    <button type="button" class="bs-tab bs-tab--add" onclick={onAdd} aria-label={__('addDestAria')}>+</button>
-  {:else}
-    <Tooltip content={__('multiDestReqPro')} placement="bottom">
-      <button type="button" class="bs-tab bs-tab--add" disabled aria-label={__('addDestAria')}>+</button>
-    </Tooltip>
-  {/if}
+  <button type="button" class="bs-tab bs-tab--add" onclick={onAdd} aria-label={__('addDestAria')}>+</button>
 </div>
 
 <style>
@@ -132,11 +123,6 @@
     color: var(--ab-color-primary);
     font-size: var(--ab-text-lg);
     line-height: 1;
-  }
-
-  .bs-tab--add:disabled {
-    color: var(--ab-color-text-muted);
-    cursor: not-allowed;
   }
 
   .bs-tab__off {

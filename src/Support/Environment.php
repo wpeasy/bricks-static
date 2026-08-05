@@ -54,6 +54,20 @@ final class Environment {
     }
 
     /**
+     * Whether WordPress is using a "pretty" permalink structure.
+     *
+     * With plain permalinks (Settings → Permalinks → Plain) every page URL is a
+     * query string on the site root — `/?page_id=9`, `/?p=1` — so the whole site
+     * maps to a single path, `/`. Nothing can be exported: {@see Url::to_relative_path()}
+     * has only the path to work with, so every page would resolve to `index.html`
+     * and overwrite the home page. The dashboard warns on this; the crawler skips
+     * the unmappable URLs rather than colliding on them.
+     */
+    public static function pretty_permalinks(): bool {
+        return (string) get_option('permalink_structure') !== '';
+    }
+
+    /**
      * The WP-CLI command users should run for a reliable sync.
      */
     public static function cli_command(): string {

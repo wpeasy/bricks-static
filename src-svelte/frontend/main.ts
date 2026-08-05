@@ -12,11 +12,7 @@ interface FabData {
   manualMode?: boolean | string;
   postId?: number | string;
   included?: boolean | string;
-  effective?: boolean | string;
   includedCount?: number | string;
-  savedCount?: number | string;
-  maxPages?: number | string;
-  unlimited?: boolean | string;
 }
 
 const data = (window as unknown as { bsFabData?: FabData }).bsFabData;
@@ -37,11 +33,7 @@ if (data && data.restUrl) {
       manualMode: !!data.manualMode,
       postId: Number(data.postId) || 0,
       included: !!data.included,
-      effective: !!data.effective,
       includedCount: Number(data.includedCount) || 0,
-      savedCount: Number(data.savedCount) || 0,
-      maxPages: Number(data.maxPages) || 0,
-      unlimited: !!data.unlimited,
     },
   });
 }

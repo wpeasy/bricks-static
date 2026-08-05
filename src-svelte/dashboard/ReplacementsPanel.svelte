@@ -3,24 +3,14 @@
   import type { DestinationDisplay } from '../shared/types';
   import TextReplacements from './TextReplacements.svelte';
   import MediaReplacer from './MediaReplacer.svelte';
-  import ProPanelMount from './ProPanelMount.svelte';
-  import ProBadge from '../lib/ProBadge.svelte';
-  import UpgradeCta from '../lib/UpgradeCta.svelte';
-  import ListSkeleton from '../lib/ListSkeleton.svelte';
+  import LinkReplacer from '../lib/LinkReplacer.svelte';
+  import VideoReplacer from '../lib/VideoReplacer.svelte';
   import { REPLACEMENT_CATALOG, type ReplacementEntry } from '../shared/replacementCatalog';
-  import { caps } from '../shared/capabilities.svelte';
-  import { getPanel } from '../shared/panelRegistry.svelte';
   import { __ } from '../shared/i18n';
 
   // Catalogue entries carry English title/description in code; map each to its
   // translated i18n key for display.
   const TITLE_KEY: Record<string, string> = { text: 'catText', media: 'catMedia', links: 'catLinks', videos: 'catVideos' };
-  const DESC_KEY: Record<string, string> = {
-    text: 'catTextDesc',
-    media: 'catMediaDesc',
-    links: 'catLinksDesc',
-    videos: 'catVideosDesc',
-  };
 
   let {
     destination,
@@ -37,21 +27,10 @@
 
   const entry = (key: string): ReplacementEntry => REPLACEMENT_CATALOG.find((e) => e.key === key)!;
 
-  // Saved-row count for the count badge — from the registered Pro panel if it
-  // provides one, otherwise from the destination's stored rows (still present in
-  // the payload even when locked, so a downgraded user sees their saved counts).
+  // Saved-row count for the count badge.
   function count(e: ReplacementEntry): number {
-    const panel = getPanel(e.key);
-    if (panel?.badge) {
-      return panel.badge(destination);
-    }
     const rows = (destination as unknown as Record<string, unknown[]>)[e.countProp];
     return Array.isArray(rows) ? rows.length : 0;
-  }
-
-  // A Pro row is locked when advanced replacements aren't licensed.
-  function locked(e: ReplacementEntry): boolean {
-    return e.tier === 'pro' && !caps.advancedReplacements;
   }
 
   let items = $derived([
@@ -70,20 +49,7 @@
          not WHERE, so it's dropped for these two per-page entries. Text/Links
          are whole-export (not per-page), so their aggregate count stays. -->
     {#if count(e) > 0 && e.key !== 'media' && e.key !== 'videos'}<Badge tone="primary" variant="soft">{count(e)}</Badge>{/if}
-    {#if locked(e)}<ProBadge />{/if}
   </span>
-{/snippet}
-
-{#snippet proBody(e: ReplacementEntry)}
-  {#if caps.advancedReplacements}
-    {#if getPanel(e.key)}
-      <ProPanelMount entryKey={e.key} {destination} {onSaved} />
-    {:else}
-      <ListSkeleton rows={3} />
-    {/if}
-  {:else}
-    <UpgradeCta description={__(DESC_KEY[e.key] ?? '') || e.description} />
-  {/if}
 {/snippet}
 
 {#snippet titleText()}{@render titleInner(entry('text'))}{/snippet}
@@ -93,8 +59,8 @@
 
 {#snippet bodyText()}<TextReplacements {destination} {running} {onSaved} />{/snippet}
 {#snippet bodyMedia()}<MediaReplacer {destination} {onSaved} />{/snippet}
-{#snippet bodyLinks()}{@render proBody(entry('links'))}{/snippet}
-{#snippet bodyVideos()}{@render proBody(entry('videos'))}{/snippet}
+{#snippet bodyLinks()}<LinkReplacer {destination} {onSaved} />{/snippet}
+{#snippet bodyVideos()}<VideoReplacer {destination} {onSaved} />{/snippet}
 
 <section class="bs-card bs-stack bs-stack--sm">
   <h2 class="bs-rp__title">{__('replacements')} <small>{__('replacementsSub')}</small></h2>

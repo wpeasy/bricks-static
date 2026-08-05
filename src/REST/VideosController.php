@@ -2,17 +2,17 @@
 /**
  * Videos (iframe embeds) REST controller.
  *
- * @package WPEasy\BricksStaticPro
+ * @package WPEasy\BricksStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStaticPro\REST;
+namespace WPEasy\BricksStatic\REST;
 
 use WP_REST_Request;
 use WP_REST_Response;
-use WPEasy\BricksStaticPro\Media\VideoCollector;
+use WPEasy\BricksStatic\Media\VideoCollector;
 
 defined('ABSPATH') || exit;
 

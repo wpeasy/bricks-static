@@ -97,7 +97,7 @@ export const api = {
   preflight: () => request<Preflight>('/sync/preflight', 'POST', {}),
   serverConfig: () => request<ServerConfig>('/sync/server-config'),
   getMedia: (page = '') =>
-    request<{ pages: ReplacementPage[]; page: string; media: MediaItem[]; maxPerPage: number }>(
+    request<{ pages: ReplacementPage[]; page: string; media: MediaItem[] }>(
       `/media${page ? `?page=${encodeURIComponent(page)}` : ''}`,
     ),
   getLinks: () => request<{ links: LinkItem[] }>('/links'),

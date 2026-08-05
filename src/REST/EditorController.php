@@ -19,7 +19,6 @@ use WP_REST_Response;
 use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Render\AssetExtractor;
 use WPEasy\BricksStatic\Render\PageRenderer;
-use WPEasy\BricksStatic\Support\Edition;
 use WPEasy\BricksStatic\Support\Url;
 use WPEasy\BricksStatic\Sync\LinkGraph;
 use WPEasy\BricksStatic\Sync\Manifest;
@@ -95,19 +94,6 @@ final class EditorController {
 
         $include = !empty($params['include']);
 
-        // Free page cap (storage-layer enforcement of the 3-layer gate): refuse to
-        // include another page once the limit is reached. Excluding is always OK.
-        if (
-            $include
-            && !Edition::is_pro()
-            && !UrlCollector::is_effective($post_id)
-            && UrlCollector::effective_count() >= Edition::max_pages()
-        ) {
-            return new WP_REST_Response(self::payload(UrlCollector::is_included($post_id)) + [
-                'message' => 'Free plan page limit reached.',
-            ], 403);
-        }
-
         // Stored as '0' (excluded) or '1' (included).
         update_post_meta($post_id, UrlCollector::INCLUDE_META, $include ? '1' : '0');
 
@@ -115,8 +101,8 @@ final class EditorController {
     }
 
     /**
-     * Include a batch of posts (the "Include all" cascade), respecting the Free
-     * page cap. Already-included posts are no-ops; over-cap posts are skipped.
+     * Include a batch of posts (the "Include all" cascade). Already-included
+     * posts are no-ops.
      *
      * @param WP_REST_Request $request Request with { postIds: int[] }.
      */
@@ -124,8 +110,6 @@ final class EditorController {
         $params = (array) $request->get_json_params();
         $ids    = array_map('intval', (array) ($params['postIds'] ?? []));
 
-        $pro      = Edition::is_pro();
-        $max      = Edition::max_pages();
         $included = [];
         $skipped  = [];
 
@@ -135,10 +119,6 @@ final class EditorController {
             }
             if (UrlCollector::is_included($pid)) {
                 continue; // already in
-            }
-            if (!$pro && UrlCollector::effective_count() >= $max) {
-                $skipped[] = $pid; // would exceed the Free cap
-                continue;
             }
             update_post_meta($pid, UrlCollector::INCLUDE_META, '1');
             $included[] = $pid;
@@ -265,8 +245,8 @@ final class EditorController {
     }
 
     /**
-     * Standard response: the post's include state plus the current count + cap so
-     * the UI can keep the Free page-limit display accurate without a reload.
+     * Standard response: the post's include state plus the current include count
+     * so the UI can keep its counts accurate without a reload.
      *
      * @param bool $included Whether the post is now included.
      * @return array<string,mixed>
@@ -276,8 +256,6 @@ final class EditorController {
             'included'      => $included,
             'includedCount' => UrlCollector::effective_count(),
             'savedCount'    => UrlCollector::included_count(),
-            'maxPages'      => Edition::max_pages(),
-            'unlimited'     => Edition::is_pro(),
         ];
     }
 }

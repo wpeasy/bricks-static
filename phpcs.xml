@@ -1,17 +1,15 @@
 <?xml version="1.0"?>
 <ruleset name="Bricks Static — Security">
     <description>
-        Security-focused PHPCS ruleset for Bricks Static (Free + Pro).
+        Security-focused PHPCS ruleset for Bricks Static.
         Run `phpcs` (auto-discovers this file) from the plugin root.
         For a broader best-practice pass, run `phpcs --standard=WordPress-Extra`.
     </description>
 
-    <!-- Scan the plugin's PHP only (Free + the Pro add-on). -->
+    <!-- Scan the plugin's PHP only. -->
     <file>bricks-static.php</file>
     <file>uninstall.php</file>
     <file>src</file>
-    <file>pro/bricks-static-pro.php</file>
-    <file>pro/src</file>
 
     <!-- Never scan bundled deps, build output, source assets or wp.org art. -->
     <exclude-pattern>*/vendor/*</exclude-pattern>

@@ -1,8 +1,6 @@
 <script lang="ts">
   import { Badge, Button, Progress, Tooltip, fadeUp } from '@wpeasy/ab-ui';
   import type { SyncSnapshot } from '../shared/types';
-  import { caps } from '../shared/capabilities.svelte';
-  import { PURCHASE_URL } from '../shared/upsell';
   import { __, __f } from '../shared/i18n';
   import Modal from '../lib/Modal.svelte';
 
@@ -219,14 +217,6 @@
       <div class="bs-progress__notice">{__f('pkgFallbackNotice', snapshot.packageFallback)}</div>
     {:else if snapshot.zipUnavailable}
       <div class="bs-progress__notice">{__('zipFallbackNotice')}</div>
-    {/if}
-
-    {#if snapshot.pageLimitHit}
-      <div class="bs-progress__limit">
-        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-        <span>{@html __f('freePlanLimit', caps.maxPages)}</span>
-        <a class="bs-btn bs-btn--primary" href={PURCHASE_URL} target="_blank" rel="noopener noreferrer">{__('upgradeToPro')}</a>
-      </div>
     {/if}
 
     {#if failedCount > 0}
@@ -449,17 +439,6 @@
     flex: 1;
   }
 
-  .bs-progress__limit {
-    display: flex;
-    align-items: center;
-    gap: var(--ab-space-4);
-    padding: var(--ab-space-3) var(--ab-space-4);
-    border: 1px solid #7c3aed;
-    border-radius: var(--ab-radius-md);
-    background: color-mix(in srgb, #7c3aed 7%, var(--ab-color-surface));
-    font-size: var(--ab-text-sm);
-  }
-
   /* Informational fallback notice (e.g. zip unavailable → file-by-file). */
   .bs-progress__notice {
     padding: var(--ab-space-3) var(--ab-space-4);
@@ -469,29 +448,6 @@
     font-size: var(--ab-text-sm);
     color: var(--ab-color-text-muted);
     line-height: 1.5;
-  }
-
-  .bs-progress__limit span {
-    flex: 1;
-  }
-
-  .bs-btn {
-    padding: var(--ab-space-2) var(--ab-space-4);
-    border: 1px solid var(--ab-color-border-strong);
-    border-radius: var(--ab-radius-md);
-    background: var(--ab-color-surface);
-    color: var(--ab-color-text);
-    font: inherit;
-    font-size: var(--ab-text-sm);
-    font-weight: var(--ab-weight-medium);
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .bs-btn--primary {
-    background: var(--ab-color-primary);
-    border-color: transparent;
-    color: var(--ab-color-primary-on);
   }
 
   .bs-progress__list {

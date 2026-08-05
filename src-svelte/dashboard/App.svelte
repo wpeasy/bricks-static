@@ -1,8 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../shared/api';
-  import { caps } from '../shared/capabilities.svelte';
-  import { PURCHASE_URL } from '../shared/upsell';
   import { __, __f } from '../shared/i18n';
   import type { CheckPreview, DestinationsResponse, DiscoveryMode, ExportSnapshot, Status, SyncSnapshot } from '../shared/types';
   import NoticePanel from './NoticePanel.svelte';
@@ -20,7 +18,7 @@
   import SettingsDrawer from './SettingsDrawer.svelte';
   import SetupWizard from './SetupWizard.svelte';
   import { uiPrefs, themeAttr, accentAttr } from '../shared/uiPrefs.svelte';
-  import { Badge, Button, ConfirmButton, Tabs, Tooltip, fadeUp, autoContrast } from '@wpeasy/ab-ui';
+  import { Alert, Badge, Button, ConfirmButton, Tabs, Tooltip, fadeUp, autoContrast } from '@wpeasy/ab-ui';
 
   const freeVersion = (window as unknown as { bsData?: { version?: string } }).bsData?.version ?? '';
 
@@ -391,9 +389,7 @@
     <header class="bs-stack bs-stack--xs">
       <h1>
         Bricks Static
-        <Badge class={caps.edition === 'pro' ? 'bs-verbadge bs-verbadge--pro' : 'bs-verbadge'} variant="soft">
-          v{freeVersion}{#if caps.proVersion} · Pro v{caps.proVersion}{/if}
-        </Badge>
+        <Badge class="bs-verbadge" variant="soft">v{freeVersion}</Badge>
         <span class="bs-dash__by">{__('byPrefix')} <a href="https://brxprod.com" target="_blank" rel="noopener noreferrer">BRXProd</a></span>
       </h1>
       <p class="bs-dash__lead">{__('appLead')}</p>
@@ -403,44 +399,18 @@
     </Tooltip>
   </div>
 
-  {#if caps.edition !== 'pro'}
-    <div class="bs-freebox">
-      <div class="bs-freebox__head">
-        <strong class="bs-freebox__title">{__('freeYouAreOn')}</strong>
-        <a class="bs-freebox__btn" href={PURCHASE_URL} target="_blank" rel="noopener noreferrer">{__('upgradeToPro')}</a>
-      </div>
-      <div class="bs-freebox__cols">
-        <div class="bs-freebox__col">
-          <h3 class="bs-freebox__colhead">{__('freeThisPlugin')}</h3>
-          <ul class="bs-freebox__list">
-            <li>{__f('freeStaticGen', caps.maxPages)}</li>
-            <li>{__('freeOneDest')}</li>
-            <li>{__('freeTextRepl')}</li>
-            <li>{__('freeMediaRepl')}</li>
-            <li>{__('freePerFile')}</li>
-            <li>{__('freeExportZip')}</li>
-            <li>{__('freeHtaccess')}</li>
-            <li>{__('freeSinglePage')}</li>
-          </ul>
-        </div>
-        <div class="bs-freebox__col bs-freebox__col--pro">
-          <h3 class="bs-freebox__colhead">{__('proAddon')}</h3>
-          <ul class="bs-freebox__list">
-            <!-- eslint-disable svelte/no-at-html-tags -->
-            <li>{@html __('proUnlimitedPages')}</li>
-            <li>{@html __('proUnlimitedDests')}</li>
-            <!-- eslint-enable svelte/no-at-html-tags -->
-            <li>{__('proAdvRepl')}</li>
-            <li>{__('proGzip')}</li>
-            <li>{__('proPrune')}</li>
-            <li>{__('proSitemap')}</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  {/if}
-
   {#if loadError}<div class="bs-dash__error">{loadError}</div>{/if}
+
+  {#if status && !status.prettyPermalinks}
+    <Alert tone="danger" title={__('permalinksTitle')}>
+      <div class="bs-stack bs-stack--xs">
+        <!-- Trusted dictionary string (contains a <code> sample URL). -->
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        <p>{@html __('permalinksBody')}</p>
+        <p><a href="options-permalink.php">{__('permalinksAction')}</a></p>
+      </div>
+    </Alert>
+  {/if}
 
   {#if status}
     <div class="bs-globalbar">
@@ -616,13 +586,6 @@
     vertical-align: middle;
   }
 
-  /* Pro accent — purple isn't an ab-ui tone, so tint the Badge directly. */
-  :global(.ab-ui .ab-badge.bs-verbadge--pro) {
-    background: color-mix(in srgb, #7c3aed 18%, transparent);
-    border-color: #7c3aed;
-    color: var(--ab-color-text);
-  }
-
   .bs-dash__by {
     margin-left: var(--ab-space-3);
     font-size: var(--ab-text-sm);
@@ -638,81 +601,6 @@
 
   .bs-dash__by a:hover {
     text-decoration: underline;
-  }
-
-  .bs-freebox {
-    display: flex;
-    flex-direction: column;
-    gap: var(--ab-space-4);
-    padding: var(--ab-space-4) var(--ab-space-5);
-    border: 1px solid #7c3aed;
-    border-radius: var(--ab-radius-lg);
-    background: color-mix(in srgb, #7c3aed 6%, var(--ab-color-surface));
-  }
-
-  .bs-freebox__head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--ab-space-4);
-    flex-wrap: wrap;
-  }
-
-  .bs-freebox__title {
-    font-size: var(--ab-text-md);
-  }
-
-  .bs-freebox__cols {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--ab-space-4);
-  }
-
-  @media (min-width: 640px) {
-    .bs-freebox__cols {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-
-  .bs-freebox__col {
-    padding: var(--ab-space-3) var(--ab-space-4);
-    border: 1px solid var(--ab-color-border);
-    border-radius: var(--ab-radius-md);
-    background: var(--ab-color-surface);
-  }
-
-  .bs-freebox__col--pro {
-    border-color: #7c3aed;
-    background: color-mix(in srgb, #7c3aed 8%, var(--ab-color-surface));
-  }
-
-  .bs-freebox__colhead {
-    margin: 0 0 var(--ab-space-1);
-    font-size: var(--ab-text-sm);
-    font-weight: var(--ab-weight-semibold);
-  }
-
-  .bs-freebox__list {
-    margin: 0;
-    padding-left: var(--ab-space-5);
-    color: var(--ab-color-text-muted);
-    font-size: var(--ab-text-sm);
-    line-height: 1.6;
-  }
-
-  .bs-freebox__btn {
-    flex: 0 0 auto;
-    padding: var(--ab-space-2) var(--ab-space-5);
-    border-radius: var(--ab-radius-md);
-    background: #7c3aed;
-    color: #fff;
-    font-weight: var(--ab-weight-semibold);
-    text-decoration: none;
-    white-space: nowrap;
-  }
-
-  .bs-freebox__btn:hover {
-    filter: brightness(1.08);
   }
 
   .bs-dash__error {

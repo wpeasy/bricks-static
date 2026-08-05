@@ -5,6 +5,20 @@ All notable changes to **Bricks Static** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-08-05
+
+### Fixed
+- **Renders no longer capture the maintenance / coming-soon screen.** With Bricks' maintenance mode enabled, every page render mirrored the maintenance template instead of the real page — and because "coming soon" returns HTTP 200, the sync succeeded silently and published a site where every page was the holding screen. Renders now pass through the gate via a new `bricks/maintenance/should_apply` filter. The bypass is authenticated with a per-site shared secret (`X-BS-Render-Token`, backed by the non-autoloaded `bs_render_token` option and compared with `hash_equals()`), so only a render this site started gets through — copying the plugin's user agent is not enough, and a hidden site stays hidden from visitors. Disable with the `bs_bypass_maintenance` filter to capture the maintenance screen instead.
+- **"Plain" permalinks are now caught before they wreck an export.** In that mode every page is a query string on the site root (`/?page_id=9`), so every page mapped to `index.html` and overwrote the home page. The dashboard now shows a blocking warning with a link to Permalink settings, the crawler skips the unmappable URLs instead of colliding on them, and the pages overview reports "Plain permalinks" as the exclusion reason rather than a misleading mode-based one.
+
+### Changed
+- **Skipped-page errors name the likely cause.** A non-200 render used to report a bare `HTTP 503`, which sent people hunting through server logs for a switch they had flipped themselves. 503, 403 and 401 now carry a hint — maintenance mode, a security plugin or firewall, or HTTP authentication.
+
+## [2.0.0] - 2026-07-31
+
+### Changed
+- **Bricks Static Pro has been merged into the free plugin — every feature is now free, and the license requirement is gone.** Unlimited pages per sync, unlimited destinations, Links and Videos replacements (alongside Text and Images), gzip pre-compression, remote pruning, and sitemap/robots.txt generation are all built in with no cap and no upgrade prompts. The separate "Bricks Static Pro" plugin, its FluentCart license-key activation, and the internal edition/capability gating layer have all been removed.
+
 ## [1.0.6] - 2026-07-11
 
 ### Added
@@ -88,3 +102,58 @@ First public release. Bricks Static renders your Bricks-built pages to static HT
 - **SSRF guard** (`Support\UrlSafety`) around the user-supplied destination-URL fetch: rejects private/reserved/link-local ranges, allows loopback for dev, and disables redirect-following.
 - **SFTP host-key verification** (trust-on-first-use): the server key is read before login and a later mismatch is refused.
 - TLS-verification relaxation is scoped to true dev hosts via exact matching. See `SECURITY_PATTERNS.md`.
+
+---
+
+## Pro changelog (pre-merge history)
+
+Bricks Static Pro shipped as a separate, licensed add-on plugin from 1.0.0 through 1.0.5 before its features were merged into this plugin in 2.0.0 (see above). Preserved here for historical record; these entries describe Pro-only releases and no longer correspond to a separate plugin.
+
+## [1.0.5] - 2026-07-11
+
+### Added
+- **"Pages with replacements" quick-jump** for the Video replacer, matching Free's new Images panel — a row of tags for every page with a saved video swap (with its count), to jump straight to one instead of picking blind.
+
+### Changed
+- **"Media replacer" renamed to "Image Replacer"** in the dictionary strings shared with Free's Images panel (labels, empty-state and "use this" wording) — no functional change.
+
+## [1.0.4] - 2026-07-10
+
+### Added
+- **Export ZIP now includes gzip `.gz` siblings** and the fuller gzip-serving `.htaccess` rules, plus `sitemap.xml`/`robots.txt`, matching what a real Sync would push to a destination — the same content Free's new Export ZIP feature packages, with Pro's gzip pre-compression and sitemaps layered on. Falls back with an in-progress notice ("Gzip is not available on this server") if the PHP runtime lacks `gzencode()`.
+
+### Changed
+- No Pro-facing behaviour change, but bumped alongside Free: `src-svelte/lib/Modal.svelte` (shared with Pro's own Link/Video replacer panels) gained an optional `size` prop, used only by Free's new setup wizard — fully backward compatible with every existing Pro modal.
+
+## [1.0.3] - 2026-07-07
+
+### Fixed
+- **Dashboard crash on hosts that open wp-admin from a cross-origin tab (e.g. InstaWP).** Same shared i18n fix as Free — the fallback that read `window.opener.bspData` could crash the dashboard when the opener was a different origin; it now fails safe.
+
+## [1.0.2] - 2026-07-07
+
+### Changed
+- **Media replacement is no longer Pro-only.** The Media panel (including this release's CSS-background detection and responsive-set swapping) has moved to the free plugin, capped at one swap per page; Pro simply removes that per-page cap. Video replacements moved to the same per-page model at the same time (previously a single site-wide swap).
+
+## [1.0.1] - 2026-06-22
+
+### Added
+- **"Only replacements" filter** on the Media, Links and Videos panels — off by default; when on, the list shows only items that already have a saved replacement.
+- **Translations.** The Pro replacement panels (Media, Links, Videos) are now localised in French, German, Italian, Spanish and Dutch, matching the free plugin's dashboard language.
+
+## [1.0.0] - 2026-06-21
+
+First release as a standalone Pro add-on, split out of Bricks Static. Requires
+Bricks Static (free) **1.0.0** or newer (`BSP_MIN_FREE`).
+
+### Added
+- **Unlimited pages** per sync — the free plugin renders up to 10 pages; Pro removes the cap.
+- **Multiple destinations** — the free plugin is capped at one; Pro unlocks unlimited destinations and "sync all". Destinations beyond the free cap are preserved (never deleted) if the license lapses, and reappear when Pro is active again.
+- **Advanced replacements** — Media, Links and Videos replacement panels, injected into the free dashboard's Replacements accordion. (Text replacements remain in Free.)
+- **Gzip pre-compression** — `.gz` siblings plus the matching `.htaccess`/nginx serving rules. Free ships plain, uncompressed files.
+- **Remote pruning** (`--prune`) — delete destination files that no longer exist locally.
+- **Sitemap + robots.txt generation**, rewritten to each destination's origin.
+- **FluentCart licensing** — license activation/management page, automatic updates, and a 7-day grace period. Pro features hard-gate off on expiry (saved settings are kept); an unlicensed install behaves like Free with an "enter license" notice.
+
+### Notes
+- Distributed as a separate plugin (Fluent Cart), installed alongside Free. WordPress's `Requires Plugins` header enforces the dependency.

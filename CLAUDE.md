@@ -13,19 +13,11 @@
 - **JS Global:** `BS` (window.BS)
 - **CSS Prefix:** `.bs-`
 
-## Free/Pro Split — Two Plugins, One Codebase
+## Single Plugin, All Features Free
 
-This repo ships **two** plugins from one codebase:
-- **Free** (`bricks-static.php`, `WPEasy\BricksStatic`, `BS_*`) — wp.org. Changelog: `CHANGELOG.md`.
-- **Pro** (`pro/bricks-static-pro.php`, `WPEasy\BricksStaticPro`, `BSP_*`, own PSR-4 autoloader over `pro/src/`) — an **add-on** that `Requires Plugins: bricks-static`. Changelog: `pro/CHANGELOG.md`.
+**Bricks Static** (`bricks-static.php`, `WPEasy\BricksStatic`, `BS_*`) ships as one free plugin on wp.org with every feature unlocked — unlimited pages/destinations, all four replacement types (Text, Media, Links, Videos), gzip pre-compression, remote pruning, and sitemap/robots.txt generation. Changelog: `CHANGELOG.md` (includes the pre-2.0.0 history of the former separate Pro add-on, merged in at 2.0.0).
 
-Rules:
-- **wp.org compliance:** the Free zip must contain **zero functional Pro code**. Pro PHP lives only under `pro/`; the build allowlist (`scripts/make-zips.mjs`, `npm run zip`) stages Free from an explicit allowlist and **fails if any staged Free PHP references `BricksStaticPro`**. Pro Svelte panels live in `pro/src-svelte/pro/` and are never imported by the Free bundle (only inert teasers ship in Free).
-- **One toggle point:** `Support\Edition` resolves the edition/capabilities; everything (PHP + JS) reads from it. Pro flips it via the `bs_license_edition` filter (its `Licensing\LicenseEnforcer`). Never gate a feature by anything other than `Edition`/capabilities.
-- **Seam, not fork:** Pro plugs into Free via hooks — `bs_loaded`, `bs_register_rest_routes`, the `Sync\Pipeline` replacer/extra-file registry, and the `window.BS` JS panel registry. Add new shared features as a Free seam Pro registers into; never have Free reference a Pro class.
-- **Edition gating is three-layer** (UI/runtime/storage), e.g. the destination cap: `Destinations::can_add()`/`visible_objects()` (storage), `DestinationsController` 403 (REST), disabled "+ Add" (UI). Downgrades **hide, never delete** (`visible_objects()`); use it (not `objects()`) anywhere destinations are shown or synced.
-- **Versioning/changelogs:** Free and Pro version independently; `BSP_MIN_FREE` is the compatibility floor (bump only when Pro needs a new Free seam). `src-svelte/shared/` + `src-svelte/lib/` compile into **both** bundles, so a change there bumps both. See `.claude/commands/commit-version.md` (project-local, split-aware).
-- **Dev setup:** a directory **junction** `wp-content/plugins/bricks-static-pro` → `bricks-static/pro` makes WP see both plugins from the one repo (the junction lives outside the repo; git ignores it).
+There is no license, no edition/capability gating, and no second plugin — `Support\Edition`, `Support\License`, and the `pro/` add-on have all been removed. Never reintroduce a tier check; if a feature needs to be conditionally available, gate it on an actual runtime/server capability (e.g. `Sync\Compressor::available()` for gzip, which checks for `gzencode()`), not a plan/edition concept.
 
 ## Required Reading
 
@@ -262,13 +254,13 @@ Add new diagnostic data to `/health/diagnostics` (admin-only), never `/health`. 
 
 ## Per-Destination Replacement Subsystems
 
-**Edition:** **Text + Media are Free** (Media is capped per page — see below); **Links + Videos are Pro** (gated by `advancedReplacements`). Media's collector/replacer/deploy-replacer/REST live in Free `src/` (moved out of `pro/`); Links/Videos stay in `pro/src/`.
+All four replacement types — **Text, Media, Links, Videos** — are unconditionally available; none are gated. All collectors/replacers/deploy-replacers/REST controllers live in `src/`.
 
-**Per-page model (Media + Videos):** a replacement is scoped to ONE exported page — stored as `{page, from, to, toId}` where `page` is the export-relative path (e.g. `about/index.html`). The dashboard picks a page first (a `Select`), then lists that page's media/videos; nothing shows until a page is chosen. Free allows **`Edition::max_media_per_page()`** (1) media swaps per page (`Destination::sanitize_page_replacements($rows, $cap)` enforces it; Pro = unlimited). Text + Links stay global (whole-export). This is why `DeployReplacer::apply($html, $ctx, $relative)` takes the page path — page-scoped replacers key their prepared `ctx` by page and apply only `$ctx[$relative]`; global ones ignore `$relative`.
+**Per-page model (Media + Videos):** a replacement is scoped to ONE exported page — stored as `{page, from, to, toId}` where `page` is the export-relative path (e.g. `about/index.html`). The dashboard picks a page first (a `Select`), then lists that page's media/videos; nothing shows until a page is chosen, and there is no per-page swap cap. Text + Links stay global (whole-export). This is why `DeployReplacer::apply($html, $ctx, $relative)` takes the page path — page-scoped replacers key their prepared `ctx` by page and apply only `$ctx[$relative]`; global ones ignore `$relative`.
 
 Replacements (Text, Media, Links, Videos) all follow ONE pattern — copy it for any new one:
 
-1. **Collector** (`src/Media/*Collector.php` Free, `pro/src/Media/*Collector.php` Pro) — `pages()` lists exported pages for the selector; `collect($page_rel)` scans that ONE page's cached HTML (`Manifest::RENDER_OPTION`) for its items.
+1. **Collector** (`src/Media/*Collector.php`) — `pages()` lists exported pages for the selector; `collect($page_rel)` scans that ONE page's cached HTML (`Manifest::RENDER_OPTION`) for its items.
 2. **Replacer** (`src/Render/*Replacer.php`) rewrites the matched thing in the per-destination deploy copy. Two non-negotiable rules, learned from real bugs:
    - **Tag-scoped, never global** — match the specific element/attribute (or, for text, only the runs between tags). A blanket `str_replace`/regex across the whole document corrupts attributes, scripts, JSON-LD, or body text. `TextReplacer` splits out `<script>/<style>/<!-- -->` and operates on the right side only.
    - **Entity-decode before matching** — attribute/`url()` values carry `&amp;`, `&quot;`, percent-encoding, etc. Decode the captured value (`html_entity_decode(..., ENT_QUOTES | ENT_HTML5)`) before comparing to the stored key; `esc_attr()` the replacement on write.
@@ -289,8 +281,8 @@ The render manifest (`Manifest::RENDER_OPTION`) is **only** rebuilt by a render 
 - **Discovery mode** (`UrlCollector::mode()`): `linked` (home + link crawl, default), `all` (every published page/term), `manual` (per-post `_bs_manual_include`, via `Admin\Editor`'s metabox + list "Static" column + bulk + front-end panel).
 - **Process** = a `check`-type run (`Runner::start('check')`): renders for the current mode, refreshes the manifest, clears the dirty flag. The UI shows **Process** when the render is stale/missing and **View list** when current (`Status.renderCurrent`). View list = `GET /pages-overview` → Included (with `CompatibilityScanner` notices) / Excluded (with reason tags).
 - **Check** = `GET /sync/check?dest=…` → `Runner::preview()`: a **synchronous, no-render** diff of the current render against the destination's pushed manifest. Returns `needsProcess` when the render is stale/missing (it never renders — that's Process's job). Shares `compute_check_preview()` with the in-job `finalize_check_preview()`.
-- **Sync** = `Runner::start('sync')`: deploy + upload (see the deploy section above). A full multi-destination sync renders ONCE then deploys per destination; when eligible (>1 target, `bs_concurrent_syncs`>1, WP-CLI spawn available) the deploy phase **fans out across N `deploy-worker` processes** (`Sync\DeployPool` + `Runner::run_deploy_worker`/`tick_deploy_monitor`) — see the [[concurrent-deploy-pool]] memory. The sequential per-target path is the untouched fallback. Free allows up to **2 destinations** (`Edition::FREE_MAX_DESTINATIONS`).
-- **Export ZIP** (`Export\ExportRunner`, Free+Pro) = a fully separate, lightweight job/option (`bs_export_job`) from Sync's `Job`/`Runner` — packages the destination-scoped deploy manifest (`Runner::deploy_manifest_for()`, the same replacements a real Sync would apply) into a downloadable zip, batched across `preparing → gzip → packaging → saving → done` ticks. Uses the CURRENT render only (`Runner::render_is_current()`, same `needsProcess` contract as Check — never renders itself), and never touches a destination's push-manifest/stats since nothing is uploaded. Mutually exclusive with Sync/Check in both directions. Download is a single-use transient-token `GET /export/download` REST route (deliberately not `admin_post_*`, to keep SECURITY_PATTERNS.md's "REST-only" invariant accurate). Free zips ship plain files + `.htaccess`; Pro adds `.gz` siblings, `sitemap.xml`/`robots.txt` — both for free, since Free's render never contains sitemap/robots in the first place (`Pipeline::extra_file_emitters()` is Pro-only).
+- **Sync** = `Runner::start('sync')`: deploy + upload (see the deploy section above). A full multi-destination sync renders ONCE then deploys per destination; when eligible (>1 target, `bs_concurrent_syncs`>1, WP-CLI spawn available) the deploy phase **fans out across N `deploy-worker` processes** (`Sync\DeployPool` + `Runner::run_deploy_worker`/`tick_deploy_monitor`) — see the [[concurrent-deploy-pool]] memory. The sequential per-target path is the untouched fallback. Destinations are unlimited.
+- **Export ZIP** (`Export\ExportRunner`) = a fully separate, lightweight job/option (`bs_export_job`) from Sync's `Job`/`Runner` — packages the destination-scoped deploy manifest (`Runner::deploy_manifest_for()`, the same replacements a real Sync would apply) into a downloadable zip, batched across `preparing → gzip → packaging → saving → done` ticks. Uses the CURRENT render only (`Runner::render_is_current()`, same `needsProcess` contract as Check — never renders itself), and never touches a destination's push-manifest/stats since nothing is uploaded. Mutually exclusive with Sync/Check in both directions. Download is a single-use transient-token `GET /export/download` REST route (deliberately not `admin_post_*`, to keep SECURITY_PATTERNS.md's "REST-only" invariant accurate). Zips ship `.gz` siblings (when the host supports gzip) alongside `sitemap.xml`/`robots.txt` (`Pipeline::extra_file_emitters()`).
 
 **Content-change tracking** (`Sync\ChangeTracker`, init on `init`): hooks `save_post`/`transition_post_status`/`deleted|trashed|untrashed_post`/`updated|added_post_meta` (only `_bricks*` keys) **and `wp_update_nav_menu`** (a menu edit changes the link graph + every page's chrome). It sets a dirty flag (`mark_dirty`) that `Runner::in_sync()` treats as out-of-sync and that flips `renderCurrent`; `mark_rendered($mode)` clears it at the end of a full render and records the mode. `UrlCollector::published_excluded_count()` powers the "*N not in export*" hint (published pages absent from the render). **Never auto-render on save** — flag-and-prompt only.
 
@@ -314,7 +306,7 @@ A 3-step onboarding flow (theme colour, pages-to-include, enable single-page syn
 
 ## AI / MCP — Abilities API (`src/Abilities/`)
 
-When the host exposes the WordPress Abilities API (`function_exists('wp_register_ability')`, WP 6.9+), `Abilities\AbilityRegistry` registers `bs/*` abilities on `bs_register_abilities`. Three tiers, gated by two opt-in options (both default off, surfaced as `aiAllowChanges`/`aiAllowSync` and saved via `POST /settings`):
+When the host exposes the WordPress Abilities API (`function_exists('wp_register_ability')`, WP 6.9+), `Abilities\AbilityRegistry::init()` registers `bs/*` abilities on `wp_abilities_api_init`. Three tiers, gated by two opt-in options (both default off, surfaced as `aiAllowChanges`/`aiAllowSync` and saved via `POST /settings`):
 
 - **Read-only** (always on): sync status, sync method, list pages, page sync status, link integrity, list destinations, sync progress.
 - **`OPT_CHANGES` (`bs_ai_allow_changes`)**: set discovery mode, include/exclude page(s).
@@ -328,10 +320,10 @@ Abilities are thin wrappers over the same `Runner`/`UrlCollector`/`Destinations`
 
 UI strings are localized with a **PHP-dictionary** pattern, deliberately not `@wordpress/i18n` + `wp_set_script_translations()` (whose md5-of-source-path `.json` matching is brittle with Vite's hashed/code-split bundles — translations silently vanish). This mirrors the sibling `ab-bricks-productivity` plugin.
 
-- **Strings live in PHP:** `src/Support/I18n.php` (`I18n::all()`, domain `bricks-static`) and `pro/src/Support/I18n.php` (domain `bricks-static-pro`), each `'jsKey' => __('English', 'domain')`. One `.mo` translates both PHP and JS.
-- **Bridge:** `Admin\Menu` localizes `I18n::all()` → `window.bsData.i18n`; `Admin\ProMenu` → `window.bspData.i18n`. The Svelte helper `src-svelte/shared/i18n.ts` exposes `__()` / `__f()` (sprintf `%s`/`%d` + positional `%1$s`) reading the merged dict; components call `__('jsKey')`. Strings with inline markup use `{@html __(...)}` (trusted dictionary only).
-- **Loading:** `load_plugin_textdomain` on `init` in both plugins; `.mo` in `languages/` (Free) and `pro/languages/` (Pro). Every JS-consuming bundle is `type="module"`, so the helper's ES `import` is fine (no IIFE concern — that rule is only for a non-module `shared.js`, which this plugin doesn't ship).
-- **Regenerate:** `wp i18n make-pot` → `python scripts/i18n_build.py extract` → translate into `scripts/i18n/<locale>.json` → `python scripts/i18n_build.py assemble` (writes `.po` + `.mo`). Shipped: fr_FR, de_DE, it_IT, es_ES, nl_NL. Scope so far: dashboard + Pro panels (Docs prose left English).
+- **Strings live in PHP:** `src/Support/I18n.php` (`I18n::all()`, domain `bricks-static`), `'jsKey' => __('English', 'domain')`. One `.mo` translates both PHP and JS.
+- **Bridge:** `Admin\Menu` localizes `I18n::all()` → `window.bsData.i18n`. The Svelte helper `src-svelte/shared/i18n.ts` exposes `__()` / `__f()` (sprintf `%s`/`%d` + positional `%1$s`) reading the dict; components call `__('jsKey')`. Strings with inline markup use `{@html __(...)}` (trusted dictionary only).
+- **Loading:** `load_plugin_textdomain` on `init`; `.mo` in `languages/`. Every JS-consuming bundle is `type="module"`, so the helper's ES `import` is fine (no IIFE concern — that rule is only for a non-module `shared.js`, which this plugin doesn't ship).
+- **Regenerate:** `wp i18n make-pot` → `python scripts/i18n_build.py extract` → translate into `scripts/i18n/<locale>.json` → `python scripts/i18n_build.py assemble` (writes `.po` + `.mo`). Shipped: fr_FR, de_DE, it_IT, es_ES, nl_NL. Scope so far: dashboard (Docs prose left English). The 2.0.0 merge added the former Pro dictionary's `links()`/`videos()` sections under the `bricks-static` domain — the shipped `.mo` files need regenerating via the pipeline above to translate them.
 
 ## Description
 

@@ -15,18 +15,24 @@ use WPEasy\BricksStatic\Admin\Editor;
 use WPEasy\BricksStatic\Admin\Menu;
 use WPEasy\BricksStatic\Export\ExportDownload;
 use WPEasy\BricksStatic\Frontend\Fab;
+use WPEasy\BricksStatic\Render\LinkDeployReplacer;
 use WPEasy\BricksStatic\Render\MediaDeployReplacer;
 use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Render\TextDeployReplacer;
+use WPEasy\BricksStatic\Render\VideoDeployReplacer;
 use WPEasy\BricksStatic\Settings\Destinations;
+use WPEasy\BricksStatic\Sitemap\SitemapGenerator;
 use WPEasy\BricksStatic\Sync\Pipeline;
 use WPEasy\BricksStatic\REST\ConnectionController;
 use WPEasy\BricksStatic\REST\DestinationsController;
 use WPEasy\BricksStatic\REST\EditorController;
 use WPEasy\BricksStatic\REST\ExportController;
+use WPEasy\BricksStatic\REST\LinksController;
 use WPEasy\BricksStatic\REST\MediaController;
+use WPEasy\BricksStatic\REST\SitemapController;
 use WPEasy\BricksStatic\REST\StatusController;
 use WPEasy\BricksStatic\REST\SyncController;
+use WPEasy\BricksStatic\REST\VideosController;
 
 defined('ABSPATH') || exit;
 
@@ -52,7 +58,6 @@ final class Plugin {
         // Migrate the legacy single destination into the destinations list once.
         Destinations::ensure_migrated();
 
-        // Register the Free deploy replacer(s). Pro adds the rest on `bs_loaded`.
         self::register_pipeline();
 
         if (is_admin()) {
@@ -81,27 +86,60 @@ final class Plugin {
             add_action('init', [self::class, 'prepare_render_output']);
         }
 
+        // Let our own render requests through Bricks' maintenance / coming-soon
+        // mode. Registered before `wp` (where Bricks applies it at priority 9).
+        add_filter('bricks/maintenance/should_apply', [self::class, 'allow_render_through_maintenance']);
+
         if (defined('WP_CLI') && \WP_CLI) {
             \WP_CLI::add_command('bricks-static', new \WPEasy\BricksStatic\CLI\SyncCommand());
         }
-
-        /**
-         * Fires once the Free plugin has wired up its subsystems and seams. The
-         * Pro addon boots from here, guaranteeing Free's hooks/registries exist.
-         */
-        do_action('bs_loaded');
     }
 
     /**
-     * Register the deploy-pipeline replacers shipped in Free. Currently just the
-     * Text replacer; the Pro addon registers media/link/video/data + sitemaps
-     * onto the same {@see Pipeline} when its license is active.
+     * Register the deploy-pipeline replacers (text, media, links, videos) and the
+     * sitemap/robots.txt extra-file emitter onto {@see Pipeline}.
      */
     private static function register_pipeline(): void {
         Pipeline::register_replacer(new TextDeployReplacer());
-        // Media replacement is a Free feature (capped per page); Links + Videos
-        // remain Pro (registered by the Pro Bootstrap).
         Pipeline::register_replacer(new MediaDeployReplacer());
+        Pipeline::register_replacer(new LinkDeployReplacer());
+        Pipeline::register_replacer(new VideoDeployReplacer());
+
+        Pipeline::register_extra_files(static function (array $page_urls): array {
+            if (!apply_filters('bs_generate_sitemaps', true)) {
+                return [];
+            }
+
+            return SitemapGenerator::from_urls($page_urls);
+        });
+    }
+
+    /**
+     * Filters `bricks/maintenance/should_apply` (Bricks 2.0+) so a static render
+     * captures the real page, not the maintenance screen.
+     *
+     * With maintenance mode on, Bricks serves its maintenance template to every
+     * visitor — including our loopback render, which would otherwise mirror that
+     * screen over the whole site ("coming soon" returns HTTP 200, so it wouldn't
+     * even fail loudly). The bypass requires the shared-secret header, so only a
+     * render this site started gets through; a visitor spoofing the user agent
+     * still sees the maintenance page.
+     *
+     * @param bool $apply Whether Bricks intends to apply maintenance mode.
+     * @return bool
+     */
+    public static function allow_render_through_maintenance($apply): bool {
+        if (!PageRenderer::is_trusted_render_request()) {
+            return (bool) $apply;
+        }
+
+        /**
+         * Filters whether static renders bypass maintenance / coming-soon mode.
+         * Return false to have renders capture the maintenance screen instead.
+         *
+         * @param bool $bypass Whether to bypass.
+         */
+        return apply_filters('bs_bypass_maintenance', true) ? false : (bool) $apply;
     }
 
     /**
@@ -139,12 +177,8 @@ final class Plugin {
         MediaController::register();
         ExportController::register();
         ExportDownload::register();
-
-        /**
-         * Lets add-ons register additional REST controllers under the bs/v1
-         * namespace. The Pro addon registers the media, links, videos
-         * and sitemap controllers from here.
-         */
-        do_action('bs_register_rest_routes');
+        LinksController::register();
+        VideosController::register();
+        SitemapController::register();
     }
 }

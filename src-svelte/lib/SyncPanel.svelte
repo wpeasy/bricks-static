@@ -18,11 +18,7 @@
     inEditor = false,
     manualMode = false,
     included = false,
-    effective = false,
     includedCount = 0,
-    savedCount = 0,
-    maxPages = 0,
-    unlimited = false,
     syncEnabled = true,
     onClose,
     onIncludeChange,
@@ -37,11 +33,7 @@
     inEditor?: boolean;
     manualMode?: boolean;
     included?: boolean;
-    effective?: boolean;
     includedCount?: number;
-    savedCount?: number;
-    maxPages?: number;
-    unlimited?: boolean;
     syncEnabled?: boolean;
     onClose?: () => void;
     onIncludeChange?: (included: boolean, count: number) => void;
@@ -82,21 +74,15 @@
 
   let includeOn = $state(false);
   let includeCount = $state(0);
-  let savedTotal = $state(0);
   let savingInclude = $state(false);
-
-  // This page is saved-included but over the Free cap, so it won't export.
-  let isOverLimit = $derived(manualMode && includeOn && !effective && !unlimited);
 
   // Link-integrity prompt after a manual include/exclude.
   let linkPrompt = $state<{ kind: 'out' | 'in'; pages: LinkPage[] } | null>(null);
   let linkBusy = $state(false);
-  let linkSkipped = $state(0);
 
   let running = $derived(!!snap?.running);
   let finished = $derived(!!snap && !snap.running && ['done', 'error', 'cancelled'].includes(snap.phase));
   let tone = $derived(snap?.phase === 'error' || snap?.phase === 'cancelled' ? 'warn' : snap?.phase === 'done' ? 'ok' : 'active');
-  let atLimit = $derived(!unlimited && !includeOn && includeCount >= maxPages);
 
   // Re-seed local state whenever a new post is targeted (the list reuses one
   // panel across rows).
@@ -104,9 +90,7 @@
     void postId; // re-seed whenever a new post is targeted
     includeOn = untrack(() => included);
     includeCount = untrack(() => includedCount);
-    savedTotal = untrack(() => savedCount);
     linkPrompt = null;
-    linkSkipped = 0;
   });
 
   // Load the page's status whenever the modal opens.
@@ -160,7 +144,6 @@
       const r = await api('/editor/include', { method: 'POST', body: JSON.stringify({ postId, include: value }) });
       includeOn = !!r.included;
       if (typeof r.includedCount === 'number') includeCount = r.includedCount;
-      if (typeof r.savedCount === 'number') savedTotal = r.savedCount;
       onIncludeChange?.(includeOn, includeCount);
       void runLinkCheck();
     } catch {
@@ -171,7 +154,6 @@
   }
 
   async function runLinkCheck(): Promise<void> {
-    linkSkipped = 0;
     try {
       if (includeOn) {
         const r = await outboundExcluded(restUrl, nonce, postId);
@@ -194,9 +176,7 @@
         includeCount = r.includedCount;
         onIncludeChange?.(includeOn, includeCount);
       }
-      if (typeof r.savedCount === 'number') savedTotal = r.savedCount;
       onBulkIncluded?.(r.included ?? []);
-      linkSkipped = r.skipped?.length ?? 0;
       linkPrompt = null;
     } catch {
       /* ignore */
@@ -326,20 +306,10 @@
 
         {#if manualMode && postId > 0}
           <label class="bs-sp__include">
-            <input type="checkbox" checked={includeOn} disabled={savingInclude || atLimit} onchange={(e) => saveInclude(e.currentTarget.checked)} />
+            <input type="checkbox" checked={includeOn} disabled={savingInclude} onchange={(e) => saveInclude(e.currentTarget.checked)} />
             <span>Include in static export</span>
           </label>
-          <p class="bs-sp__inccount">
-            {unlimited ? `${includeCount} pages included` : `${includeCount} of ${maxPages} pages included`}
-          </p>
-          {#if !unlimited && savedTotal > includeCount}
-            <p class="bs-sp__inccount">{savedTotal - includeCount} more saved — over your Free limit.</p>
-          {/if}
-          {#if isOverLimit}
-            <p class="bs-sp__msg bs-sp__msg--err">This page is saved but over your Free limit — it won’t export until you upgrade or free up room.</p>
-          {:else if atLimit}
-            <p class="bs-sp__msg bs-sp__msg--err">Free plan page limit reached — exclude another page, or upgrade to Pro.</p>
-          {/if}
+          <p class="bs-sp__inccount">{includeCount} pages included</p>
 
           {#if linkPrompt}
             <div class="bs-sp__links bs-sp__links--{linkPrompt.kind}">
@@ -359,9 +329,6 @@
                 <p class="bs-sp__notefoot">Based on the last check/sync — run a check to refresh.</p>
               {/if}
             </div>
-          {/if}
-          {#if linkSkipped > 0}
-            <p class="bs-sp__msg bs-sp__msg--err">{linkSkipped} couldn't be included (Free limit reached).</p>
           {/if}
         {/if}
 

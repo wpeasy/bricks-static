@@ -2,13 +2,13 @@
 /**
  * Collects the link targets (href) referenced by the rendered site.
  *
- * @package WPEasy\BricksStaticPro
+ * @package WPEasy\BricksStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStaticPro\Media;
+namespace WPEasy\BricksStatic\Media;
 
 use WPEasy\BricksStatic\Sync\Manifest;
 

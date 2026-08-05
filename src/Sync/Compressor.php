@@ -10,18 +10,17 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Sync;
 
-use WPEasy\BricksStatic\Support\Edition;
-
 defined('ABSPATH') || exit;
 
 /**
  * Writes `.gz` siblings next to compressible files so the destination can serve
  * pre-compressed responses (see HtaccessBuilder).
  *
- * Gzip pre-compression is a Pro capability. In the Free edition the two
- * chokepoints below ({@see is_compressible()} and {@see extensions()}) report
- * "nothing is compressible", which neutralises every consumer at once: the
- * Runner skips writing/uploading `.gz` siblings, the PackageDeployer tells its
+ * Gzip pre-compression is always attempted; the two chokepoints below
+ * ({@see is_compressible()} and {@see extensions()}) fall back to "nothing is
+ * compressible" only when the host's PHP runtime lacks `gzencode()` (see
+ * {@see available()}), which neutralises every consumer at once: the Runner
+ * skips writing/uploading `.gz` siblings, the PackageDeployer tells its
  * server-side helper to gzip nothing, and HtaccessBuilder omits the gzip rules.
  */
 final class Compressor {
@@ -54,22 +53,22 @@ final class Compressor {
 
     /**
      * Extensions worth pre-compressing (for the server-side deploy helper).
-     * Empty when gzip is disabled (Free), so the helper gzips nothing.
+     * Empty when the host can't gzip, so the helper gzips nothing.
      *
      * @return array<int,string>
      */
     public static function extensions(): array {
-        return Edition::gzip_enabled() ? self::TEXT_EXTENSIONS : [];
+        return self::available() ? self::TEXT_EXTENSIONS : [];
     }
 
     /**
      * Whether a relative path looks like a compressible text file. Always false
-     * when gzip is disabled (Free ships plain, uncompressed files).
+     * when the host's PHP runtime lacks `gzencode()`.
      *
      * @param string $relative_path Relative file path.
      */
     public static function is_compressible(string $relative_path): bool {
-        if (!Edition::gzip_enabled()) {
+        if (!self::available()) {
             return false;
         }
 

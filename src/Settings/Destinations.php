@@ -10,8 +10,6 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Settings;
 
-use WPEasy\BricksStatic\Support\Edition;
-
 defined('ABSPATH') || exit;
 
 /**
@@ -66,37 +64,13 @@ final class Destinations {
     }
 
     /**
-     * The maximum number of destinations the active edition may use (1 in Free,
-     * effectively unlimited in Pro).
-     */
-    public static function max(): int {
-        return Edition::max_destinations();
-    }
-
-    /**
-     * Whether another destination may be added under the current edition's cap.
-     */
-    public static function can_add(): bool {
-        return count(self::all()) < self::max();
-    }
-
-    /**
-     * How many stored destinations are hidden by the current edition cap (e.g. a
-     * Pro user who downgraded keeps their extra destinations, just hidden).
-     */
-    public static function hidden_count(): int {
-        return max(0, count(self::all()) - self::max());
-    }
-
-    /**
-     * Destinations visible under the current edition cap, as objects (index 0 is
-     * primary). Stored data beyond the cap is preserved but never returned here,
-     * so it is neither shown nor pushed until the cap is raised again (Pro).
+     * Destinations, as objects (index 0 is primary). Alias of {@see objects()}
+     * kept as the canonical accessor for display/sync call sites.
      *
      * @return array<int,Destination>
      */
     public static function visible_objects(): array {
-        return array_slice(self::objects(), 0, self::max());
+        return self::objects();
     }
 
     /**
@@ -106,8 +80,6 @@ final class Destinations {
      */
     public static function enabled_ids(): array {
         $ids = [];
-        // Only visible destinations sync — destinations hidden by the edition cap
-        // are preserved in storage but never pushed.
         foreach (self::visible_objects() as $dest) {
             if ((bool) $dest->get('enabled')) {
                 $ids[] = $dest->id();
@@ -157,14 +129,7 @@ final class Destinations {
      * @param array<string,mixed> $input Initial values.
      */
     public static function add(array $input): Destination {
-        $list = self::all();
-
-        // Storage-layer enforcement of the edition cap (defence in depth — the
-        // REST controller also rejects this). At the cap, adding is a no-op.
-        if (count($list) >= self::max()) {
-            return self::primary();
-        }
-
+        $list  = self::all();
         $count = count($list) + 1;
         $dest  = new Destination(self::blank(self::new_id(), 'Destination ' . $count), false);
 

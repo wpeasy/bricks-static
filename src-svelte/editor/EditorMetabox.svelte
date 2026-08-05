@@ -12,11 +12,7 @@
     pageUrl,
     published,
     included: initialIncluded,
-    effective = false,
     includedCount: initialCount = 0,
-    savedCount: initialSaved = 0,
-    maxPages = 0,
-    unlimited = false,
   }: {
     restUrl: string;
     nonce: string;
@@ -24,11 +20,7 @@
     pageUrl: string;
     published: boolean;
     included: boolean;
-    effective?: boolean;
     includedCount?: number;
-    savedCount?: number;
-    maxPages?: number;
-    unlimited?: boolean;
   } = $props();
 
   interface Target {
@@ -51,17 +43,10 @@
 
   let included = $state(untrack(() => initialIncluded));
   let count = $state(untrack(() => initialCount));
-  let savedTotal = $state(untrack(() => initialSaved));
   let savingInclude = $state(false);
 
   let linkPrompt = $state<{ kind: 'out' | 'in'; pages: LinkPage[] } | null>(null);
   let linkBusy = $state(false);
-  let linkSkipped = $state(0);
-
-  // Free plan: can't include another page once the cap is hit (excluding is fine).
-  let atLimit = $derived(!unlimited && !included && count >= maxPages);
-  // This page is saved-included but over the Free cap, so it won't export.
-  let isOverLimit = $derived(included && !effective && !unlimited);
 
   let status = $state<PageStatus | null>(null);
   let statusErr = $state('');
@@ -91,17 +76,15 @@
       const r = await api('/editor/include', { method: 'POST', body: JSON.stringify({ postId, include: value }) });
       included = !!r.included;
       if (typeof r.includedCount === 'number') count = r.includedCount;
-      if (typeof r.savedCount === 'number') savedTotal = r.savedCount;
       void runLinkCheck();
     } catch {
-      included = previous; // revert on failure (e.g. at the Free limit)
+      included = previous; // revert on failure
     } finally {
       savingInclude = false;
     }
   }
 
   async function runLinkCheck(): Promise<void> {
-    linkSkipped = 0;
     try {
       if (included) {
         const r = await outboundExcluded(restUrl, nonce, postId);
@@ -121,8 +104,6 @@
     try {
       const r = await includeBulk(restUrl, nonce, linkPrompt.pages.map((p) => p.postId));
       if (typeof r.includedCount === 'number') count = r.includedCount;
-      if (typeof r.savedCount === 'number') savedTotal = r.savedCount;
-      linkSkipped = r.skipped?.length ?? 0;
       linkPrompt = null;
     } catch {
       /* ignore */
@@ -170,21 +151,11 @@
     bind:included
     label={__('editorInclude')}
     hint={__('editorIncludeHint')}
-    disabled={savingInclude || atLimit}
+    disabled={savingInclude}
     onChange={saveInclude}
   />
 
-  <p class="bs-em__count">
-    {unlimited ? __f('editorIncludedUnlimited', count) : __f('editorIncludedCount', count, maxPages)}
-  </p>
-  {#if !unlimited && savedTotal > count}
-    <p class="bs-em__count">{__f('editorSavedOver', savedTotal - count)}</p>
-  {/if}
-  {#if isOverLimit}
-    <p class="bs-em__note bs-em__note--err">{__('editorOverLimit')}</p>
-  {:else if atLimit}
-    <p class="bs-em__note bs-em__note--err">{__('editorLimitHint')}</p>
-  {/if}
+  <p class="bs-em__count">{__f('editorIncludedUnlimited', count)}</p>
 
   {#if linkPrompt}
     <div class="bs-em__links bs-em__links--{linkPrompt.kind}">
@@ -204,9 +175,6 @@
         <p class="bs-em__notefoot">{__('editorLinksInNote')}</p>
       {/if}
     </div>
-  {/if}
-  {#if linkSkipped > 0}
-    <p class="bs-em__note bs-em__note--err">{__f('editorLinkSkipped', linkSkipped)}</p>
   {/if}
 
   {#if !published}

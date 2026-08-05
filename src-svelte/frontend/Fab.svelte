@@ -10,11 +10,7 @@
     manualMode = false,
     postId = 0,
     included = false,
-    effective = false,
     includedCount = 0,
-    savedCount = 0,
-    maxPages = 0,
-    unlimited = false,
   }: {
     restUrl: string;
     nonce: string;
@@ -23,11 +19,7 @@
     manualMode?: boolean;
     postId?: number;
     included?: boolean;
-    effective?: boolean;
     includedCount?: number;
-    savedCount?: number;
-    maxPages?: number;
-    unlimited?: boolean;
   } = $props();
 
   const POS_KEY = 'bs_fab_pos';
@@ -140,11 +132,7 @@
   {inEditor}
   {manualMode}
   {included}
-  {effective}
   {includedCount}
-  {savedCount}
-  {maxPages}
-  {unlimited}
   syncEnabled={true}
 />
 

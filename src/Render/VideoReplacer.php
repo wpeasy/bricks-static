@@ -2,15 +2,13 @@
 /**
  * Per-destination video/embed swapping + embed-origin rewriting in rendered HTML.
  *
- * @package WPEasy\BricksStaticPro
+ * @package WPEasy\BricksStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStaticPro\Render;
-
-use WPEasy\BricksStatic\Render\UrlRewriter;
+namespace WPEasy\BricksStatic\Render;
 
 defined('ABSPATH') || exit;
 

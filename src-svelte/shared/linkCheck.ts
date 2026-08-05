@@ -40,6 +40,6 @@ export function includeBulk(
   restUrl: string,
   nonce: string,
   postIds: number[],
-): Promise<{ included: number[]; skipped: number[]; includedCount: number; savedCount: number; maxPages: number; unlimited: boolean }> {
+): Promise<{ included: number[]; skipped: number[]; includedCount: number; savedCount: number }> {
   return postJson(restUrl, nonce, '/editor/include-bulk', { postIds });
 }

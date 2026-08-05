@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
   import { Button, Input, Select, Tag } from '@wpeasy/ab-ui';
-  import { api } from '../../../src-svelte/shared/api';
-  import type { VideoItem, VideoReplacement, DestinationDisplay, ReplacementPage } from '../../../src-svelte/shared/types';
-  import { __ } from '../../../src-svelte/shared/i18n';
-  import ListSkeleton from '../../../src-svelte/lib/ListSkeleton.svelte';
+  import { api } from '../shared/api';
+  import type { VideoItem, VideoReplacement, DestinationDisplay, ReplacementPage } from '../shared/types';
+  import { __ } from '../shared/i18n';
+  import ListSkeleton from './ListSkeleton.svelte';
 
   let { destination, onSaved }: { destination: DestinationDisplay; onSaved: () => void } = $props();
 

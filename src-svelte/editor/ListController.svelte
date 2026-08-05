@@ -10,23 +10,17 @@
     manualMode = false,
     fabEnabled = true,
     includedCount = 0,
-    savedCount = 0,
-    maxPages = 0,
-    unlimited = false,
   }: {
     restUrl: string;
     nonce: string;
     manualMode?: boolean;
     fabEnabled?: boolean;
     includedCount?: number;
-    savedCount?: number;
-    maxPages?: number;
-    unlimited?: boolean;
   } = $props();
 
   let open = $state(false);
   let count = $state(untrack(() => includedCount));
-  let ctx = $state<{ postId: number; pageUrl: string; included: boolean; effective: boolean }>({ postId: 0, pageUrl: '', included: false, effective: false });
+  let ctx = $state<{ postId: number; pageUrl: string; included: boolean }>({ postId: 0, pageUrl: '', included: false });
   let activeBtn: HTMLButtonElement | null = null;
 
   function paint(btn: HTMLButtonElement, state: string, synced: boolean): void {
@@ -36,8 +30,6 @@
       btn.innerHTML = '<span class="bs-static-x" aria-hidden="true">✕</span>';
     } else if (state === 'unknown') {
       btn.innerHTML = '<span class="bs-static-q" aria-hidden="true">?</span>';
-    } else if (state === 'overlimit') {
-      btn.innerHTML = '<span class="bs-static-dot bs-static-dot--over" aria-hidden="true"></span>';
     } else {
       btn.innerHTML =
         '<span class="bs-static-dot bs-static-dot--' + (synced ? 'ok' : 'warn') + '" aria-hidden="true"></span>' +
@@ -51,7 +43,6 @@
       postId: Number(btn.dataset.post) || 0,
       pageUrl: btn.dataset.url || '',
       included: btn.dataset.included === '1',
-      effective: btn.dataset.state === 'included',
     };
     open = true;
   }
@@ -103,11 +94,7 @@
   pageUrl={ctx.pageUrl}
   {manualMode}
   included={ctx.included}
-  effective={ctx.effective}
   includedCount={count}
-  savedCount={savedCount}
-  {maxPages}
-  {unlimited}
   syncEnabled={fabEnabled}
   {onIncludeChange}
   {onBulkIncluded}
@@ -144,9 +131,6 @@
   }
   :global(.bs-static-dot--warn) {
     background: #f59e0b;
-  }
-  :global(.bs-static-dot--over) {
-    background: #94a3b8;
   }
   :global(.bs-static-ico) {
     font-size: 13px;

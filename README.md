@@ -8,10 +8,7 @@ Generate and serve static HTML versions of [Bricks](https://bricksbuilder.io/)-b
 
 **Bricks Static** renders your Bricks pages to static HTML (via authenticated loopback requests), rewrites their URLs to be portable, and pushes the result to one or more destinations — turning a dynamic WordPress + Bricks site into a fast, static front end while you keep editing in WordPress.
 
-It ships as **two plugins from one codebase**:
-
-- **Bricks Static** (Free) — static generation, one destination, link/“all”/manual page discovery, text replacements, per-file or packaged deploy, `.htaccess` output, single-page sync, and an optional AI/MCP integration.
-- **Bricks Static Pro** (add-on) — unlimited pages and destinations, media/link/video replacements, gzip, prune, and sitemap generation. Requires the Free plugin.
+A single free plugin: unlimited pages and destinations, link/"all"/manual page discovery, text/media/link/video replacements, gzip pre-compression, remote pruning, sitemap generation, per-file or packaged deploy, `.htaccess` output, single-page sync, and an optional AI/MCP integration.
 
 ## Requirements
 
@@ -51,7 +48,7 @@ The run is **batched and resumable**, driven by WP-CLI where available (best on 
 **Process** renders the site for the current mode and refreshes the page list. It owns rendering — there is no auto-render on save. When the render is current the button becomes **View list**, opening the **Included / Excluded** overview:
 
 - **Included** — pages in the export, with compatibility notices (e.g. “form submit action points to this site — won’t work statically”).
-- **Excluded** — published pages not in the export, each tagged with the reason (**Not linked**, **Not included**, **Over plan limit**, **Not published**).
+- **Excluded** — published pages not in the export, each tagged with the reason (**Not linked**, **Not included**, **Not published**).
 
 A **content-change tracker** watches post saves, status changes, Bricks meta writes, and **menu edits**; any change flags the render stale, flips the **In sync** dot, and turns **View list** back into **Process**. If published pages exist that aren’t in the export, a “*N not in export*” chip appears next to the button and opens the Excluded tab.
 
@@ -70,16 +67,16 @@ A **content-change tracker** watches post saves, status changes, Bricks meta wri
 
 ### Destinations
 
-Add destinations (one on Free, unlimited on Pro). Each has its own transport (**SFTP / FTPS / FTP**), credentials, remote path, destination URL, and a sub-path. **Test** validates the connection; the deploy badge shows whether the host supports **packaged deploy** (one zip + server-side unzip — fast) or falls back to **per-file** upload.
+Add any number of destinations. Each has its own transport (**SFTP / FTPS / FTP**), credentials, remote path, destination URL, and a sub-path. **Test** validates the connection; the deploy badge shows whether the host supports **packaged deploy** (one zip + server-side unzip — fast) or falls back to **per-file** upload.
 
 ### Replacements (accordion)
 
 Per-destination find-and-replace applied to the deploy copy, so different destinations can serve different content from one render:
 
-- **Text** (Free) — literal/rich text swaps, scoped to text runs (never attributes/scripts/JSON-LD).
-- **Media** (Pro) — swap an image for a media-library attachment. Images are **grouped by source attachment**, so one swap covers every responsive size: the matched `<img>` (including lazy `data-src`/`data-srcset`) gets its `src`/`srcset` regenerated from the new image, intrinsic `width`/`height` updated, and CSS `url(...)` backgrounds rewritten too. Images not in the media library are swapped by exact URL and flagged.
-- **Links** (Pro) — rewrite link targets.
-- **Videos** (Pro) — swap a video/embed (and rewrite the embed origin to the destination).
+- **Text** — literal/rich text swaps, scoped to text runs (never attributes/scripts/JSON-LD).
+- **Media** — swap an image for a media-library attachment. Images are **grouped by source attachment**, so one swap covers every responsive size: the matched `<img>` (including lazy `data-src`/`data-srcset`) gets its `src`/`srcset` regenerated from the new image, intrinsic `width`/`height` updated, and CSS `url(...)` backgrounds rewritten too. Images not in the media library are swapped by exact URL and flagged.
+- **Links** — rewrite link targets.
+- **Videos** — swap a video/embed (and rewrite the embed origin to the destination).
 
 ### Server config
 
@@ -122,17 +119,14 @@ All routes require `manage_options`.
 | `POST /sync/page`, `GET /sync/page-status` | Single-page sync + its per-destination state. |
 | `POST /sync/reset`, `POST /sync/preflight`, `GET /sync/server-config` | Reset push state, probe loopback, get `.htaccess`/nginx. |
 | `POST /editor/include`, `…/include-bulk`, `GET /editor/links`, `GET /editor/inbound` | Manual-mode include toggles + link integrity. |
-| `GET /media`, `GET /links`, `GET /videos` (Pro) | Replacement catalogs from the last render. |
-| `GET /sitemap/test` (Pro) | Preview the generated sitemap. |
+| `GET /media`, `GET /links`, `GET /videos` | Replacement catalogs from the last render. |
+| `GET /sitemap/test` | Preview the generated sitemap. |
 
 ## Hooks
 
 Selected filters/actions (prefix `bs_`):
 
 **Extension seams**
-- `bs_loaded` (action) — plugin booted; Pro and add-ons hook here.
-- `bs_register_rest_routes` (action) — register extra REST routes.
-- `bs_register_abilities` (action) — register extra AI abilities.
 - `bs_transport` — supply a custom transport implementation.
 
 **Discovery / render**
@@ -144,10 +138,7 @@ Selected filters/actions (prefix `bs_`):
 **Deploy / transport**
 - `bs_package_timeout`, `bs_package_sslverify` — remote unzip request.
 - `bs_sftp_verify_host_key` — SFTP host-key trust policy.
-- `bs_gzip_min_bytes`, `bs_gzip_enabled`, `bs_cache_dir`, `bs_can_spawn_cli`, `bs_is_local`.
-
-**Edition / licensing**
-- `bs_license_edition`, `bs_license_status`, `bs_is_pro`, `bs_max_pages`, `bs_max_destinations`, `bs_pro_version` — Pro flips the edition here.
+- `bs_gzip_min_bytes`, `bs_cache_dir`, `bs_can_spawn_cli`, `bs_is_local`.
 
 ## WP-CLI
 
@@ -156,7 +147,7 @@ wp bricks-static sync            # full sync to the primary destination
 wp bricks-static sync --check    # render only (no upload) — same as Process
 wp bricks-static sync --all      # sync all enabled destinations
 wp bricks-static sync --dest=ID  # a specific destination
-wp bricks-static sync --prune    # also remove deleted files (Pro)
+wp bricks-static sync --prune    # also remove deleted files
 ```
 
 Running WP-CLI against a Local by Flywheel site on Windows: see [`WP_CLI_LOCAL.md`](WP_CLI_LOCAL.md).
@@ -165,12 +156,12 @@ Running WP-CLI against a Local by Flywheel site on Windows: see [`WP_CLI_LOCAL.m
 
 | Property | Value |
 |----------|-------|
-| PHP namespace (Free / Pro) | `WPEasy\BricksStatic` / `WPEasy\BricksStaticPro` |
-| Constants prefix (Free / Pro) | `BS_` / `BSP_` |
-| Textdomain (Free / Pro) | `bricks-static` / `bricks-static-pro` |
+| PHP namespace | `WPEasy\BricksStatic` |
+| Constants prefix | `BS_` |
+| Textdomain | `bricks-static` |
 | REST namespace | `bs/v1` |
 | Options / table prefix | `bs_` |
-| JS global | `window.BS` (data: `bsData` / `bspData`) |
+| JS global | `window.BS` (data: `bsData`) |
 | CSS prefix | `.bs-` |
 | Static cache | `wp-content/cache/bricks-static/site/` |
 
@@ -178,7 +169,7 @@ Running WP-CLI against a Local by Flywheel site on Windows: see [`WP_CLI_LOCAL.m
 
 Conventions and required reading:
 
-- [`CLAUDE.md`](CLAUDE.md) — architecture, Free/Pro split, subsystems, i18n
+- [`CLAUDE.md`](CLAUDE.md) — architecture, subsystems, i18n
 - [`CODE_STANDARDS.md`](CODE_STANDARDS.md) — naming, security, PHP/JS/CSS standards
 - [`SECURITY_PATTERNS.md`](SECURITY_PATTERNS.md) — admin-only REST, SSRF guard, TLS, transport hardening
 - [`WORDPRESS.md`](WORDPRESS.md) — plugin header template
@@ -189,9 +180,9 @@ Build:
 
 ```bash
 npm run check    # TypeScript / Svelte type check
-npm run build    # production build (Free + Pro bundles)
+npm run build    # production build
 npm run dev      # watch build
-npm run zip      # stage + package the Free and Pro zips (wp.org-safe allowlist)
+npm run zip      # stage + package the plugin zip (wp.org-safe allowlist)
 ```
 
 ## License

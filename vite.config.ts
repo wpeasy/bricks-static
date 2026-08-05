@@ -2,10 +2,9 @@ import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 
 /**
- * FREE build → assets/dist with a Vite manifest. WordPress (Admin/Menu.php)
- * reads the manifest to enqueue the hashed JS + CSS. After the Free/Pro split
- * the dashboard entry imports zero Pro panels, so they never land in this bundle.
- * Input paths are relative to the project root (this config's directory).
+ * Build → assets/dist with a Vite manifest. WordPress (Admin/Menu.php) reads
+ * the manifest to enqueue the hashed JS + CSS. Input paths are relative to the
+ * project root (this config's directory).
  */
 export default defineConfig({
   plugins: [svelte()],

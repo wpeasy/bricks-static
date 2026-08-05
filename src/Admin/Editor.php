@@ -19,7 +19,6 @@ namespace WPEasy\BricksStatic\Admin;
 use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Support\Assets;
-use WPEasy\BricksStatic\Support\Edition;
 use WPEasy\BricksStatic\Support\I18n;
 use WPEasy\BricksStatic\Support\Url;
 use WPEasy\BricksStatic\Sync\Manifest;
@@ -61,13 +60,6 @@ final class Editor {
      * @var array<int,string>|null
      */
     private static ?array $enabled_ids = null;
-
-    /**
-     * Cached effective (exporting) included post ids as a lookup set.
-     *
-     * @var array<int,bool>|null
-     */
-    private static ?array $effective = null;
 
     /**
      * Register hooks — only while in `manual` discovery mode.
@@ -160,13 +152,11 @@ final class Editor {
                 : __('Out of date — open to sync', 'bricks-static'),
             'excluded' => __('Not in the static export — open to manage', 'bricks-static'),
             'unknown'  => __('Run a check or sync to see status', 'bricks-static'),
-            'overlimit'=> __('Saved, but over your Free limit — won’t export until you upgrade or free up room', 'bricks-static'),
         ];
 
         $inner = match ($st['state']) {
             'excluded'  => '<span class="bs-static-x" aria-hidden="true">✕</span>',
             'unknown'   => '<span class="bs-static-q" aria-hidden="true">?</span>',
-            'overlimit' => '<span class="bs-static-dot bs-static-dot--over" aria-hidden="true"></span>',
             default     => '<span class="bs-static-dot bs-static-dot--' . ($st['synced'] ? 'ok' : 'warn') . '" aria-hidden="true"></span>'
                           . '<span class="bs-static-ico" aria-hidden="true">⟳</span>',
         };
@@ -201,10 +191,6 @@ final class Editor {
         if ($mode === 'manual') {
             if (!UrlCollector::is_included($post_id)) {
                 return ['state' => 'excluded', 'synced' => false];
-            }
-            // Included but beyond the Free cap → saved, but not exporting.
-            if (!isset(self::$effective[$post_id])) {
-                return ['state' => 'overlimit', 'synced' => false];
             }
             return ['state' => 'included', 'synced' => self::is_synced($rel)];
         }
@@ -270,7 +256,6 @@ final class Editor {
             return;
         }
         self::$render_rels = Manifest::load(Manifest::RENDER_OPTION);
-        self::$effective   = array_fill_keys(UrlCollector::effective_included_ids(), true);
         self::$pushed      = [];
         self::$enabled_ids = [];
         foreach (Destinations::visible_objects() as $dest) {
@@ -333,8 +318,6 @@ final class Editor {
             'effective'     => UrlCollector::is_effective($post_id),
             'includedCount' => UrlCollector::effective_count(),
             'savedCount'    => UrlCollector::included_count(),
-            'maxPages'      => Edition::max_pages(),
-            'unlimited'     => Edition::is_pro(),
             'i18n'          => I18n::all(),
         ]);
     }
@@ -369,8 +352,6 @@ final class Editor {
             'fabEnabled'    => get_option('bs_fab_enabled', '1') !== '0',
             'includedCount' => $manual ? UrlCollector::effective_count() : 0,
             'savedCount'    => $manual ? UrlCollector::included_count() : 0,
-            'maxPages'      => Edition::max_pages(),
-            'unlimited'     => Edition::is_pro(),
         ]);
     }
 

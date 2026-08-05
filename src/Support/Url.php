@@ -171,8 +171,16 @@ final class Url {
      * Map a URL (or path) to a relative file path under the cache root.
      *
      * Directory-style URLs (trailing slash or no extension) become index.html;
-     * file-style URLs keep their path. The query string is ignored. Returns
-     * null if the URL carries a query string for a page (cannot be made static).
+     * file-style URLs keep their path. Returns null if the URL carries a query
+     * string for a page (cannot be made static).
+     *
+     * A page URL's query string is part of its identity — `/?page_id=9` and
+     * `/?p=1` are different pages that share the path `/`. Mapping those on path
+     * alone would resolve every one of them to the same `index.html`, so each
+     * would overwrite the last (the whole export collapsing to one file under
+     * plain permalinks; a `/?s=term` link clobbering the home page under pretty
+     * ones). They are unmappable, so callers skip them. A query on a real *file*
+     * is still ignored — `style.css?ver=1` is just cache-busting.
      *
      * @param string $url URL or path.
      * @return string|null Relative file path, or null if unmappable.
@@ -183,22 +191,21 @@ final class Url {
         $path  = rawurldecode($path);
         $path  = self::remap_site_path($path);
 
+        $has_query = is_string($query) && $query !== '';
+
         if ($path === '' || $path === '/') {
-            return 'index.html';
+            return $has_query ? null : 'index.html';
         }
 
         $path     = ltrim($path, '/');
         $basename = basename($path);
 
-        // Directory style → index.html.
+        // Directory style → index.html (unless a query makes it non-static).
         if (substr($path, -1) === '/' || strpos($basename, '.') === false) {
-            return rtrim($path, '/') . '/index.html';
+            return $has_query ? null : rtrim($path, '/') . '/index.html';
         }
 
-        // File style (has an extension). A query string on a real file is fine
-        // to ignore (e.g. style.css?ver=1); on an "html" page it is not static.
-        unset($query);
-
+        // File style (has an extension) — the query is cache-busting, ignore it.
         return $path;
     }
 

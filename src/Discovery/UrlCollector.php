@@ -10,7 +10,6 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Discovery;
 
-use WPEasy\BricksStatic\Support\Edition;
 use WPEasy\BricksStatic\Support\Url;
 
 defined('ABSPATH') || exit;
@@ -28,10 +27,8 @@ defined('ABSPATH') || exit;
  *  - `manual`: render an authoritative set — only the published public posts whose
  *    per-post "Include" switch ({@see INCLUDE_META} meta) is on. The switch is OFF
  *    by default for every post EXCEPT the site's static front page (which defaults
- *    on). On Free the EXPORTED set is capped to the page limit (see
- *    {@see effective_included_ids()}); pages over the cap stay saved but don't
- *    export. The {@see \WPEasy\BricksStatic\Sync\Runner} locks crawl expansion to
- *    the effective set so an unincluded page can't return via a link.
+ *    on). The {@see \WPEasy\BricksStatic\Sync\Runner} locks crawl expansion to the
+ *    effective set so an unincluded page can't return via a link.
  */
 final class UrlCollector {
 
@@ -163,26 +160,12 @@ final class UrlCollector {
     }
 
     /**
-     * The included posts that actually export. On Pro, every included post; on
-     * Free, only the first {@see Edition::max_pages()} of them (the home page
-     * kept first) — the rest stay saved but "over limit" until Pro is active
-     * again (mirrors the destinations "downgrade hides, never deletes" policy).
+     * The included posts that actually export — every included post.
      *
      * @return array<int,int>
      */
     public static function effective_included_ids(): array {
-        $ids = self::included_ids();
-        if (Edition::is_pro()) {
-            return $ids;
-        }
-
-        // Keep the static front page in the effective set if it's included.
-        $front = self::front_page_id();
-        if ($front > 0 && in_array($front, $ids, true)) {
-            $ids = array_merge([$front], array_values(array_diff($ids, [$front])));
-        }
-
-        return array_slice($ids, 0, max(0, Edition::max_pages()));
+        return self::included_ids();
     }
 
     /**
@@ -195,7 +178,7 @@ final class UrlCollector {
     }
 
     /**
-     * How many included posts actually export (≤ max_pages on Free).
+     * How many included posts actually export.
      */
     public static function effective_count(): int {
         return count(self::effective_included_ids());
@@ -230,7 +213,7 @@ final class UrlCollector {
     }
 
     /**
-     * How many posts are currently included (for the Free page-limit UI).
+     * How many posts are currently included.
      */
     public static function included_count(): int {
         return count(self::included_ids());
@@ -240,9 +223,8 @@ final class UrlCollector {
      * How many PUBLISHED public pages are NOT in the current render — published
      * content that isn't in the static export. Mode-agnostic: in `linked` these
      * are orphan pages nothing links to; in `manual`, ones with the Include
-     * switch off; in `all`, ones dropped by the Free page cap. Powers the
-     * dashboard's "published but excluded" hint so an in-sync export never
-     * silently hides pages the user just published.
+     * switch off. Powers the dashboard's "published but excluded" hint so an
+     * in-sync export never silently hides pages the user just published.
      *
      * @param array<int,string> $rendered Relative paths present in the render manifest.
      */

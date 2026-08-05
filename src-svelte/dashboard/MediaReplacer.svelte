@@ -5,7 +5,6 @@
   import type { MediaItem, MediaReplacement, DestinationDisplay, ReplacementPage } from '../shared/types';
   import { __, __f } from '../shared/i18n';
   import ListSkeleton from '../lib/ListSkeleton.svelte';
-  import UpgradeCta from '../lib/UpgradeCta.svelte';
 
   let { destination, onSaved }: { destination: DestinationDisplay; onSaved: () => void } = $props();
 
@@ -17,7 +16,6 @@
   let pages = $state<ReplacementPage[]>([]);
   let selectedPage = $state('');
   let media = $state<MediaItem[]>([]);
-  let maxPerPage = $state(1);
   let loadingPages = $state(true);
   let loadingMedia = $state(false);
   let error = $state('');
@@ -26,7 +24,6 @@
     try {
       const r = await api.getMedia('');
       pages = r.pages;
-      maxPerPage = r.maxPerPage;
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -82,9 +79,6 @@
     for (const r of replacements) if (r.page === selectedPage) map[r.from] = r;
     return map;
   });
-  const pageSwapCount = $derived(Object.keys(pageSwaps).length);
-  const atCap = $derived(pageSwapCount >= maxPerPage);
-  const unlimited = $derived(maxPerPage >= 9999);
 
   function basename(url: string): string {
     const path = url.split('?')[0];
@@ -132,10 +126,7 @@
 
 <div class="bs-media">
   <div class="bs-media__head">
-    <span>
-      {__('mediaReplacer')}
-      {#if !unlimited}<small>{__f('mediaPerPageLimit', maxPerPage)}</small>{/if}
-    </span>
+    <span>{__('mediaReplacer')}</span>
   </div>
 
   {#if loadingPages}
@@ -177,20 +168,15 @@
     {:else if media.length === 0}
       <p class="bs-media__note">{__('noMediaOnPage')}</p>
     {:else}
-      {#if atCap && !unlimited}
-        <UpgradeCta description={__f('mediaCapReached', maxPerPage)} />
-      {/if}
       <div class="bs-media__list">
         {#each media as item (item.url)}
           {@const swapped = pageSwaps[item.url]}
-          {@const blocked = !swapped && atCap && !unlimited}
           <div class="bs-media__row" class:is-swapped={swapped}>
             <div class="bs-media__line">
               <button
                 type="button"
                 class="bs-media__thumbbtn"
-                onclick={() => !blocked && pick(item)}
-                disabled={blocked}
+                onclick={() => pick(item)}
                 title={__('clickToReplace')}
               >
                 <img class="bs-media__thumb" src={item.thumb} alt={item.alt} loading="lazy" />
@@ -207,13 +193,7 @@
                   </Tooltip>
                 {/if}
               </div>
-              {#if blocked}
-                <Tooltip content={__f('mediaCapReached', maxPerPage)} placement="top">
-                  <Button variant="secondary" size="sm" disabled>{__('btnReplace')}</Button>
-                </Tooltip>
-              {:else}
-                <Button variant="secondary" size="sm" onclick={() => pick(item)}>{__('btnReplace')}</Button>
-              {/if}
+              <Button variant="secondary" size="sm" onclick={() => pick(item)}>{__('btnReplace')}</Button>
             </div>
 
             {#if swapped}
@@ -303,11 +283,6 @@
     background: none;
     cursor: pointer;
     line-height: 0;
-  }
-
-  .bs-media__thumbbtn:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
   }
 
   .bs-media__thumb {

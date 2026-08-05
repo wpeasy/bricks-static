@@ -2,13 +2,13 @@
 /**
  * Parses robots.txt + sitemaps (index-aware) into a flat list of page URLs.
  *
- * @package WPEasy\BricksStaticPro
+ * @package WPEasy\BricksStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStaticPro\Sitemap;
+namespace WPEasy\BricksStatic\Sitemap;
 
 defined('ABSPATH') || exit;
 

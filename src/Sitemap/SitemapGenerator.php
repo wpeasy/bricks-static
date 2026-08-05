@@ -2,13 +2,13 @@
 /**
  * Builds a dummy sitemap set (index + per-type urlsets) from discovered content.
  *
- * @package WPEasy\BricksStaticPro
+ * @package WPEasy\BricksStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStaticPro\Sitemap;
+namespace WPEasy\BricksStatic\Sitemap;
 
 defined('ABSPATH') || exit;
 

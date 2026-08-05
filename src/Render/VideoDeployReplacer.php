@@ -1,17 +1,16 @@
 <?php
 /**
- * Video deploy replacer (Pro) — swaps local/embed video sources and rewrites
+ * Video deploy replacer — swaps local/embed video sources and rewrites
  * embed origins to the destination at deploy time.
  *
- * @package WPEasy\BricksStaticPro
+ * @package WPEasy\BricksStatic
  * @since   0.0.4
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStaticPro\Render;
+namespace WPEasy\BricksStatic\Render;
 
-use WPEasy\BricksStatic\Render\UrlRewriter;
 use WPEasy\BricksStatic\Settings\Destination;
 use WPEasy\BricksStatic\Support\Url;
 use WPEasy\BricksStatic\Sync\DeployReplacer;

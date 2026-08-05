@@ -13,7 +13,6 @@ namespace WPEasy\BricksStatic\Frontend;
 use WPEasy\BricksStatic\Discovery\UrlCollector;
 use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Support\Assets;
-use WPEasy\BricksStatic\Support\Edition;
 
 defined('ABSPATH') || exit;
 
@@ -125,8 +124,6 @@ final class Fab {
             'effective'     => $post_id > 0 ? UrlCollector::is_effective($post_id) : false,
             'includedCount' => $manual ? UrlCollector::effective_count() : 0,
             'savedCount'    => $manual ? UrlCollector::included_count() : 0,
-            'maxPages'      => Edition::max_pages(),
-            'unlimited'     => Edition::is_pro(),
         ]);
     }
 
