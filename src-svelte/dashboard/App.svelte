@@ -560,11 +560,12 @@
     gap: var(--ab-space-4);
   }
 
-  /* The gear is the only way into Settings — 3× the default icon size so it
-     reads as a primary control, not a stray glyph. `class` is passed through
-     ab-ui's Button, so this is a scoped override, not a lib edit. */
+  /* The gear is the only way into Settings — 2× the default icon size so it
+     reads as a real control, not a stray glyph (3× was too dominant).
+     `class` is passed through ab-ui's Button, so this is a scoped override,
+     not a lib edit. */
   .bs-dash__top :global(.bs-dash__gear) {
-    font-size: 3em;
+    font-size: 2em;
     width: auto;
     height: auto;
     line-height: 1;
