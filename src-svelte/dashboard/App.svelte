@@ -498,7 +498,6 @@
                     onCheck={startCheck}
                     onSync={startSync}
                     onProcess={processPages}
-                    onExport={startExport}
                   />
                   <div class="bs-destrow">
                     <DestinationPanel
@@ -506,8 +505,10 @@
                       capabilities={dests.capabilities}
                       running={syncing}
                       canRemove={destinations.length > 1}
+                      exporting={exporting}
                       onSaved={loadDestinations}
                       onRemove={removeDestination}
+                      onExport={startExport}
                     />
                     <ReplacementsPanel destination={activeDest} running={syncing} onSaved={loadDestinations} />
                   </div>

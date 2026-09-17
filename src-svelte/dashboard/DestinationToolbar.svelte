@@ -15,7 +15,6 @@
     onCheck,
     onSync,
     onProcess,
-    onExport,
   }: {
     destination: DestinationDisplay;
     running: boolean;
@@ -30,7 +29,6 @@
     onSync: (id: string, prune: boolean) => void;
     /** Run a Process (render) so a stale page list/preview becomes accurate. */
     onProcess: () => void;
-    onExport: (id: string) => void;
   } = $props();
 
   const d = untrack(() => destination);
@@ -95,11 +93,6 @@
     {:else}
       <ConfirmButton variant="primary" label={__('btnSync')} confirmLabel={__('btnConfirmSync')} onconfirm={() => onSync(d.id, false)} disabled={!canRun} />
     {/if}
-    <Tooltip content={blockedReason || __('btnExportHint')} placement="bottom">
-      <Button variant="secondary" onclick={() => onExport(d.id)} disabled={!canRun}>
-        {exporting ? __('btnExporting') : __('btnExport')}
-      </Button>
-    </Tooltip>
     {#if url}
       <a class="bs-dtoolbar__link" href={url} target="_blank" rel="noopener noreferrer">{__('visitSite')}</a>
     {/if}

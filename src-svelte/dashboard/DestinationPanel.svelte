@@ -1,24 +1,30 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { Button, ConfirmButton, Input, Select } from '@wpeasy/ab-ui';
+  import { Badge, Button, ConfirmButton, Input, Select, Tabs, Tooltip, fadeUp } from '@wpeasy/ab-ui';
   import { api } from '../shared/api';
   import type { Capabilities, ConnectionInput, DestinationDisplay, Transport } from '../shared/types';
   import { __ } from '../shared/i18n';
+  import { uiPrefs, persistPrefs, type TransportTab } from '../shared/uiPrefs.svelte';
 
   let {
     destination,
     capabilities,
     running,
     canRemove,
+    exporting = false,
     onSaved,
     onRemove,
+    onExport,
   }: {
     destination: DestinationDisplay;
     capabilities: Capabilities;
     running: boolean;
     canRemove: boolean;
+    /** An Export ZIP is in flight (for any destination). */
+    exporting?: boolean;
     onSaved: () => void;
     onRemove: (id: string) => void;
+    onExport: (id: string) => void;
   } = $props();
 
   const DEFAULT_PORTS: Record<Transport, number> = { sftp: 22, ftps: 21, ftp: 21 };
@@ -39,7 +45,22 @@
   let testing = $state(false);
   let message = $state('');
   let messageOk = $state(true);
-  let busy = $derived(saving || testing || running);
+  let busy = $derived(saving || testing || running || exporting);
+
+  // Transport tab: FTP (the saved transport), Connector (planned), Manual ZIP.
+  // Remembered per destination in uiPrefs; the saved `transport` setting only
+  // changes on Save, so switching tabs is free.
+  let transportTab = $state<TransportTab>(uiPrefs.transportTab[d.id] ?? 'ftp');
+  const tabItems = [
+    { value: 'ftp', label: __('tabFtp') },
+    { value: 'connector', label: __('tabConnector') },
+    { value: 'zip', label: __('tabManualZip') },
+  ];
+  function selectTab(value: string): void {
+    transportTab = value as TransportTab;
+    uiPrefs.transportTab[d.id] = transportTab;
+    persistPrefs();
+  }
 
   // How this destination deploys (live from /destinations).
   let deployNote = $derived.by<{ tone: 'ok' | 'muted'; text: string; retest: boolean } | null>(() => {
@@ -145,36 +166,79 @@
 </script>
 
 <section class="bs-card bs-stack bs-stack--md">
+  <!-- Site fields apply to every transport: the URL drives package deploy, the
+       server probe and the Connector; the sub-path drives link rewriting for
+       Sync AND Export ZIP. -->
   <div class="bs-grid">
-    <Select
-      label={__('fldTransport')}
-      id="bs-transport-{d.id}"
-      value={transport}
-      options={transportOptions}
-      disabled={d.transport.fromConstant || busy}
-      onchange={(v) => handleTransportChange(String(v))}
-    />
-    <Input label={__('fldPort')} type="number" bind:value={port} placeholder={transport === 'sftp' ? '22' : '21'} disabled={d.port.fromConstant || busy} />
-
-    <Input label={__('fldHost')} bind:value={host} placeholder="ftp.example.com" disabled={d.host.fromConstant || busy} />
-    <Input label={__('fldUsername')} bind:value={username} autocomplete="off" disabled={d.username.fromConstant || busy} />
-
-    <Input label={__('fldPassword')} type="password" bind:value={password} autocomplete="new-password" placeholder={d.password.hasValue ? __('phSavedBlank') : __('fldPassword')} disabled={d.password.fromConstant || busy} />
-    <Input label={__('fldRemotePath')} bind:value={remotePath} placeholder={__('phRemoteEmpty')} disabled={d.remotePath.fromConstant || busy} />
-
     <Input label={__('fldDestUrl')} type="url" bind:value={destinationUrl} placeholder="https://www.example.com" disabled={d.destinationUrl.fromConstant || busy} />
     <Input label={__('fldSubPath')} bind:value={basePath} placeholder="/" disabled={d.basePath.fromConstant || busy} />
   </div>
 
-  {#if deployNote}
-    <p class="bs-deploy bs-deploy--{deployNote.tone}">
-      {#if deployNote.tone === 'ok'}⚡ {/if}{deployNote.text}
-      {#if deployNote.retest}
-        <Button variant="ghost" size="sm" onclick={retestPackage} disabled={retesting || busy}>{retesting ? __('btnReTesting') : __('btnReTest')}</Button>
-      {/if}
-      {#if retestMsg}<span class="bs-deploy__result"> — {retestMsg}</span>{/if}
-    </p>
-  {/if}
+  <Tabs value={transportTab} items={tabItems} onchange={selectTab}>
+    {#snippet panel(tab)}
+      <div class="bs-tpanel bs-stack bs-stack--sm" in:fadeUp>
+        {#if tab === 'ftp'}
+          <p class="bs-lead">{__('ftpLead')}</p>
+          <div class="bs-grid">
+            <Select
+              label={__('fldTransport')}
+              id="bs-transport-{d.id}"
+              value={transport}
+              options={transportOptions}
+              disabled={d.transport.fromConstant || busy}
+              onchange={(v) => handleTransportChange(String(v))}
+            />
+            <Input label={__('fldPort')} type="number" bind:value={port} placeholder={transport === 'sftp' ? '22' : '21'} disabled={d.port.fromConstant || busy} />
+
+            <Input label={__('fldHost')} bind:value={host} placeholder="ftp.example.com" disabled={d.host.fromConstant || busy} />
+            <Input label={__('fldUsername')} bind:value={username} autocomplete="off" disabled={d.username.fromConstant || busy} />
+
+            <Input label={__('fldPassword')} type="password" bind:value={password} autocomplete="new-password" placeholder={d.password.hasValue ? __('phSavedBlank') : __('fldPassword')} disabled={d.password.fromConstant || busy} />
+            <Input label={__('fldRemotePath')} bind:value={remotePath} placeholder={__('phRemoteEmpty')} disabled={d.remotePath.fromConstant || busy} />
+          </div>
+
+          {#if deployNote}
+            <p class="bs-deploy bs-deploy--{deployNote.tone}">
+              {#if deployNote.tone === 'ok'}⚡ {/if}{deployNote.text}
+              {#if deployNote.retest}
+                <Button variant="ghost" size="sm" onclick={retestPackage} disabled={retesting || busy}>{retesting ? __('btnReTesting') : __('btnReTest')}</Button>
+              {/if}
+              {#if retestMsg}<span class="bs-deploy__result"> — {retestMsg}</span>{/if}
+            </p>
+          {/if}
+        {:else if tab === 'connector'}
+          <div class="bs-row bs-row--between">
+            <p class="bs-lead">{__('connectorLead')}</p>
+            <Badge tone="neutral">{__('comingSoon')}</Badge>
+          </div>
+          <!-- eslint-disable svelte/no-at-html-tags -- trusted PHP dictionary -->
+          <ol class="bs-steps">
+            <li>{@html __('connectorStep1')}</li>
+            <li>{@html __('connectorStep2')}</li>
+            <li>{@html __('connectorStep3')}</li>
+            <li>{@html __('connectorStep4')}</li>
+          </ol>
+          <p class="bs-lead">{__('connectorReq')}</p>
+        {:else}
+          <p class="bs-lead">{@html __('zipLead')}</p>
+          <ol class="bs-steps">
+            <li>{@html __('zipStep1')}</li>
+            <li>{@html __('zipStep2')}</li>
+            <li>{@html __('zipStep3')}</li>
+            <li>{@html __('zipStep4')}</li>
+          </ol>
+          <!-- eslint-enable svelte/no-at-html-tags -->
+          <div class="bs-row">
+            <Tooltip content={destination.enabled ? __('btnExportHint') : __('zipDisabledHint')} placement="bottom">
+              <Button variant="primary" onclick={() => onExport(d.id)} disabled={busy || !destination.enabled}>
+                {exporting ? __('btnExporting') : __('btnExport')}
+              </Button>
+            </Tooltip>
+          </div>
+        {/if}
+      </div>
+    {/snippet}
+  </Tabs>
 
   {#if message}
     <p class="bs-msg bs-msg--{messageOk ? 'ok' : 'err'}">{message}</p>
@@ -182,7 +246,9 @@
 
   <div class="bs-row bs-row--between">
     <div class="bs-row bs-row--wrap">
-      <Button variant="secondary" onclick={test} disabled={busy || !host}>{testing ? __('btnTesting') : __('btnTest')}</Button>
+      {#if transportTab === 'ftp'}
+        <Button variant="secondary" onclick={test} disabled={busy || !host}>{testing ? __('btnTesting') : __('btnTest')}</Button>
+      {/if}
       <Button variant="primary" onclick={save} disabled={busy}>{saving ? __('btnSaving') : __('btnSave')}</Button>
     </div>
     {#if canRemove}
@@ -214,6 +280,25 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--ab-space-4);
+  }
+
+  .bs-tpanel {
+    padding-top: var(--ab-space-3);
+  }
+
+  .bs-lead {
+    margin: 0;
+    color: var(--ab-color-text-muted);
+    font-size: var(--ab-text-sm);
+  }
+
+  .bs-steps {
+    margin: 0;
+    padding-left: var(--ab-space-5);
+    font-size: var(--ab-text-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ab-space-1);
   }
 
   .bs-deploy {

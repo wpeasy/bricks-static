@@ -16,6 +16,8 @@
 
 export type ColorScheme = 'auto' | 'light' | 'dark';
 export type Accent = 'blue' | 'green' | 'yellow' | 'purple' | 'custom';
+/** Which transport tab a destination's Connection panel shows (FTP / Connector / Manual ZIP). */
+export type TransportTab = 'ftp' | 'connector' | 'zip';
 
 export interface UiPrefs {
   colorScheme: ColorScheme;
@@ -27,6 +29,9 @@ export interface UiPrefs {
   customAccent: string;
   distance: number;
   duration: number;
+  /** Last-chosen transport tab per destination id (presentation only — the
+      saved `transport` setting is unchanged until the user hits Save). */
+  transportTab: Record<string, TransportTab>;
 }
 
 const KEY = 'bs_ui_prefs';
@@ -40,10 +45,25 @@ const DEFAULTS: UiPrefs = {
   customAccent: '#1f9fc4',
   distance: 15,
   duration: 350,
+  transportTab: {},
 };
+
+const TRANSPORT_TABS: TransportTab[] = ['ftp', 'connector', 'zip'];
 
 const SCHEMES: ColorScheme[] = ['auto', 'light', 'dark'];
 const ACCENTS: Accent[] = ['blue', 'green', 'yellow', 'purple', 'custom'];
+
+function loadTransportTabs(raw: unknown): Record<string, TransportTab> {
+  const out: Record<string, TransportTab> = {};
+  if (raw && typeof raw === 'object') {
+    for (const [id, tab] of Object.entries(raw as Record<string, unknown>)) {
+      if (TRANSPORT_TABS.includes(tab as TransportTab)) {
+        out[id] = tab as TransportTab;
+      }
+    }
+  }
+  return out;
+}
 
 function load(): UiPrefs {
   try {
@@ -56,6 +76,7 @@ function load(): UiPrefs {
       customAccent: typeof raw.customAccent === 'string' ? raw.customAccent : DEFAULTS.customAccent,
       distance: typeof raw.distance === 'number' ? raw.distance : DEFAULTS.distance,
       duration: typeof raw.duration === 'number' ? raw.duration : DEFAULTS.duration,
+      transportTab: loadTransportTabs(raw.transportTab),
     };
   } catch {
     return { ...DEFAULTS };
@@ -76,6 +97,7 @@ export function persistPrefs(): void {
         customAccent: uiPrefs.customAccent,
         distance: uiPrefs.distance,
         duration: uiPrefs.duration,
+        transportTab: uiPrefs.transportTab,
       }),
     );
   } catch {
