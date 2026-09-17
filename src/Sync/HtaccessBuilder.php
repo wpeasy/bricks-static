@@ -72,6 +72,19 @@ final class HtaccessBuilder {
     }
 
     /**
+     * Whether the given .htaccess content is one WE wrote (carries our marker).
+     *
+     * Used to tell an untouched third-party/host .htaccess — worth backing up
+     * before we merge into it — apart from our own previous output, which is
+     * regenerated every sync and has nothing worth preserving.
+     *
+     * @param string $content Current remote .htaccess contents.
+     */
+    public static function has_block(string $content): bool {
+        return strpos($content, '# BEGIN ' . self::MARKER) !== false;
+    }
+
+    /**
      * Remove a "# BEGIN Name … # END Name" block from content.
      *
      * @param string $content Content.
@@ -161,8 +174,14 @@ HTACCESS;
         // sibling would be served as an undecodable binary blob.
         $precompressed = Compressor::available() ? "\n" . self::precompressed_headers() . "\n" : '';
 
+        // `index.php` is listed AFTER index.html purely as a safety net: Apache
+        // inherits .htaccess into every subdirectory, so a destination root that
+        // happens to sit above a PHP app (a WordPress install in a subfolder or
+        // subdomain docroot is a common layout) would otherwise lose its own
+        // DirectoryIndex and 403. Static output never contains an index.php, so
+        // index.html still wins wherever we actually deploy.
         return <<<HTACCESS
-DirectoryIndex index.html
+DirectoryIndex index.html index.php
 $rewrite
 
 <IfModule mod_headers.c>

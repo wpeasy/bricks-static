@@ -57,6 +57,11 @@ final class Runner {
     private const HOME_FILE = 'index.html';
 
     /**
+     * Where a destination's pre-existing .htaccess is preserved, once.
+     */
+    private const HTACCESS_BAK = '.htaccess.bricks-static.bak';
+
+    /**
      * Start a fresh run: prepare the cache, seed the queue, enter render phase.
      *
      * @param string              $type    Run type ('check' or 'sync').
@@ -2137,11 +2142,17 @@ HTML;
     private static function upload_htaccess(TransportInterface $transport): void {
         $existing = $transport->exists('.htaccess') ? $transport->get('.htaccess') : '';
 
-        // One-time backup of the original before we ever merge into it.
-        if ($existing !== '' && !$transport->exists('.htaccess.bricks-static.bak')) {
+        // One-time backup of the ORIGINAL before we ever merge into it. Skip when
+        // the remote file is already our own output: on a destination that had no
+        // .htaccess to begin with, sync 1 writes ours and sync 2 would otherwise
+        // "back up" that generated file — and on a destination that DID have one,
+        // that write would clobber the genuine original saved by sync 1.
+        $is_ours = HtaccessBuilder::has_block($existing);
+
+        if ($existing !== '' && !$is_ours && !$transport->exists(self::HTACCESS_BAK)) {
             $bak = self::worker_tmp('htaccess.bak.out');
             file_put_contents($bak, $existing);
-            self::put_retry($transport, $bak, '.htaccess.bricks-static.bak');
+            self::put_retry($transport, $bak, self::HTACCESS_BAK);
             @unlink($bak);
         }
 
