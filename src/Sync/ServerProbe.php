@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\Sync;
 
+use WPEasy\BricksStatic\Deploy\ConnectorClient;
 use WPEasy\BricksStatic\Deploy\PackageDeployer;
 use WPEasy\BricksStatic\Settings\Destination;
 use WPEasy\BricksStatic\Settings\Destinations;
@@ -98,6 +99,15 @@ final class ServerProbe {
         $result['serverHeader'] = self::header($html, 'server');
         $result['server']       = self::classify($result['serverHeader']);
 
+        // A Connector destination can tell us its origin server exactly (PHP's
+        // SERVER_SOFTWARE), which beats a stripped or CDN-masked Server header.
+        $origin = self::origin_via_connector($dest);
+        if ($origin !== '') {
+            $result['serverHeader'] = $origin;
+            $result['server']       = self::classify($origin);
+            $result['viaConnector'] = true;
+        }
+
         $cc = self::header($html, 'cache-control');
 
         $result['html'] = [
@@ -132,6 +142,29 @@ final class ServerProbe {
         $result['message'] = self::message($result);
 
         return self::remember($dest_id, $result);
+    }
+
+    /**
+     * SERVER_SOFTWARE as reported by the destination's Connector receiver, or
+     * '' when this isn't a paired Connector destination / it doesn't answer.
+     * Best-effort: a probe must never fail because of it.
+     *
+     * @param Destination $dest Destination.
+     */
+    private static function origin_via_connector(Destination $dest): string {
+        if (!$dest->is_connector()) {
+            return '';
+        }
+        $c      = $dest->connection_config();
+        $client = new ConnectorClient((string) $c['url'], (string) $c['connectorId'], (string) $c['connectorSecret']);
+        if (!$client->configured()) {
+            return '';
+        }
+        try {
+            return trim((string) ($client->ping()['server'] ?? ''));
+        } catch (\Throwable $e) {
+            return '';
+        }
     }
 
     /**

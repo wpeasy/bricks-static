@@ -10,8 +10,11 @@ declare(strict_types=1);
 
 namespace WPEasy\BricksStatic\CLI;
 
+use WPEasy\BricksStatic\Deploy\ConnectorScript;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Sync\Runner;
+use WPEasy\BricksStatic\Transport\ConnectorTransport;
+use WPEasy\BricksStatic\Transport\TransportFactory;
 
 defined('ABSPATH') || exit;
 
@@ -148,6 +151,123 @@ final class SyncCommand {
         } else {
             \WP_CLI::error((string) ($snapshot['message'] ?? 'Finished with errors.'));
         }
+    }
+
+    /**
+     * Manage a destination's Connector (HTTPS) pairing without the dashboard.
+     *
+     * ## OPTIONS
+     *
+     * <action>
+     * : What to do.
+     * ---
+     * options:
+     *   - pair
+     *   - revoke
+     *   - test
+     *   - rebuild
+     *   - status
+     * ---
+     *
+     * [<dest>]
+     * : Destination id (see `status`). Defaults to the primary destination.
+     *
+     * [--to=<dir>]
+     * : For `pair`: directory to write the connector file into (default: current directory).
+     *
+     * [--dest-url=<url>]
+     * : For `pair`: set the Destination URL first (https://…, the folder the connector will live in). (`--url` is WP-CLI's own flag, hence the name.)
+     *
+     * ## EXAMPLES
+     *
+     *     wp bricks-static connector status
+     *     wp bricks-static connector pair ab12cd34ef56 --dest-url=https://example.com --to=/tmp
+     *     wp bricks-static connector test ab12cd34ef56
+     *     wp bricks-static connector rebuild ab12cd34ef56
+     *     wp bricks-static connector revoke ab12cd34ef56
+     *
+     * @param array<int,string>    $args       [action, dest].
+     * @param array<string,string> $assoc_args Flags.
+     * @when after_wp_load
+     */
+    public function connector(array $args, array $assoc_args): void {
+        $action  = (string) ($args[0] ?? 'status');
+        $dest_id = (string) ($args[1] ?? Destinations::primary()->id());
+        $dest    = Destinations::get($dest_id);
+        if ($dest === null) {
+            \WP_CLI::error('Unknown destination: ' . $dest_id);
+        }
+
+        switch ($action) {
+            case 'status':
+                foreach (Destinations::visible_objects() as $d) {
+                    $paired = (string) $d->get('connectorId');
+                    \WP_CLI::log(sprintf(
+                        '%s  %-24s transport=%-9s %s',
+                        $d->id(),
+                        (string) $d->get('name'),
+                        (string) $d->get('transport'),
+                        $d->is_connector() ? ($paired !== '' ? 'paired: ' . ConnectorScript::filename($paired) : 'not paired') : ''
+                    ));
+                }
+                return;
+
+            case 'pair':
+                if (isset($assoc_args['dest-url'])) {
+                    Destinations::update($dest_id, ['destinationUrl' => (string) $assoc_args['dest-url'], 'transport' => 'connector']);
+                } elseif (!$dest->is_connector()) {
+                    Destinations::update($dest_id, ['transport' => 'connector']);
+                }
+                $dest = Destinations::get($dest_id);
+                $url  = trim((string) $dest->get('destinationUrl'));
+                if ($url === '') {
+                    \WP_CLI::error('Set the Destination URL first (--dest-url=https://…).');
+                }
+                $pair = Destinations::pair_connector($dest_id);
+                if ($pair === null) {
+                    \WP_CLI::error('Pairing failed.');
+                }
+                $dir  = rtrim((string) ($assoc_args['to'] ?? getcwd()), '/\\');
+                $path = $dir . DIRECTORY_SEPARATOR . ConnectorScript::filename($pair['id']);
+                if (file_put_contents($path, ConnectorScript::generate($pair['id'], $pair['secret'])) === false) {
+                    \WP_CLI::error('Could not write ' . $path);
+                }
+                \WP_CLI::success(sprintf('Paired. Upload %s to the folder served at %s, then run `connector test`.', $path, $url));
+                return;
+
+            case 'revoke':
+                Destinations::revoke_connector($dest_id);
+                \WP_CLI::success('Connector revoked — the file on the destination will refuse every request from now on.');
+                return;
+
+            case 'test':
+            case 'rebuild':
+                if (!$dest->is_connector()) {
+                    \WP_CLI::error('That destination does not use the Connector transport.');
+                }
+                try {
+                    $transport = TransportFactory::make($dest->connection_config());
+                    $transport->connect();
+                } catch (\Throwable $e) {
+                    \WP_CLI::error($e->getMessage());
+                }
+                if (!$transport instanceof ConnectorTransport) {
+                    \WP_CLI::error('Not a connector transport.');
+                }
+                if ($action === 'test') {
+                    update_option('bs_conn_' . $dest_id, ['ok' => true, 'time' => time(), 'message' => $transport->describe()], false);
+                    \WP_CLI::success('Connector reached — ' . $transport->describe());
+                    return;
+                }
+                if (!Runner::render_is_current()) {
+                    \WP_CLI::error('Process the pages first (`wp bricks-static sync --check`) — the push record is rebuilt against the current render.');
+                }
+                $r = Runner::rebuild_pushed_record($dest_id, $transport->manifest());
+                \WP_CLI::success(sprintf('Push record rebuilt: %d match, %d will upload, %d unmanaged files left alone. %s', $r['matched'], $r['total'] - $r['matched'], $r['unmanaged'], $r['inSync'] ? 'In sync.' : 'Run Sync to finish.'));
+                return;
+        }
+
+        \WP_CLI::error('Unknown action: ' . $action);
     }
 
     /**

@@ -87,6 +87,12 @@ final class DestinationsController {
             'permission_callback' => [self::class, 'can_manage'],
         ]);
 
+        register_rest_route(self::NS, '/destinations/(?P<id>[A-Za-z0-9]+)/connector/rebuild', [
+            'methods'             => 'POST',
+            'callback'            => [self::class, 'connector_rebuild'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
+
         // Streams the generated receiver (single-use token from /connector/pair).
         // Same shape as /export/download — a bs/v1 REST route, not admin_post_*.
         register_rest_route(self::NS, '/connector/download', [
@@ -156,6 +162,52 @@ final class DestinationsController {
         $ok = Destinations::revoke_connector((string) $request['id']);
 
         return new WP_REST_Response(['ok' => $ok, 'message' => $ok ? __('Connector revoked. Delete the file from the destination when convenient.', 'bricks-static') : 'Unknown destination.'], $ok ? 200 : 404);
+    }
+
+    /**
+     * POST /destinations/{id}/connector/rebuild — ask the receiver what it
+     * holds and rebuild this destination's push record from it (see
+     * Runner::rebuild_pushed_record()). Needs a current render, like Check.
+     *
+     * @param WP_REST_Request $request Request.
+     */
+    public static function connector_rebuild(WP_REST_Request $request): WP_REST_Response {
+        $id   = (string) $request['id'];
+        $dest = Destinations::get($id);
+        if ($dest === null) {
+            return new WP_REST_Response(['ok' => false, 'message' => 'Unknown destination.'], 404);
+        }
+        if (!$dest->is_connector()) {
+            return new WP_REST_Response(['ok' => false, 'message' => __('Only a Connector destination can report its files.', 'bricks-static')]);
+        }
+        if (!Runner::render_is_current()) {
+            return new WP_REST_Response(['ok' => false, 'needsProcess' => true, 'message' => __('Process the pages first — the push record is rebuilt against the current render.', 'bricks-static')]);
+        }
+
+        try {
+            $transport = TransportFactory::make($dest->connection_config());
+            if (!$transport instanceof ConnectorTransport) {
+                return new WP_REST_Response(['ok' => false, 'message' => 'Not a connector transport.']);
+            }
+            $transport->connect();
+            $remote = $transport->manifest();
+        } catch (\Throwable $e) {
+            return new WP_REST_Response(['ok' => false, 'message' => $e->getMessage()]);
+        }
+
+        $r = Runner::rebuild_pushed_record($id, $remote);
+
+        $message = $r['inSync']
+            /* translators: %d: number of files found on the destination */
+            ? sprintf(__('Push record rebuilt — all %d files are already on the destination and match. In sync.', 'bricks-static'), $r['matched'])
+            /* translators: 1: matching files, 2: differing/missing files */
+            : sprintf(__('Push record rebuilt — %1$d files match, %2$d will upload on the next Sync.', 'bricks-static'), $r['matched'], $r['total'] - $r['matched']);
+        if ($r['unmanaged'] > 0) {
+            /* translators: %d: number of files on the destination the plugin doesn't manage */
+            $message .= ' ' . sprintf(__('(%d other files there are left alone.)', 'bricks-static'), $r['unmanaged']);
+        }
+
+        return new WP_REST_Response(['ok' => true, 'message' => $message] + $r);
     }
 
     /**
@@ -332,6 +384,7 @@ final class DestinationsController {
             $transport->connect();
             $ok = true;
             $message = $transport instanceof ConnectorTransport
+                /* translators: %s: receiver summary (PHP version, zip support, free space) */
                 ? sprintf(__('Connector reached — %s.', 'bricks-static'), $transport->describe())
                 : 'Connected successfully.';
         } catch (\Throwable $e) {

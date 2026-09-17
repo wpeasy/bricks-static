@@ -63,7 +63,7 @@
     "msgid": "Include or exclude a page"
   },
   {
-    "msgid": "In manual discovery mode, sets whether a single post is included in the static export. Respects the Free page limit."
+    "msgid": "In manual discovery mode, sets whether a single post is included in the static export."
   },
   {
     "msgid": "The post ID."
@@ -75,7 +75,7 @@
     "msgid": "Include multiple pages"
   },
   {
-    "msgid": "In manual discovery mode, includes a batch of posts (e.g. the cascade when enabling a page that links to others). Respects the Free page limit and reports any skipped."
+    "msgid": "In manual discovery mode, includes a batch of posts (e.g. the cascade when enabling a page that links to others)."
   },
   {
     "msgid": "The post IDs to include."
@@ -123,9 +123,6 @@
     "msgid": "You cannot edit this post."
   },
   {
-    "msgid": "Free plan page limit reached."
-  },
-  {
     "msgid": "A valid internal page URL is required."
   },
   {
@@ -147,9 +144,6 @@
     "msgid": "Run a check or sync to see status"
   },
   {
-    "msgid": "Saved, but over your Free limit — won’t export until you upgrade or free up room"
-  },
-  {
     "msgid": "Dashboard"
   },
   {
@@ -157,6 +151,102 @@
   },
   {
     "msgid": "Bricks Static: the admin assets are not built. Run \"npm run build\" in the plugin directory."
+  },
+  {
+    "msgid": "Missing download token."
+  },
+  {
+    "msgid": "This export is no longer available — please export again."
+  },
+  {
+    "msgid": "Preparing export…"
+  },
+  {
+    "msgid": "A Sync/Check is currently running — wait for it to finish, then try again."
+  },
+  {
+    "msgid": "An Export ZIP is already running — wait for it to finish, then try again."
+  },
+  {
+    "msgid": "That destination could not be found."
+  },
+  {
+    "msgid": "The page list has changed since the last render. Click Process to refresh it, then Export again."
+  },
+  {
+    "msgid": "Nothing has been rendered yet. Click Process first, then Export."
+  },
+  {
+    "msgid": "The export directory is not writable: "
+  },
+  {
+    "msgid": "Export cancelled."
+  },
+  {
+    "msgid": "That destination no longer exists."
+  },
+  {
+    "msgid": "Preparing export… %d files."
+  },
+  {
+    "msgid": "Gzip is not available on this server (the PHP zlib extension is missing) — the export will not include .gz files."
+  },
+  {
+    "msgid": "Packaging… %1$d/%2$d files."
+  },
+  {
+    "msgid": "Creating gzip files… %1$d/%2$d."
+  },
+  {
+    "msgid": "Could not create the export archive."
+  },
+  {
+    "msgid": "The export archive was not created."
+  },
+  {
+    "msgid": "Could not save the export archive."
+  },
+  {
+    "msgid": "Export ready — %1$d files, %2$s."
+  },
+  {
+    "msgid": "Enter and save the Destination URL first — the connector is called at that address."
+  },
+  {
+    "msgid": "The connector needs an HTTPS Destination URL (the pairing secret travels in each request)."
+  },
+  {
+    "msgid": "That Destination URL resolves to a private or reserved network address and cannot be used."
+  },
+  {
+    "msgid": "Paired. Download the connector file and upload it to the folder served at the Destination URL."
+  },
+  {
+    "msgid": "Connector revoked. Delete the file from the destination when convenient."
+  },
+  {
+    "msgid": "Only a Connector destination can report its files."
+  },
+  {
+    "msgid": "Process the pages first — the push record is rebuilt against the current render."
+  },
+  {
+    "msgid": "Push record rebuilt — all %d files are already on the destination and match. In sync."
+  },
+  {
+    "msgid": "Push record rebuilt — %1$d files match, %2$d will upload on the next Sync."
+  },
+  {
+    "msgid": "(%d other files there are left alone.)"
+  },
+  {
+    "msgid": "This download link has expired — pair again to get a new connector file."
+  },
+  {
+    "msgid": "This pairing is no longer current — pair again."
+  },
+  {
+    "msgid": "Connector reached — %s."
   },
   {
     "msgid": "(no title)"
@@ -174,10 +264,10 @@
     "msgid": "Not published"
   },
   {
-    "msgid": "Not included"
+    "msgid": "Plain permalinks"
   },
   {
-    "msgid": "Over plan limit"
+    "msgid": "Not included"
   },
   {
     "msgid": "Not rendered"
@@ -201,13 +291,52 @@
     "msgid": "Allow AI to change settings"
   },
   {
-    "msgid": "Discovery mode and the per-page Include switch. Respects your plan limits."
+    "msgid": "Discovery mode and the per-page Include switch."
   },
   {
     "msgid": "Allow AI to run syncs"
   },
   {
     "msgid": "Scan, sync, single-page sync, cancel and reset. These render pages and push to your destinations."
+  },
+  {
+    "msgid": "Wizard"
+  },
+  {
+    "msgid": "Setup Wizard"
+  },
+  {
+    "msgid": "A few basics before your first sync — you can change any of these later in Settings."
+  },
+  {
+    "msgid": "Back"
+  },
+  {
+    "msgid": "Next"
+  },
+  {
+    "msgid": "Finish & Process"
+  },
+  {
+    "msgid": "Processing…"
+  },
+  {
+    "msgid": "Preparing…"
+  },
+  {
+    "msgid": "Creating gzip files…"
+  },
+  {
+    "msgid": "Packaging…"
+  },
+  {
+    "msgid": "Saving…"
+  },
+  {
+    "msgid": "Export ready"
+  },
+  {
+    "msgid": "Cancel"
   },
   {
     "msgid": "Include in static export"
@@ -231,19 +360,7 @@
     "msgid": "Not pushed"
   },
   {
-    "msgid": "%1$d of %2$d pages included"
-  },
-  {
     "msgid": "%d pages included"
-  },
-  {
-    "msgid": "Free plan page limit reached — exclude another page, or upgrade to Pro to add more."
-  },
-  {
-    "msgid": "%d more saved — over your Free limit."
-  },
-  {
-    "msgid": "This page is saved but over your Free limit — it won’t export until you upgrade or free up room."
   },
   {
     "msgid": "This page links to %d page(s) not included:"
@@ -261,64 +378,58 @@
     "msgid": "Including…"
   },
   {
-    "msgid": "%d couldn’t be included (Free limit reached)."
-  },
-  {
     "msgid": "Generate and serve static HTML versions of your site for performance."
   },
   {
     "msgid": "Another plugin by"
   },
   {
-    "msgid": "You're on the free version of Bricks Static"
+    "msgid": "Settings"
   },
   {
-    "msgid": "Upgrade to Pro"
+    "msgid": "Style"
   },
   {
-    "msgid": "Free — this plugin"
+    "msgid": "Compact"
   },
   {
-    "msgid": "Pro — add-on"
+    "msgid": "Colour scheme"
   },
   {
-    "msgid": "Static generation — up to %d pages per sync"
+    "msgid": "Auto"
   },
   {
-    "msgid": "1 destination (SFTP / FTP / FTPS)"
+    "msgid": "Light"
   },
   {
-    "msgid": "Text replacements"
+    "msgid": "Dark"
   },
   {
-    "msgid": "Per-file & package (zip) deploy"
+    "msgid": "Theme"
   },
   {
-    "msgid": ".htaccess + nginx config, favicon"
+    "msgid": "Blue"
   },
   {
-    "msgid": "Single-page sync & WP-CLI"
+    "msgid": "Green"
   },
   {
-    "msgid": "<strong>Unlimited</strong> pages"
+    "msgid": "Yellow"
   },
   {
-    "msgid": "<strong>Unlimited</strong> destinations + sync-all"
+    "msgid": "Purple"
   },
   {
-    "msgid": "Media, Links & Videos replacements"
-  },
-  {
-    "msgid": "Gzip pre-compression (.gz)"
-  },
-  {
-    "msgid": "Remote pruning"
-  },
-  {
-    "msgid": "Sitemap.xml + robots.txt"
+    "msgid": "Custom"
   },
   {
     "msgid": "Enable sync single button"
+  },
+  {
+    "msgid": "Concurrent syncs"
+  },
+  {
+    "msgid": "How many destinations to upload to at the same time during a multi-destination sync. Higher is faster but uses more connections. Requires WP-CLI; otherwise syncs run one at a time."
   },
   {
     "msgid": "Destinations"
@@ -330,16 +441,13 @@
     "msgid": "Wiped a remote, or want a full re-upload? Reset clears the push record for every destination."
   },
   {
-    "msgid": "This will render the site and push to %s. Continue?"
+    "msgid": "Confirm reset?"
   },
   {
-    "msgid": "all enabled destinations"
+    "msgid": "Confirm sync?"
   },
   {
-    "msgid": "the destination"
-  },
-  {
-    "msgid": "Reset the push record for all destinations? The next Sync will re-upload everything."
+    "msgid": "Sync all destinations?"
   },
   {
     "msgid": "Destination"
@@ -390,7 +498,7 @@
     "msgid": "Render the site for the current mode so the page list is accurate."
   },
   {
-    "msgid": "View list"
+    "msgid": "View processed list"
   },
   {
     "msgid": "%d not in export"
@@ -445,6 +553,15 @@
   },
   {
     "msgid": "Test browser rendering"
+  },
+  {
+    "msgid": "Permalinks are set to “Plain”"
+  },
+  {
+    "msgid": "Every page shares the same address in this mode (<code>/?page_id=9</code>), so there is no separate file to export any of them to — the whole site would collapse into one page. Choose any other permalink structure, then run Process again."
+  },
+  {
+    "msgid": "Open Permalink settings"
   },
   {
     "msgid": "Method"
@@ -534,6 +651,105 @@
     "msgid": "Re-test"
   },
   {
+    "msgid": "Deploy via"
+  },
+  {
+    "msgid": "FTP / SFTP"
+  },
+  {
+    "msgid": "Connector"
+  },
+  {
+    "msgid": "Manual ZIP"
+  },
+  {
+    "msgid": "Connector (HTTPS)"
+  },
+  {
+    "msgid": "Sync uploads straight to the destination over FTP, FTPS or SFTP. Enter the connection details, Test, then Save."
+  },
+  {
+    "msgid": "A single PHP file you download here and upload to the destination web root once. After that, syncs run over signed HTTPS — no FTP account, and each sync goes up as one package."
+  },
+  {
+    "msgid": "Enter the <strong>Destination URL</strong> above (it must be HTTPS) and <strong>Save</strong>."
+  },
+  {
+    "msgid": "Press <strong>Pair</strong>, then download the connector file made for this destination only (the link works once)."
+  },
+  {
+    "msgid": "Upload <code>bs-connector-&lt;id&gt;.php</code> to the folder served at that URL."
+  },
+  {
+    "msgid": "Press <strong>Test</strong>, then Check / Sync as usual."
+  },
+  {
+    "msgid": "Needs PHP 7.4+ at the destination; ZipArchive there enables one-package deploys (otherwise files upload one by one)."
+  },
+  {
+    "msgid": "Not paired yet."
+  },
+  {
+    "msgid": "Paired — expects %s in the destination folder."
+  },
+  {
+    "msgid": "Pairing is set by wp-config constants."
+  },
+  {
+    "msgid": "Re-pair (new file)"
+  },
+  {
+    "msgid": "Pairing…"
+  },
+  {
+    "msgid": "Revoke"
+  },
+  {
+    "msgid": "Yes, revoke"
+  },
+  {
+    "msgid": "Download %s"
+  },
+  {
+    "msgid": "Pair"
+  },
+  {
+    "msgid": "Re-pairing invalidates the file currently on the destination — upload the new one before the next sync."
+  },
+  {
+    "msgid": "Rebuild push record"
+  },
+  {
+    "msgid": "Rebuilding…"
+  },
+  {
+    "msgid": "Ask the connector what is already on the destination and rebuild the push record from it — so after a reset or re-pair, files that are already there and identical don’t upload again."
+  },
+  {
+    "msgid": "Manual deploy"
+  },
+  {
+    "msgid": "How it works"
+  },
+  {
+    "msgid": "No server access needed. <strong>Export ZIP</strong> packages the current render — with this destination’s replacements applied — into a zip you upload and extract yourself. The plugin uploads nothing and the destination’s sync stats are untouched."
+  },
+  {
+    "msgid": "If the pages list is stale, run <strong>Process</strong> first (Export never renders on its own)."
+  },
+  {
+    "msgid": "Press <strong>Export ZIP</strong> and download it when it finishes."
+  },
+  {
+    "msgid": "Extract it into the destination web root — the folder served at the <strong>Destination URL</strong>. If the site lives under a sub-folder, set <strong>Served from sub-path</strong> above <em>before</em> exporting so links are rewritten for it."
+  },
+  {
+    "msgid": "The zip includes the <code>.htaccess</code> (Apache/LiteSpeed), <code>.gz</code> siblings where supported, <code>sitemap.xml</code> and <code>robots.txt</code>. On nginx, see the <em>Destination Server Configuration</em> tab for the optional snippet and <strong>Check server</strong>."
+  },
+  {
+    "msgid": "Enable this destination to export."
+  },
+  {
     "msgid": "Saved."
   },
   {
@@ -559,9 +775,6 @@
   },
   {
     "msgid": "off"
-  },
-  {
-    "msgid": "Multiple destinations — Requires Pro"
   },
   {
     "msgid": "Add destination"
@@ -597,16 +810,175 @@
     "msgid": "Visit site ↗"
   },
   {
+    "msgid": "Export ZIP"
+  },
+  {
+    "msgid": "Exporting…"
+  },
+  {
+    "msgid": "Package the current render into a downloadable zip for this destination — an alternative to Sync for manual deploys. Uploads nothing."
+  },
+  {
+    "msgid": "Download"
+  },
+  {
     "msgid": "Replacements"
   },
   {
     "msgid": "(applied to this destination only · saved automatically)"
   },
   {
+    "msgid": "Image Replacer"
+  },
+  {
+    "msgid": "Select a page…"
+  },
+  {
+    "msgid": "Select a page above to replace its images."
+  },
+  {
+    "msgid": "Process the site first, then choose a page to replace its images."
+  },
+  {
+    "msgid": "No replaceable images on this page."
+  },
+  {
+    "msgid": "Loading images…"
+  },
+  {
+    "msgid": "Choose a replacement"
+  },
+  {
+    "msgid": "Use this image"
+  },
+  {
+    "msgid": "Click to replace"
+  },
+  {
+    "msgid": "— no alt —"
+  },
+  {
+    "msgid": "↳ replaced with"
+  },
+  {
+    "msgid": "No images match the current filter."
+  },
+  {
+    "msgid": "Pages with replacements:"
+  },
+  {
+    "msgid": "%d sizes"
+  },
+  {
+    "msgid": "not in library"
+  },
+  {
+    "msgid": "This image isn’t in the media library, so only this exact URL is swapped — other responsive sizes may remain."
+  },
+  {
+    "msgid": "The WordPress media library is unavailable on this page."
+  },
+  {
+    "msgid": "Replace…"
+  },
+  {
+    "msgid": "Remove"
+  },
+  {
+    "msgid": "Filter by page…"
+  },
+  {
+    "msgid": "Filter by page"
+  },
+  {
+    "msgid": "Only replacements"
+  },
+  {
+    "msgid": "Link replacer"
+  },
+  {
+    "msgid": "%d link"
+  },
+  {
+    "msgid": "%d links"
+  },
+  {
+    "msgid": ", %d replaced"
+  },
+  {
+    "msgid": "Search URL or label…"
+  },
+  {
+    "msgid": "Replace a link target (<code>&lt;a&gt;</code>/button <code>href</code>) with another URL for this destination. Leave blank to keep the original."
+  },
+  {
+    "msgid": "Loading links…"
+  },
+  {
+    "msgid": "No links found yet — run a Check or Sync first so the pages are rendered."
+  },
+  {
+    "msgid": "— no label —"
+  },
+  {
+    "msgid": "%d page"
+  },
+  {
+    "msgid": "%d pages"
+  },
+  {
+    "msgid": "Replacement URL…"
+  },
+  {
+    "msgid": "No links match the current filter."
+  },
+  {
+    "msgid": "Video replacer"
+  },
+  {
+    "msgid": "Select a page above to replace its videos."
+  },
+  {
+    "msgid": "No replaceable videos on this page."
+  },
+  {
+    "msgid": "%d video"
+  },
+  {
+    "msgid": "%d videos"
+  },
+  {
+    "msgid": "Search URL or title…"
+  },
+  {
+    "msgid": "Local videos swap via the media library; embeds (YouTube, Vimeo, …) take a URL <em>or</em> a video ID (like Bricks). An embed’s <code>origin=</code> is rewritten to this destination automatically when a Destination URL is set."
+  },
+  {
+    "msgid": "Loading videos…"
+  },
+  {
+    "msgid": "No videos found yet — run a Check or Sync first so the pages are rendered."
+  },
+  {
+    "msgid": "local file"
+  },
+  {
+    "msgid": "Choose a replacement video"
+  },
+  {
+    "msgid": "Use this video"
+  },
+  {
+    "msgid": "Replacement URL or video ID…"
+  },
+  {
+    "msgid": "No videos match the current filter."
+  },
+  {
     "msgid": "Text"
   },
   {
-    "msgid": "Media"
+    "msgid": "Images"
   },
   {
     "msgid": "Videos"
@@ -615,7 +987,7 @@
     "msgid": "Find and replace visible text on this destination only."
   },
   {
-    "msgid": "Swap images and media for other library items per destination — responsive variants are rebuilt automatically."
+    "msgid": "Pick a page, then swap any of its images for another library item — responsive variants are rebuilt automatically."
   },
   {
     "msgid": "Rewrite link and button targets per destination, without touching body text."
@@ -666,16 +1038,40 @@
     "msgid": "Uploading"
   },
   {
+    "msgid": "Deploying"
+  },
+  {
     "msgid": "Removing old files"
   },
   {
     "msgid": "Done"
   },
   {
-    "msgid": "Error"
+    "msgid": "Failed"
   },
   {
     "msgid": "Cancelled"
+  },
+  {
+    "msgid": "Uploading…"
+  },
+  {
+    "msgid": "Uploaded file-by-file: the PHP runtime running this sync has no Zip (ZipArchive) extension, so the faster single-package deploy wasn’t available. The result is identical, just slower. This is common with Local’s bundled WP-CLI PHP — most production hosts include Zip and will package automatically."
+  },
+  {
+    "msgid": "The faster one-shot package deploy didn’t complete — %s. Files were uploaded individually instead: same result, just slower."
+  },
+  {
+    "msgid": "Error"
+  },
+  {
+    "msgid": "View error details"
+  },
+  {
+    "msgid": "Sync error details"
+  },
+  {
+    "msgid": "No further detail was recorded for this destination."
   },
   {
     "msgid": "Pages"
@@ -712,9 +1108,6 @@
   },
   {
     "msgid": "%d failed uploads"
-  },
-  {
-    "msgid": "<strong>Free plan renders up to %d pages.</strong> Additional pages weren't synced."
   },
   {
     "msgid": "%d file failed to upload."
@@ -759,7 +1152,70 @@
     "msgid": "View"
   },
   {
-    "msgid": "The <code>.htaccess</code> is uploaded to the destination automatically (Apache/LiteSpeed). On nginx, paste the snippet below into your server block."
+    "msgid": "The <code>.htaccess</code> is uploaded to the destination automatically (Apache/LiteSpeed). nginx serves the static site as-is; its snippet below is an <em>optional</em> tuning (cache policy + pre-compressed serving) to paste into your server block. Use <strong>Check server</strong> to see what the destination is actually doing."
+  },
+  {
+    "msgid": "Server check"
+  },
+  {
+    "msgid": "Fetches the destination’s home page and one asset, and reports the web server and whether the cache rules are in effect."
+  },
+  {
+    "msgid": "Check server"
+  },
+  {
+    "msgid": "Check again"
+  },
+  {
+    "msgid": "No destination has a Destination URL yet — set one on the destination to enable the check."
+  },
+  {
+    "msgid": "Server"
+  },
+  {
+    "msgid": "Cache policy"
+  },
+  {
+    "msgid": "HTML"
+  },
+  {
+    "msgid": "Asset"
+  },
+  {
+    "msgid": "Applied"
+  },
+  {
+    "msgid": "Partial"
+  },
+  {
+    "msgid": "Not applied"
+  },
+  {
+    "msgid": "Unknown"
+  },
+  {
+    "msgid": "gzip"
+  },
+  {
+    "msgid": "none"
+  },
+  {
+    "msgid": "(no Cache-Control header)"
+  },
+  {
+    "msgid": "No Destination URL is set, so the host was guessed from the connection — set the URL for an accurate check."
+  },
+  {
+    "msgid": "Checked %s"
+  },
+  {
+    "msgid": "unknown"
+  },
+  {
+    "msgid": "CDN / proxy"
+  },
+  {
+    "msgid": "Text replacements"
   },
   {
     "msgid": "(optional)"
@@ -873,13 +1329,7 @@
     "msgid": "Formatting"
   },
   {
-    "msgid": "Cancel"
-  },
-  {
     "msgid": "Save"
-  },
-  {
-    "msgid": "Saving…"
   },
   {
     "msgid": "Testing…"
@@ -897,19 +1347,22 @@
     "msgid": "Close"
   },
   {
-    "msgid": "Requires Pro"
-  },
-  {
-    "msgid": "Your Bricks Static Pro license has expired — renew to re-enable this feature. Your saved settings are kept."
-  },
-  {
-    "msgid": "Renew license"
-  },
-  {
     "msgid": "That URL resolves to a private or reserved network address (cloud metadata, LAN, loopback proxy, etc.) and cannot be used. Use a public HTTP(S) URL."
   },
   {
     "msgid": "The destination URL returned a redirect, which is not followed for safety."
+  },
+  {
+    "msgid": "An Export ZIP is currently running — wait for it to finish, then try again."
+  },
+  {
+    "msgid": "site is in maintenance mode, or temporarily unavailable"
+  },
+  {
+    "msgid": "blocked — maintenance mode, a security plugin, or a firewall"
+  },
+  {
+    "msgid": "password protected, or behind HTTP authentication"
   },
   {
     "msgid": "The page list has changed since the last render. Click Process to refresh it, then Check again."
@@ -922,250 +1375,42 @@
     "msgid_plural": "%d published pages aren’t in the export — see View list."
   },
   {
+    "msgid": "Unknown destination."
+  },
+  {
+    "msgid": "Set a Destination URL for this destination first, so the probe knows where the site is served from."
+  },
+  {
+    "msgid": "an unidentified server"
+  },
+  {
+    "msgid": "The destination URL answered HTTP %d, so the rules could not be verified. Check the Destination URL and remote path point at the deployed site."
+  },
+  {
+    "msgid": "%s is answering, but nothing has been synced to this destination yet — run a Sync, then check again."
+  },
+  {
+    "msgid": "%s — cache policy in effect (assets long-cached, HTML revalidated)."
+  },
+  {
+    "msgid": "%s — the cache policy is only partly in effect. Compare the headers below with the rules."
+  },
+  {
+    "msgid": "nginx detected. The site is being served, but the optional cache tuning is not applied — paste the nginx snippet into your server block and reload nginx, then check again."
+  },
+  {
+    "msgid": "%s detected, but the .htaccess cache headers are not in effect. Check that mod_headers is enabled and that .htaccess overrides are allowed (AllowOverride) for the destination directory."
+  },
+  {
+    "msgid": "A CDN/proxy (%s) is in front of the destination, which hides the origin server and may rewrite cache headers. The cache policy is not visible at the edge."
+  },
+  {
+    "msgid": "%s detected — the cache policy is not in effect. On Apache/LiteSpeed the .htaccess is uploaded automatically; on nginx, apply the snippet below."
+  },
+  {
     "msgid": "Bricks Static documentation requires JavaScript."
   },
   {
     "msgid": "Bricks Static requires JavaScript."
-  },
-  {
-    "msgid": "Bricks Static Pro"
-  },
-  {
-    "msgid": "Pro features for Bricks Static — multiple destinations, advanced replacements (media/links/videos), gzip pre-compression, pruning, and sitemaps."
-  },
-  {
-    "msgid": "Bricks Static Pro requires Bricks Static %s or newer. Please update the Bricks Static plugin."
-  },
-  {
-    "msgid": "Cannot store license safely: AUTH_KEY in wp-config.php must be set (≥ 32 chars) and the OpenSSL PHP extension must be available."
-  },
-  {
-    "msgid": "Licensing API URL must use HTTPS — refusing to send license key over plaintext."
-  },
-  {
-    "msgid": "License is valid. All features are enabled."
-  },
-  {
-    "msgid": "Bricks Static Pro requires a license key. <a href=\"%1$s\">Enter your license key</a> or <a href=\"%2$s\" target=\"_blank\" rel=\"noopener noreferrer\">purchase a license</a>."
-  },
-  {
-    "msgid": "Bricks Static Pro license issue detected. You have %1$d day remaining to resolve this. <a href=\"%2$s\">Check your license</a>",
-    "msgid_plural": "Bricks Static Pro license issue detected. You have %1$d days remaining to resolve this. <a href=\"%2$s\">Check your license</a>"
-  },
-  {
-    "msgid": "Check your license"
-  },
-  {
-    "msgid": "Bricks Static Pro: Your license has expired. Features and plugin updates are disabled until you renew. %s"
-  },
-  {
-    "msgid": "Your license has expired. Please renew to continue receiving updates and support."
-  },
-  {
-    "msgid": "Your license has been disabled. Please contact support."
-  },
-  {
-    "msgid": "Default WordPress security keys detected"
-  },
-  {
-    "msgid": "Your wp-config.php still contains the placeholder text that ships with a fresh WordPress install (\"put your unique phrase here\"). Bricks Static Pro encrypts your license key using these WordPress security keys — replacing the placeholder with real, randomly-generated values is strongly recommended before activating."
-  },
-  {
-    "msgid": "Open the WordPress salt generator: <a href=\"%s\" target=\"_blank\" rel=\"noopener\">%s</a>"
-  },
-  {
-    "msgid": "Copy the 8 lines it outputs."
-  },
-  {
-    "msgid": "Open <code>wp-config.php</code> in the root of your WordPress install and replace the existing salt block (the 8 lines starting with AUTH_KEY, SECURE_AUTH_KEY, etc.) with the new lines."
-  },
-  {
-    "msgid": "Save the file and reload this page."
-  },
-  {
-    "msgid": "Updating these keys logs everyone out of your site (it invalidates session cookies). No data is lost — users just need to sign in again."
-  },
-  {
-    "msgid": "Generate WordPress Security Keys"
-  },
-  {
-    "msgid": "License activation is blocked — WordPress security keys are missing"
-  },
-  {
-    "msgid": "Your wp-config.php is missing the AUTH_KEY security constant (or it's too short). Bricks Static Pro uses this key to encrypt your license key at rest, so it's never stored in plain text in your database. Activation is paused until this is fixed."
-  },
-  {
-    "msgid": "Open <code>wp-config.php</code> in the root of your WordPress install and paste the 8 lines in (replacing any existing salt block, or adding it above the \"That's all, stop editing\" comment)."
-  },
-  {
-    "msgid": "License activation is blocked — OpenSSL PHP extension is not loaded"
-  },
-  {
-    "msgid": "Your server is missing the OpenSSL PHP extension, which Bricks Static Pro uses to encrypt your license key. The OpenSSL extension is included in PHP by default on virtually every host — it's unusual to see it disabled."
-  },
-  {
-    "msgid": "Contact your hosting provider and ask them to enable the OpenSSL PHP extension."
-  },
-  {
-    "msgid": "If you manage your own server, check that <code>extension=openssl</code> is enabled in your <code>php.ini</code> file."
-  },
-  {
-    "msgid": "Once enabled, reload this page."
-  },
-  {
-    "msgid": "Licensing instance is not available."
-  },
-  {
-    "msgid": "Learn more"
-  },
-  {
-    "msgid": "Activation is paused until the issue above is resolved."
-  },
-  {
-    "msgid": "The WordPress media library is unavailable on this page."
-  },
-  {
-    "msgid": "Replace…"
-  },
-  {
-    "msgid": "Remove"
-  },
-  {
-    "msgid": "Filter by page…"
-  },
-  {
-    "msgid": "Filter by page"
-  },
-  {
-    "msgid": "Only replacements"
-  },
-  {
-    "msgid": "Media replacer"
-  },
-  {
-    "msgid": "%d item"
-  },
-  {
-    "msgid": "%d items"
-  },
-  {
-    "msgid": ", %d swapped"
-  },
-  {
-    "msgid": "Choose a replacement"
-  },
-  {
-    "msgid": "Use this media"
-  },
-  {
-    "msgid": "Search name or alt…"
-  },
-  {
-    "msgid": "Loading media…"
-  },
-  {
-    "msgid": "No media found yet — run a Check or Sync first so the pages are rendered."
-  },
-  {
-    "msgid": "Click to replace"
-  },
-  {
-    "msgid": "— no alt —"
-  },
-  {
-    "msgid": "%1$d page: %2$s"
-  },
-  {
-    "msgid": "%1$d pages: %2$s"
-  },
-  {
-    "msgid": "↳ replaced with"
-  },
-  {
-    "msgid": "No media match the current filter."
-  },
-  {
-    "msgid": "%d sizes"
-  },
-  {
-    "msgid": "not in library"
-  },
-  {
-    "msgid": "This image isn’t in the media library, so only this exact URL is swapped — other responsive sizes may remain."
-  },
-  {
-    "msgid": "Link replacer"
-  },
-  {
-    "msgid": "%d link"
-  },
-  {
-    "msgid": "%d links"
-  },
-  {
-    "msgid": ", %d replaced"
-  },
-  {
-    "msgid": "Search URL or label…"
-  },
-  {
-    "msgid": "Replace a link target (<code>&lt;a&gt;</code>/button <code>href</code>) with another URL for this destination. Leave blank to keep the original."
-  },
-  {
-    "msgid": "Loading links…"
-  },
-  {
-    "msgid": "No links found yet — run a Check or Sync first so the pages are rendered."
-  },
-  {
-    "msgid": "— no label —"
-  },
-  {
-    "msgid": "%d page"
-  },
-  {
-    "msgid": "%d pages"
-  },
-  {
-    "msgid": "Replacement URL…"
-  },
-  {
-    "msgid": "No links match the current filter."
-  },
-  {
-    "msgid": "Video replacer"
-  },
-  {
-    "msgid": "%d video"
-  },
-  {
-    "msgid": "%d videos"
-  },
-  {
-    "msgid": "Search URL or title…"
-  },
-  {
-    "msgid": "Local videos swap via the media library; embeds (YouTube, Vimeo, …) take a URL <em>or</em> a video ID (like Bricks). An embed’s <code>origin=</code> is rewritten to this destination automatically when a Destination URL is set."
-  },
-  {
-    "msgid": "Loading videos…"
-  },
-  {
-    "msgid": "No videos found yet — run a Check or Sync first so the pages are rendered."
-  },
-  {
-    "msgid": "local file"
-  },
-  {
-    "msgid": "Choose a replacement video"
-  },
-  {
-    "msgid": "Use this video"
-  },
-  {
-    "msgid": "Replacement URL or video ID…"
-  },
-  {
-    "msgid": "No videos match the current filter."
   }
 ]

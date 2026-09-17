@@ -220,6 +220,26 @@
     }
   }
 
+  // Rebuild the push record from what the receiver reports — after a wipe,
+  // a fresh pairing or "Reset sync state", so identical files don't re-upload.
+  let rebuilding = $state(false);
+  async function rebuild(): Promise<void> {
+    if (rebuilding) return;
+    rebuilding = true;
+    message = '';
+    try {
+      const r = await api.connectorRebuild(d.id);
+      message = r.message;
+      messageOk = r.ok;
+      if (r.ok) onSaved();
+    } catch (e) {
+      message = (e as Error).message;
+      messageOk = false;
+    } finally {
+      rebuilding = false;
+    }
+  }
+
   let zipHelpOpen = $state(false);
 </script>
 
@@ -304,6 +324,13 @@
               </Tooltip>
               <ConfirmButton variant="ghost" size="sm" label={__('btnRevoke')} confirmLabel={__('btnConfirmRevoke')} onconfirm={revoke} disabled={busy || pairing} />
             </div>
+            {#if destination.status.connected}
+              <div class="bs-row">
+                <Tooltip content={__('rebuildHint')} placement="bottom">
+                  <Button variant="ghost" size="sm" onclick={rebuild} disabled={busy || pairing || rebuilding}>{rebuilding ? __('btnRebuilding') : __('btnRebuild')}</Button>
+                </Tooltip>
+              </div>
+            {/if}
           {:else}
             <Status status="unknown" label={__('connectorUnpaired')} />
             <div class="bs-row">

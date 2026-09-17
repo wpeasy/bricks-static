@@ -106,6 +106,24 @@ final class ConnectorClient {
     }
 
     /**
+     * `manifest` — what the receiver's folder currently holds (size + md5 per
+     * file; excludes our files, .gz siblings and .htaccess).
+     *
+     * @return array<string,array{size:int,md5:string}>
+     */
+    public function manifest(): array {
+        $r   = $this->json(['op' => 'manifest'], 120);
+        $out = [];
+        foreach ((array) ($r['files'] ?? []) as $rel => $meta) {
+            if (is_array($meta)) {
+                $out[(string) $rel] = ['size' => (int) ($meta['size'] ?? 0), 'md5' => (string) ($meta['md5'] ?? '')];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * `delete` — remove files (+ their .gz siblings are handled by extract/prune callers).
      *
      * @param array<int,string> $paths Relative paths.

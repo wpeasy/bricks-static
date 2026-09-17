@@ -100,7 +100,7 @@ The Connector transport replaces FTP with a **user-installed, persistent** PHP r
 **Filesystem jail** (`bs_safe` / `bs_target` / `bs_existing` / `bs_write_allowed`)
 - Same `$safe()` string rules as `UnzipScript`, **plus** `realpath` containment of the deepest existing ancestor (symlink-escape guard), a refusal to write through a symlink or over a directory, and a `..`-segment check.
 - **Executable write deny-list**: any extension segment in `php php3-8 phtml phar phps pht phpt cgi pl py sh bash ini htpasswd` (so `x.php.txt` is refused too), `web.config`, `.user.ini`, `php.ini`, and anything named `bs-connector-*` (the receiver can never overwrite itself, its state, or in-flight parts). `.htaccess` writes are content-scanned and refused if they contain handler/PHP directives (`AddHandler`, `AddType`, `SetHandler`, `Action`, `php_value/flag`, `php_admin_*`, `RemoveHandler`, `CGIPassAuth`). Static output never needs any of these. **Blast radius with a stolen secret: deface the static folder — never code execution, never a read outside it.**
-- `get` is allow-listed to `.htaccess` and `.htaccess.bricks-static.bak` (the two files the merge needs). There is no directory listing op.
+- `get` is allow-listed to `.htaccess` and `.htaccess.bricks-static.bak` (the two files the merge needs). `manifest` is the only listing op: names + size + md5 of regular files under BASE (never contents, never symlinks, never our own files or `.htaccess`).
 - `delete` removes files only (+ prunes empty parents, never BASE); `extract` is the `UnzipScript` body with the deny-list applied per entry.
 
 **Client-side handling**

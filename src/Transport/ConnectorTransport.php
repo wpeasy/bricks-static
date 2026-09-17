@@ -108,6 +108,15 @@ final class ConnectorTransport implements TransportInterface, PackageCapableTran
     }
 
     /**
+     * Remote inventory (see ConnectorClient::manifest()).
+     *
+     * @return array<string,array{size:int,md5:string}>
+     */
+    public function manifest(): array {
+        return $this->client->manifest();
+    }
+
+    /**
      * @inheritdoc
      */
     public function put(string $local_path, string $remote_path): void {

@@ -1969,6 +1969,64 @@ final class Runner {
     }
 
     /**
+     * Rebuild a destination's push record from what its Connector reports is
+     * actually on disk, so a wiped record (re-target, "Reset sync state", a
+     * fresh pairing) doesn't force a full re-upload of files that are already
+     * there and identical.
+     *
+     * Only files present in the CURRENT deploy manifest are recorded: a remote
+     * file whose md5 equals the local deploy copy takes the manifest's stable
+     * hash (so it reads as unchanged); one that differs is recorded with a
+     * non-matching hash (so it re-uploads). Files on the remote that the
+     * deploy manifest doesn't know are deliberately NOT recorded — the push
+     * record only ever lists what we pushed, so prune never touches a user's
+     * own files.
+     *
+     * @param string                                $dest_id Destination id.
+     * @param array<string,array{size:int,md5:string}> $remote  Receiver inventory.
+     * @return array{matched:int,changed:int,unmanaged:int,inSync:bool,total:int}
+     */
+    public static function rebuild_pushed_record(string $dest_id, array $remote): array {
+        $render = Manifest::load(Manifest::RENDER_OPTION);
+        $deploy = self::build_deploy_manifest($render, $dest_id);
+
+        $pushed  = [];
+        $matched = 0;
+        $changed = 0;
+        foreach ($deploy as $rel => $meta) {
+            if (!isset($remote[$rel])) {
+                continue; // Not on the remote → stays absent → uploads next sync.
+            }
+            $src = (string) ($meta['src'] ?? '');
+            if ($src !== '' && is_file($src) && md5_file($src) === $remote[$rel]['md5']) {
+                $pushed[$rel] = ['size' => (int) $meta['size'], 'hash' => (string) $meta['hash']];
+                $matched++;
+            } else {
+                $pushed[$rel] = ['size' => (int) $remote[$rel]['size'], 'hash' => 'remote:' . $remote[$rel]['md5']];
+                $changed++;
+            }
+        }
+        ksort($pushed);
+        Manifest::save(Destinations::pushed_option($dest_id), $pushed);
+
+        $diff    = Manifest::diff($pushed, $deploy);
+        $in_sync = $diff['changed'] === [] && $diff['removed'] === [] && $deploy !== [];
+        if ($in_sync) {
+            self::mark_synced($dest_id);
+        } else {
+            delete_option(self::SYNC_SIG . $dest_id);
+        }
+
+        return [
+            'matched'   => $matched,
+            'changed'   => $changed,
+            'unmanaged' => count(array_diff_key($remote, $deploy)),
+            'inSync'    => $in_sync,
+            'total'     => count($deploy),
+        ];
+    }
+
+    /**
      * Record that a destination is now in sync (its signature at deploy time).
      *
      * @param string $dest_id Destination id.

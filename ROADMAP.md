@@ -15,9 +15,9 @@ here are not yet scheduled and may change. Pro-facing items are also listed as
   and a connection agent to simplify destination setup and transport.
   The **Connector transport** — a user-installed, per-pairing PHP receiver
   spoken to over signed HTTPS (chunked package upload, no FTP) — shipped
-  2026-09-17 (phases 1+2 of `docs/CONNECTOR_PLAN.md`). Still open: phase 3
-  (`manifest` op to rebuild the push record, `ServerProbe` via `ping`, WP-CLI
-  pair/download/revoke).
+  2026-09-17, all phases of `docs/CONNECTOR_PLAN.md` including the
+  "Rebuild push record" op, the server probe reading the origin via `ping`,
+  and `wp bricks-static connector pair|test|rebuild|revoke|status`.
 - **nginx auto-apply (Tier 2).** Opt-in SSH apply for SFTP destinations
   (phpseclib `SSH2`, fixed `nginx -t && nginx -s reload` behind a user-installed
   sudoers rule). Tier 1 — detect + verify via `Sync\ServerProbe` / "Check server"

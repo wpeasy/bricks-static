@@ -99,6 +99,7 @@ export const api = {
   preflight: () => request<Preflight>('/sync/preflight', 'POST', {}),
   connectorPair: (id: string) => request<ConnectorPairResponse>(`/destinations/${id}/connector/pair`, 'POST'),
   connectorRevoke: (id: string) => request<TestResult>(`/destinations/${id}/connector/revoke`, 'POST'),
+  connectorRebuild: (id: string) => request<TestResult & { needsProcess?: boolean }>(`/destinations/${id}/connector/rebuild`, 'POST'),
   serverConfig: () => request<ServerConfig>('/sync/server-config'),
   serverCheck: (dest: string) => request<ServerCheck>(`/sync/server-check?dest=${encodeURIComponent(dest)}`),
   getMedia: (page = '') =>

@@ -301,6 +301,28 @@ switch ($op) {
         ]);
     }
 
+    case 'manifest': {
+        // Inventory of the folder (size + md5 per file) so the plugin can
+        // rebuild its push record after a wipe or a fresh pairing. Skips our
+        // own files, in-flight parts, server config and .gz siblings (which
+        // the plugin regenerates). Read-only; never lists outside BASE.
+        $files = [];
+        $it    = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($BASE, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::LEAVES_ONLY);
+        foreach ($it as $f) {
+            if (!$f->isFile() || $f->isLink()) {
+                continue;
+            }
+            $name = $f->getFilename();
+            if (strpos($name, 'bs-connector-') === 0 || substr($name, -3) === '.gz' || $name === '.htaccess' || $name === '.htaccess.bricks-static.bak') {
+                continue;
+            }
+            $rel = ltrim(str_replace('\\', '/', substr($f->getPathname(), strlen($BASE))), '/');
+            $files[$rel] = ['size' => (int) $f->getSize(), 'md5' => (string) md5_file($f->getPathname())];
+        }
+        ksort($files);
+        bs_out(200, ['ok' => true, 'files' => $files]);
+    }
+
     case 'stat': {
         $out   = [];
         $paths = is_array($body['paths'] ?? null) ? $body['paths'] : [];
