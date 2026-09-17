@@ -195,6 +195,13 @@ final class Destinations {
     private static function target_signature(Destination $d): string {
         $c = $d->connection_config();
 
+        // A Connector destination is identified by WHERE the receiver answers,
+        // not by an FTP account. (Re-pairing/rotating keeps the same target — the
+        // files on the destination don't change — so the pairing isn't part of it.)
+        if ($d->is_connector()) {
+            return 'connector|' . strtolower(rtrim((string) ($c['url'] ?? ''), '/'));
+        }
+
         return implode('|', [
             (string) ($c['transport'] ?? ''),
             strtolower((string) ($c['host'] ?? '')),
@@ -202,6 +209,60 @@ final class Destinations {
             (string) ($c['username'] ?? ''),
             trim((string) ($c['remotePath'] ?? ''), '/'),
         ]);
+    }
+
+    /**
+     * Pair a destination with a new Connector: fresh id + 256-bit secret. Any
+     * previous pairing is replaced (rotation), so a lost or compromised
+     * connector file is invalidated simply by pairing again.
+     *
+     * @param string $id Destination id.
+     * @return array{id:string,secret:string}|null The NEW pairing (the raw secret
+     *                                              is returned once, to embed
+     *                                              its hash in the file), or null
+     *                                              for an unknown destination.
+     */
+    public static function pair_connector(string $id): ?array {
+        $list = self::all();
+        foreach ($list as $i => $data) {
+            if ((string) ($data['id'] ?? '') !== $id) {
+                continue;
+            }
+            $connector_id = bin2hex(random_bytes(8));
+            $secret       = bin2hex(random_bytes(32));
+            $dest         = new Destination($data, $i === 0);
+            $list[$i]     = $dest->set_connector($connector_id, $secret, \WPEasy\BricksStatic\Deploy\ConnectorScript::VERSION);
+            update_option(self::OPTION, $list, false);
+            // The old file (if any) is dead; a stale "connected" state would mislead.
+            delete_option('bs_conn_' . $id);
+
+            return ['id' => $connector_id, 'secret' => $secret];
+        }
+
+        return null;
+    }
+
+    /**
+     * Revoke a destination's Connector pairing. The receiver file on the
+     * destination then refuses every request until a new one is uploaded.
+     *
+     * @param string $id Destination id.
+     */
+    public static function revoke_connector(string $id): bool {
+        $list = self::all();
+        foreach ($list as $i => $data) {
+            if ((string) ($data['id'] ?? '') !== $id) {
+                continue;
+            }
+            $dest     = new Destination($data, $i === 0);
+            $list[$i] = $dest->set_connector('', '', 0);
+            update_option(self::OPTION, $list, false);
+            delete_option('bs_conn_' . $id);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**

@@ -103,13 +103,42 @@ final class Destination {
      */
     public function connection_config(): array {
         return [
-            'transport'  => (string) $this->get('transport'),
-            'host'       => (string) $this->get('host'),
-            'port'       => (int) $this->get('port'),
-            'username'   => (string) $this->get('username'),
-            'password'   => (string) $this->get('password'),
-            'remotePath' => (string) $this->get('remotePath'),
+            'transport'       => (string) $this->get('transport'),
+            'host'            => (string) $this->get('host'),
+            'port'            => (int) $this->get('port'),
+            'username'        => (string) $this->get('username'),
+            'password'        => (string) $this->get('password'),
+            'remotePath'      => (string) $this->get('remotePath'),
+            // Connector transport: the public URL the receiver lives under + its pairing.
+            'url'             => (string) $this->get('destinationUrl'),
+            'connectorId'     => (string) $this->get('connectorId'),
+            'connectorSecret' => (string) $this->get('connectorSecret'),
+            'connectorVersion'=> (int) $this->get('connectorVersion'),
         ];
+    }
+
+    /**
+     * Whether this destination deploys through the Connector (HTTPS) receiver.
+     */
+    public function is_connector(): bool {
+        return (string) $this->get('transport') === 'connector';
+    }
+
+    /**
+     * Record a Connector pairing (id + secret, encrypted at rest) or clear it.
+     * The only writer for the internal connector fields.
+     *
+     * @param string $id      Connector id ('' clears the pairing).
+     * @param string $secret  Raw secret ('' clears).
+     * @param int    $version Protocol version the file was generated for.
+     * @return array<string,mixed> Updated stored data.
+     */
+    public function set_connector(string $id, string $secret, int $version): array {
+        $this->data['connectorId']      = $id;
+        $this->data['connectorSecret']  = $secret === '' ? '' : Crypto::encrypt($secret);
+        $this->data['connectorVersion'] = $id === '' ? 0 : $version;
+
+        return $this->data;
     }
 
     /**
@@ -262,8 +291,8 @@ final class Destination {
 
         // Connection fields.
         foreach (Schema::fields() as $key => $field) {
-            if ($this->is_from_constant($key)) {
-                continue;
+            if ($this->is_from_constant($key) || Schema::is_internal($key)) {
+                continue; // Constants win; internal (Connector) fields have their own writer.
             }
 
             if (Schema::is_secret($key)) {

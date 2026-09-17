@@ -395,7 +395,7 @@
       <p class="bs-dash__lead">{__('appLead')}</p>
     </header>
     <Tooltip content={__('settings')} placement="bottom-end">
-      <Button variant="ghost" shape="square" onclick={() => (settingsOpen = true)} aria-label={__('settings')}>⚙</Button>
+      <Button class="bs-dash__gear" variant="ghost" shape="square" onclick={() => (settingsOpen = true)} aria-label={__('settings')}>⚙</Button>
     </Tooltip>
   </div>
 
@@ -558,6 +558,17 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: var(--ab-space-4);
+  }
+
+  /* The gear is the only way into Settings — 3× the default icon size so it
+     reads as a primary control, not a stray glyph. `class` is passed through
+     ab-ui's Button, so this is a scoped override, not a lib edit. */
+  .bs-dash__top :global(.bs-dash__gear) {
+    font-size: 3em;
+    width: auto;
+    height: auto;
+    line-height: 1;
+    padding: var(--ab-space-1) var(--ab-space-2);
   }
 
 

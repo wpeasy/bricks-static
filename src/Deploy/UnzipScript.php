@@ -24,6 +24,9 @@ defined('ABSPATH') || exit;
  *    (zip-slip / path traversal).
  *  - Deletes the package AND itself after an authorised run; the plugin also
  *    removes both over FTP as a backstop.
+ *
+ * The persistent Connector receiver (`templates/connector.php.txt`) carries the
+ * same `$safe()` path rules and gzip-sibling logic — keep the two in sync.
  */
 final class UnzipScript {
 

@@ -1,6 +1,6 @@
 // Shared types mirroring the REST payloads (src/REST/*Controller.php).
 
-export type Transport = 'sftp' | 'ftps' | 'ftp';
+export type Transport = 'sftp' | 'ftps' | 'ftp' | 'connector';
 
 export interface ValueField<T> {
   value: T;
@@ -21,12 +21,27 @@ export interface SettingsDisplay {
   remotePath: ValueField<string>;
   basePath: ValueField<string>;
   destinationUrl: ValueField<string>;
+  /** Connector pairing (plugin-managed; never sent from the client). */
+  connectorId: ValueField<string>;
+  connectorSecret: SecretField;
+  connectorVersion: ValueField<number>;
 }
 
 export interface Capabilities {
   sftp: boolean;
   ftps: boolean;
   ftp: boolean;
+  connector: boolean;
+}
+
+/** POST /destinations/{id}/connector/pair */
+export interface ConnectorPairResponse {
+  ok: boolean;
+  connectorId?: string;
+  filename?: string;
+  /** Single-use token for connectorDownloadUrl(); valid 10 minutes. */
+  downloadToken?: string;
+  message: string;
 }
 
 export interface ConnectionResponse {

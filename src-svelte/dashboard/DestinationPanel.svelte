@@ -1,10 +1,9 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { Badge, Button, ConfirmButton, Input, Select, Tabs, Tooltip, fadeUp } from '@wpeasy/ab-ui';
-  import { api } from '../shared/api';
+  import { Button, Collapsible, ConfirmButton, Input, Segmented, Select, Status, Tooltip, fadeUp } from '@wpeasy/ab-ui';
+  import { api, connectorDownloadUrl } from '../shared/api';
   import type { Capabilities, ConnectionInput, DestinationDisplay, Transport } from '../shared/types';
-  import { __ } from '../shared/i18n';
-  import { uiPrefs, persistPrefs, type TransportTab } from '../shared/uiPrefs.svelte';
+  import { __, __f } from '../shared/i18n';
 
   let {
     destination,
@@ -27,14 +26,15 @@
     onExport: (id: string) => void;
   } = $props();
 
-  const DEFAULT_PORTS: Record<Transport, number> = { sftp: 22, ftps: 21, ftp: 21 };
+  type FtpTransport = Exclude<Transport, 'connector'>;
+  const DEFAULT_PORTS: Record<FtpTransport, number> = { sftp: 22, ftps: 21, ftp: 21 };
   const KNOWN_DEFAULT_PORTS = [0, 21, 22];
 
   const d = untrack(() => destination);
 
   let transport = $state<Transport>(d.transport.value);
   let host = $state(d.host.value);
-  let port = $state<number>(d.port.value || DEFAULT_PORTS[d.transport.value]);
+  let port = $state<number>(d.port.value || (d.transport.value === 'connector' ? 21 : DEFAULT_PORTS[d.transport.value]));
   let username = $state(d.username.value);
   let password = $state('');
   let remotePath = $state(d.remotePath.value);
@@ -47,19 +47,22 @@
   let messageOk = $state(true);
   let busy = $derived(saving || testing || running || exporting);
 
-  // Transport tab: FTP (the saved transport), Connector (planned), Manual ZIP.
-  // Remembered per destination in uiPrefs; the saved `transport` setting only
-  // changes on Save, so switching tabs is free.
-  let transportTab = $state<TransportTab>(uiPrefs.transportTab[d.id] ?? 'ftp');
-  const tabItems = [
+  // ---- Deploy method: FTP/SFTP vs Connector — ONE per destination (it IS the
+  // saved `transport`), so a Segmented choice rather than tabs. The FTP
+  // protocol picker lives inside the FTP branch.
+  let method = $derived<'ftp' | 'connector'>(transport === 'connector' ? 'connector' : 'ftp');
+  let lastFtp: FtpTransport = d.transport.value === 'connector' ? 'ftps' : d.transport.value;
+  let methodOptions = $derived([
     { value: 'ftp', label: __('tabFtp') },
-    { value: 'connector', label: __('tabConnector') },
-    { value: 'zip', label: __('tabManualZip') },
-  ];
-  function selectTab(value: string): void {
-    transportTab = value as TransportTab;
-    uiPrefs.transportTab[d.id] = transportTab;
-    persistPrefs();
+    { value: 'connector', label: __('optConnector'), disabled: !capabilities.connector },
+  ]);
+  function selectMethod(value: string): void {
+    if (value === 'connector') {
+      if (transport !== 'connector') lastFtp = transport as FtpTransport;
+      transport = 'connector';
+    } else {
+      transport = lastFtp;
+    }
   }
 
   // How this destination deploys (live from /destinations).
@@ -114,7 +117,7 @@
 
   function handleTransportChange(value: string): void {
     transport = value as Transport;
-    if (!d.port.fromConstant && KNOWN_DEFAULT_PORTS.includes(port)) {
+    if (transport !== 'connector' && !d.port.fromConstant && KNOWN_DEFAULT_PORTS.includes(port)) {
       port = DEFAULT_PORTS[transport];
     }
   }
@@ -129,7 +132,7 @@
     return data;
   }
 
-  async function save(): Promise<void> {
+  async function save(): Promise<boolean> {
     saving = true;
     message = '';
     try {
@@ -138,9 +141,11 @@
       message = __('msgSaved');
       messageOk = true;
       onSaved();
+      return true;
     } catch (e) {
       message = (e as Error).message;
       messageOk = false;
+      return false;
     } finally {
       saving = false;
     }
@@ -163,82 +168,152 @@
       testing = false;
     }
   }
+
+  // ---- Connector pairing. `paired` reflects the SERVER state (the id is
+  // plugin-managed, never edited here). The download link is SINGLE-USE and
+  // only exists right after a pair (10-minute token), so it's local state and
+  // is cleared on click — a lost file means re-pairing, by design.
+  let paired = $derived(!!destination.connectorId.value);
+  let pairedFile = $derived(`bs-connector-${destination.connectorId.value}.php`);
+  let pairing = $state(false);
+  let downloadToken = $state('');
+
+  async function pair(): Promise<void> {
+    if (pairing) return;
+    pairing = true;
+    message = '';
+    downloadToken = '';
+    // Pairing binds the receiver to the SAVED Destination URL, so persist the
+    // form first (this also switches the transport to connector).
+    const ok = await save();
+    if (!ok) {
+      pairing = false;
+      return;
+    }
+    try {
+      const r = await api.connectorPair(d.id);
+      message = r.message;
+      messageOk = r.ok;
+      if (r.ok && r.downloadToken) {
+        downloadToken = r.downloadToken;
+        onSaved();
+      }
+    } catch (e) {
+      message = (e as Error).message;
+      messageOk = false;
+    } finally {
+      pairing = false;
+    }
+  }
+
+  async function revoke(): Promise<void> {
+    message = '';
+    try {
+      const r = await api.connectorRevoke(d.id);
+      message = r.message;
+      messageOk = r.ok;
+      downloadToken = '';
+      onSaved();
+    } catch (e) {
+      message = (e as Error).message;
+      messageOk = false;
+    }
+  }
+
+  let zipHelpOpen = $state(false);
 </script>
 
 <section class="bs-card bs-stack bs-stack--md">
-  <!-- Site fields apply to every transport: the URL drives package deploy, the
-       server probe and the Connector; the sub-path drives link rewriting for
-       Sync AND Export ZIP. -->
+  <!-- Site fields apply to every deploy method: the URL drives package deploy,
+       the server probe and the Connector; the sub-path drives link rewriting
+       for Sync AND Export ZIP. -->
   <div class="bs-grid">
     <Input label={__('fldDestUrl')} type="url" bind:value={destinationUrl} placeholder="https://www.example.com" disabled={d.destinationUrl.fromConstant || busy} />
     <Input label={__('fldSubPath')} bind:value={basePath} placeholder="/" disabled={d.basePath.fromConstant || busy} />
   </div>
 
-  <Tabs value={transportTab} items={tabItems} onchange={selectTab}>
-    {#snippet panel(tab)}
-      <div class="bs-tpanel bs-stack bs-stack--sm" in:fadeUp>
-        {#if tab === 'ftp'}
-          <p class="bs-lead">{__('ftpLead')}</p>
-          <div class="bs-grid">
-            <Select
-              label={__('fldTransport')}
-              id="bs-transport-{d.id}"
-              value={transport}
-              options={transportOptions}
-              disabled={d.transport.fromConstant || busy}
-              onchange={(v) => handleTransportChange(String(v))}
-            />
-            <Input label={__('fldPort')} type="number" bind:value={port} placeholder={transport === 'sftp' ? '22' : '21'} disabled={d.port.fromConstant || busy} />
+  <Segmented
+    label={__('lblDeployVia')}
+    options={methodOptions}
+    value={method}
+    block
+    disabled={d.transport.fromConstant || busy}
+    onchange={selectMethod}
+  />
 
-            <Input label={__('fldHost')} bind:value={host} placeholder="ftp.example.com" disabled={d.host.fromConstant || busy} />
-            <Input label={__('fldUsername')} bind:value={username} autocomplete="off" disabled={d.username.fromConstant || busy} />
+  {#key method}
+    <div class="bs-stack bs-stack--sm" in:fadeUp>
+      {#if method === 'ftp'}
+        <p class="bs-lead">{__('ftpLead')}</p>
+        <div class="bs-grid">
+          <Select
+            label={__('fldTransport')}
+            id="bs-transport-{d.id}"
+            value={transport}
+            options={transportOptions}
+            disabled={d.transport.fromConstant || busy}
+            onchange={(v) => handleTransportChange(String(v))}
+          />
+          <Input label={__('fldPort')} type="number" bind:value={port} placeholder={transport === 'sftp' ? '22' : '21'} disabled={d.port.fromConstant || busy} />
 
-            <Input label={__('fldPassword')} type="password" bind:value={password} autocomplete="new-password" placeholder={d.password.hasValue ? __('phSavedBlank') : __('fldPassword')} disabled={d.password.fromConstant || busy} />
-            <Input label={__('fldRemotePath')} bind:value={remotePath} placeholder={__('phRemoteEmpty')} disabled={d.remotePath.fromConstant || busy} />
-          </div>
+          <Input label={__('fldHost')} bind:value={host} placeholder="ftp.example.com" disabled={d.host.fromConstant || busy} />
+          <Input label={__('fldUsername')} bind:value={username} autocomplete="off" disabled={d.username.fromConstant || busy} />
 
-          {#if deployNote}
-            <p class="bs-deploy bs-deploy--{deployNote.tone}">
-              {#if deployNote.tone === 'ok'}⚡ {/if}{deployNote.text}
-              {#if deployNote.retest}
-                <Button variant="ghost" size="sm" onclick={retestPackage} disabled={retesting || busy}>{retesting ? __('btnReTesting') : __('btnReTest')}</Button>
-              {/if}
-              {#if retestMsg}<span class="bs-deploy__result"> — {retestMsg}</span>{/if}
-            </p>
-          {/if}
-        {:else if tab === 'connector'}
-          <div class="bs-row bs-row--between">
-            <p class="bs-lead">{__('connectorLead')}</p>
-            <Badge tone="neutral">{__('comingSoon')}</Badge>
-          </div>
-          <!-- eslint-disable svelte/no-at-html-tags -- trusted PHP dictionary -->
-          <ol class="bs-steps">
-            <li>{@html __('connectorStep1')}</li>
-            <li>{@html __('connectorStep2')}</li>
-            <li>{@html __('connectorStep3')}</li>
-            <li>{@html __('connectorStep4')}</li>
-          </ol>
-          <p class="bs-lead">{__('connectorReq')}</p>
-        {:else}
-          <p class="bs-lead">{@html __('zipLead')}</p>
-          <ol class="bs-steps">
-            <li>{@html __('zipStep1')}</li>
-            <li>{@html __('zipStep2')}</li>
-            <li>{@html __('zipStep3')}</li>
-            <li>{@html __('zipStep4')}</li>
-          </ol>
-          <!-- eslint-enable svelte/no-at-html-tags -->
-          <div class="bs-row">
-            <Tooltip content={destination.enabled ? __('btnExportHint') : __('zipDisabledHint')} placement="bottom">
-              <Button variant="primary" onclick={() => onExport(d.id)} disabled={busy || !destination.enabled}>
-                {exporting ? __('btnExporting') : __('btnExport')}
-              </Button>
-            </Tooltip>
-          </div>
+          <Input label={__('fldPassword')} type="password" bind:value={password} autocomplete="new-password" placeholder={d.password.hasValue ? __('phSavedBlank') : __('fldPassword')} disabled={d.password.fromConstant || busy} />
+          <Input label={__('fldRemotePath')} bind:value={remotePath} placeholder={__('phRemoteEmpty')} disabled={d.remotePath.fromConstant || busy} />
+        </div>
+
+        {#if deployNote}
+          <p class="bs-deploy bs-deploy--{deployNote.tone}">
+            {#if deployNote.tone === 'ok'}⚡ {/if}{deployNote.text}
+            {#if deployNote.retest}
+              <Button variant="ghost" size="sm" onclick={retestPackage} disabled={retesting || busy}>{retesting ? __('btnReTesting') : __('btnReTest')}</Button>
+            {/if}
+            {#if retestMsg}<span class="bs-deploy__result"> — {retestMsg}</span>{/if}
+          </p>
         {/if}
-      </div>
-    {/snippet}
-  </Tabs>
+      {:else}
+        <p class="bs-lead">{__('connectorLead')}</p>
+        <!-- eslint-disable svelte/no-at-html-tags -- trusted PHP dictionary -->
+        <ol class="bs-steps">
+          <li>{@html __('connectorStep1')}</li>
+          <li>{@html __('connectorStep2')}</li>
+          <li>{@html __('connectorStep3')}</li>
+          <li>{@html __('connectorStep4')}</li>
+        </ol>
+        <!-- eslint-enable svelte/no-at-html-tags -->
+        <p class="bs-lead">{__('connectorReq')}</p>
+
+        <div class="bs-connector bs-stack bs-stack--xs">
+          {#if d.connectorId.fromConstant}
+            <Status status="info" label={__('connectorConst')} />
+          {:else if paired}
+            <Status status={destination.status.connected ? 'ok' : 'warn'}>
+              {#snippet label()}
+                <span>{@html __f('connectorPaired', `<code>${pairedFile}</code>`)}</span>
+              {/snippet}
+            </Status>
+            <div class="bs-row bs-row--wrap">
+              {#if downloadToken}
+                <a class="ab-button ab-button--primary bs-connector__download" href={connectorDownloadUrl(downloadToken)} onclick={() => setTimeout(() => (downloadToken = ''), 500)}>
+                  {__f('btnDownloadFile', pairedFile)}
+                </a>
+              {/if}
+              <Tooltip content={__('repairHint')} placement="bottom">
+                <Button variant="secondary" size="sm" onclick={pair} disabled={busy || pairing}>{pairing ? __('btnPairing') : __('btnRepair')}</Button>
+              </Tooltip>
+              <ConfirmButton variant="ghost" size="sm" label={__('btnRevoke')} confirmLabel={__('btnConfirmRevoke')} onconfirm={revoke} disabled={busy || pairing} />
+            </div>
+          {:else}
+            <Status status="unknown" label={__('connectorUnpaired')} />
+            <div class="bs-row">
+              <Button variant="secondary" size="sm" onclick={pair} disabled={busy || pairing || !destinationUrl}>{pairing ? __('btnPairing') : __('btnPair')}</Button>
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </div>
+  {/key}
 
   {#if message}
     <p class="bs-msg bs-msg--{messageOk ? 'ok' : 'err'}">{message}</p>
@@ -246,9 +321,7 @@
 
   <div class="bs-row bs-row--between">
     <div class="bs-row bs-row--wrap">
-      {#if transportTab === 'ftp'}
-        <Button variant="secondary" onclick={test} disabled={busy || !host}>{testing ? __('btnTesting') : __('btnTest')}</Button>
-      {/if}
+      <Button variant="secondary" onclick={test} disabled={busy || (method === 'ftp' ? !host : !paired)}>{testing ? __('btnTesting') : __('btnTest')}</Button>
       <Button variant="primary" onclick={save} disabled={busy}>{saving ? __('btnSaving') : __('btnSave')}</Button>
     </div>
     {#if canRemove}
@@ -261,6 +334,30 @@
         disabled={busy}
       />
     {/if}
+  </div>
+
+  <!-- Manual ZIP is not a transport (nothing is uploaded), so it is always
+       available regardless of the deploy method chosen above. -->
+  <div class="bs-zip bs-stack bs-stack--xs">
+    <div class="bs-row bs-row--between">
+      <h3>{__('zipHeading')}</h3>
+      <Tooltip content={destination.enabled ? __('btnExportHint') : __('zipDisabledHint')} placement="bottom">
+        <Button variant="secondary" size="sm" onclick={() => onExport(d.id)} disabled={busy || !destination.enabled}>
+          {exporting ? __('btnExporting') : __('btnExport')}
+        </Button>
+      </Tooltip>
+    </div>
+    <!-- eslint-disable svelte/no-at-html-tags -- trusted PHP dictionary -->
+    <p class="bs-lead">{@html __('zipLead')}</p>
+    <Collapsible title={__('zipHowTo')} bind:open={zipHelpOpen}>
+      <ol class="bs-steps">
+        <li>{@html __('zipStep1')}</li>
+        <li>{@html __('zipStep2')}</li>
+        <li>{@html __('zipStep3')}</li>
+        <li>{@html __('zipStep4')}</li>
+      </ol>
+    </Collapsible>
+    <!-- eslint-enable svelte/no-at-html-tags -->
   </div>
 </section>
 
@@ -282,10 +379,6 @@
     gap: var(--ab-space-4);
   }
 
-  .bs-tpanel {
-    padding-top: var(--ab-space-3);
-  }
-
   .bs-lead {
     margin: 0;
     color: var(--ab-color-text-muted);
@@ -299,6 +392,26 @@
     display: flex;
     flex-direction: column;
     gap: var(--ab-space-1);
+  }
+
+  .bs-connector {
+    padding: var(--ab-space-3) var(--ab-space-4);
+    background: var(--ab-color-bg);
+    border: 1px solid var(--ab-color-border);
+    border-radius: var(--ab-radius-md);
+  }
+
+  /* Same fix as ExportProgress: app.css's `a` colour rule would otherwise
+     paint the download link's text in the button's own background colour. */
+  a.bs-connector__download,
+  a.bs-connector__download:hover {
+    color: var(--ab-color-primary-on);
+    text-decoration: none;
+  }
+
+  .bs-zip {
+    padding-top: var(--ab-space-4);
+    border-top: 1px solid var(--ab-color-border);
   }
 
   .bs-deploy {

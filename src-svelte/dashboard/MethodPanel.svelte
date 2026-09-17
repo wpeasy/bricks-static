@@ -17,7 +17,7 @@
     if (!method) {
       return '…';
     }
-    const labels: Record<string, string> = { sftp: 'SFTP', ftps: 'FTPS', ftp: 'FTP' };
+    const labels: Record<string, string> = { sftp: 'SFTP', ftps: 'FTPS', ftp: 'FTP', connector: __('optConnector') };
     return labels[method.transport] ?? method.transport;
   });
 

@@ -12,10 +12,13 @@ namespace WPEasy\BricksStatic\REST;
 
 use WP_REST_Request;
 use WP_REST_Response;
+use WPEasy\BricksStatic\Deploy\ConnectorScript;
 use WPEasy\BricksStatic\Deploy\PackageDeployer;
 use WPEasy\BricksStatic\Settings\Destinations;
-use WPEasy\BricksStatic\Sync\Runner;
+use WPEasy\BricksStatic\Support\UrlSafety;
 use WPEasy\BricksStatic\Sync\Manifest;
+use WPEasy\BricksStatic\Sync\Runner;
+use WPEasy\BricksStatic\Transport\ConnectorTransport;
 use WPEasy\BricksStatic\Transport\TransportFactory;
 
 defined('ABSPATH') || exit;
@@ -71,6 +74,119 @@ final class DestinationsController {
             'callback'            => [self::class, 'package_test'],
             'permission_callback' => [self::class, 'can_manage'],
         ]);
+
+        register_rest_route(self::NS, '/destinations/(?P<id>[A-Za-z0-9]+)/connector/pair', [
+            'methods'             => 'POST',
+            'callback'            => [self::class, 'connector_pair'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
+
+        register_rest_route(self::NS, '/destinations/(?P<id>[A-Za-z0-9]+)/connector/revoke', [
+            'methods'             => 'POST',
+            'callback'            => [self::class, 'connector_revoke'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
+
+        // Streams the generated receiver (single-use token from /connector/pair).
+        // Same shape as /export/download — a bs/v1 REST route, not admin_post_*.
+        register_rest_route(self::NS, '/connector/download', [
+            'methods'             => 'GET',
+            'callback'            => [self::class, 'connector_download'],
+            'permission_callback' => [self::class, 'can_manage'],
+        ]);
+    }
+
+    /**
+     * Transient prefix for connector download tokens.
+     */
+    private const CONNECTOR_DL = 'bs_connector_dl_';
+
+    /**
+     * POST /destinations/{id}/connector/pair — generate a fresh pairing
+     * (rotating any previous one) and hand back a one-time download token for
+     * the receiver file. The raw secret lives only in the encrypted option and,
+     * for the next 10 minutes, in the download transient; the file carries its
+     * hash.
+     *
+     * @param WP_REST_Request $request Request.
+     */
+    public static function connector_pair(WP_REST_Request $request): WP_REST_Response {
+        $id   = (string) $request['id'];
+        $dest = Destinations::get($id);
+        if ($dest === null) {
+            return new WP_REST_Response(['ok' => false, 'message' => 'Unknown destination.'], 404);
+        }
+
+        $url  = trim((string) $dest->get('destinationUrl'));
+        $host = (string) (wp_parse_url($url, PHP_URL_HOST) ?? '');
+        if ($url === '' || $host === '') {
+            return new WP_REST_Response(['ok' => false, 'message' => __('Enter and save the Destination URL first — the connector is called at that address.', 'bricks-static')]);
+        }
+        if (strtolower((string) wp_parse_url($url, PHP_URL_SCHEME)) !== 'https' && !UrlSafety::is_dev_host($host)) {
+            return new WP_REST_Response(['ok' => false, 'message' => __('The connector needs an HTTPS Destination URL (the pairing secret travels in each request).', 'bricks-static')]);
+        }
+        if (!UrlSafety::is_safe_url($url)) {
+            return new WP_REST_Response(['ok' => false, 'message' => __('That Destination URL resolves to a private or reserved network address and cannot be used.', 'bricks-static')]);
+        }
+
+        $pair = Destinations::pair_connector($id);
+        if ($pair === null) {
+            return new WP_REST_Response(['ok' => false, 'message' => 'Unknown destination.'], 404);
+        }
+
+        $token = bin2hex(random_bytes(24));
+        set_transient(self::CONNECTOR_DL . $token, ['dest' => $id, 'id' => $pair['id'], 'secret' => $pair['secret']], 10 * MINUTE_IN_SECONDS);
+
+        return new WP_REST_Response([
+            'ok'            => true,
+            'connectorId'   => $pair['id'],
+            'filename'      => ConnectorScript::filename($pair['id']),
+            'downloadToken' => $token,
+            'message'       => __('Paired. Download the connector file and upload it to the folder served at the Destination URL.', 'bricks-static'),
+        ]);
+    }
+
+    /**
+     * POST /destinations/{id}/connector/revoke — forget the pairing; the file
+     * on the destination refuses everything from now on.
+     *
+     * @param WP_REST_Request $request Request.
+     */
+    public static function connector_revoke(WP_REST_Request $request): WP_REST_Response {
+        $ok = Destinations::revoke_connector((string) $request['id']);
+
+        return new WP_REST_Response(['ok' => $ok, 'message' => $ok ? __('Connector revoked. Delete the file from the destination when convenient.', 'bricks-static') : 'Unknown destination.'], $ok ? 200 : 404);
+    }
+
+    /**
+     * GET /connector/download?token=… — stream the generated receiver and exit
+     * (mirrors ExportDownload: manage_options + wp_rest nonce via ?_wpnonce,
+     * opaque single-use token, nothing path-like taken from the request).
+     *
+     * @param WP_REST_Request $request Request.
+     */
+    public static function connector_download(WP_REST_Request $request) {
+        $token  = sanitize_text_field((string) $request->get_param('token'));
+        $record = $token !== '' ? get_transient(self::CONNECTOR_DL . $token) : false;
+        if (!is_array($record) || empty($record['id']) || empty($record['secret'])) {
+            return new WP_REST_Response(['message' => __('This download link has expired — pair again to get a new connector file.', 'bricks-static')], 404);
+        }
+        delete_transient(self::CONNECTOR_DL . $token);
+
+        // The pairing may have been rotated/revoked since the token was issued.
+        $dest = Destinations::get((string) ($record['dest'] ?? ''));
+        if ($dest === null || (string) $dest->get('connectorId') !== (string) $record['id']) {
+            return new WP_REST_Response(['message' => __('This pairing is no longer current — pair again.', 'bricks-static')], 410);
+        }
+
+        $source = ConnectorScript::generate((string) $record['id'], (string) $record['secret']);
+
+        nocache_headers();
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . ConnectorScript::filename((string) $record['id']) . '"');
+        header('Content-Length: ' . (string) strlen($source));
+        echo $source; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- generated PHP source, streamed as a download.
+        exit;
     }
 
     /**
@@ -206,7 +322,8 @@ final class DestinationsController {
             $config['password'] = (string) $input['password'];
         }
 
-        if ($config['host'] === '') {
+        $is_connector = ($config['transport'] ?? '') === 'connector';
+        if (!$is_connector && $config['host'] === '') {
             return new WP_REST_Response(['ok' => false, 'message' => 'Enter a host first.'], 200);
         }
 
@@ -214,7 +331,9 @@ final class DestinationsController {
         try {
             $transport->connect();
             $ok = true;
-            $message = 'Connected successfully.';
+            $message = $transport instanceof ConnectorTransport
+                ? sprintf(__('Connector reached — %s.', 'bricks-static'), $transport->describe())
+                : 'Connected successfully.';
         } catch (\Throwable $e) {
             $ok = false;
             $message = $e->getMessage();

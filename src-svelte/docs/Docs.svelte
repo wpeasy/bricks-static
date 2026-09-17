@@ -40,7 +40,7 @@
     },
     {
       title: 'Export ZIP',
-      body: 'Each destination’s connection panel has three transport tabs — FTP / SFTP, Connector (planned) and Manual ZIP. The Manual ZIP tab’s "Export ZIP" button packages the current render into a downloadable zip — for hosts you deploy manually, no FTP/SFTP needed. Uses that destination’s configured replacements, same as a real Sync, and never touches its sync stats since nothing is uploaded. Includes gzip .gz files, sitemap.xml and robots.txt.',
+      body: 'Each destination deploys via FTP / SFTP or the Connector (one or the other); Manual deploy is always available underneath. Its "Export ZIP" button packages the current render into a downloadable zip — for hosts you deploy manually, no FTP/SFTP needed. Uses that destination’s configured replacements, same as a real Sync, and never touches its sync stats since nothing is uploaded. Includes gzip .gz files, sitemap.xml and robots.txt.',
     },
     {
       title: 'gzip + server config',

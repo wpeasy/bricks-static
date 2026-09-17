@@ -41,6 +41,8 @@ final class TransportFactory {
         }
 
         switch ($config['transport'] ?? 'sftp') {
+            case 'connector':
+                return new ConnectorTransport($config);
             case 'ftps':
                 return new FtpTransport($config, true);
             case 'ftp':
@@ -54,13 +56,14 @@ final class TransportFactory {
     /**
      * Which transports are usable on this server.
      *
-     * @return array{sftp:bool,ftps:bool,ftp:bool}
+     * @return array{sftp:bool,ftps:bool,ftp:bool,connector:bool}
      */
     public static function capabilities(): array {
         return [
-            'sftp' => SftpTransport::is_available(),
-            'ftps' => FtpTransport::is_secure_available(),
-            'ftp'  => FtpTransport::is_available(),
+            'sftp'      => SftpTransport::is_available(),
+            'ftps'      => FtpTransport::is_secure_available(),
+            'ftp'       => FtpTransport::is_available(),
+            'connector' => ConnectorTransport::is_available(),
         ];
     }
 }

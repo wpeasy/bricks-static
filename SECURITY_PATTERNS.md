@@ -1,9 +1,11 @@
 # Security Patterns — Bricks Static
 
 > **Read this before working on any REST controller, the deploy layer
-> (`PackageDeployer` / `UnzipScript`), the transports (`FtpTransport` /
-> `SftpTransport`), URL fetching (`UrlSafety` / `PageRenderer`), credential
-> storage (`Crypto`), or anything that renders stored HTML on the client.**
+> (`PackageDeployer` / `UnzipScript` / the Connector: `ConnectorScript`,
+> `ConnectorClient`, `templates/connector.php.txt`), the transports
+> (`FtpTransport` / `SftpTransport` / `ConnectorTransport`), URL fetching
+> (`UrlSafety` / `PageRenderer`), credential storage (`Crypto`), or anything
+> that renders stored HTML on the client.**
 >
 > These are this plugin's real, non-negotiable security rules. Each maps to an
 > actual call site in `src/`. When you add a feature, check it against every
@@ -28,7 +30,7 @@ Every REST route in `src/REST/*` registers `permission_callback => [self::class,
 
 ## 1. SSRF guard for user-supplied URLs (`Support\UrlSafety`)
 
-SSRF risk is asymmetric: a remote browser can't reach `127.0.0.1` or the cloud-metadata endpoint `169.254.169.254`, but the WordPress server can. The plugin fetches one **user-supplied** URL server-side — a destination's public URL — in two places: POSTed to trigger the deploy helper (`PackageDeployer::deploy()`), and GET/HEAD by the server probe (`Sync\ServerProbe`, `GET /sync/server-check`).
+SSRF risk is asymmetric: a remote browser can't reach `127.0.0.1` or the cloud-metadata endpoint `169.254.169.254`, but the WordPress server can. The plugin fetches one **user-supplied** URL server-side — a destination's public URL — in three places: POSTed to trigger the deploy helper (`PackageDeployer::deploy()`), every Connector request (`Deploy\ConnectorClient::send()`), and GET/HEAD by the server probe (`Sync\ServerProbe`, `GET /sync/server-check`).
 
 **Rule:** any server-side fetch of a URL that originated from a request MUST go through `UrlSafety`:
 
@@ -77,6 +79,35 @@ return apply_filters('bs_package_sslverify', !$local, $url);
 - **Self-delete** on success and on expiry; does NOT self-delete on a bad token (the plugin cleans up over FTP instead, so a probe can't make it erase itself).
 
 Don't add an entry-name or `deletes` path to a filesystem operation without running it through the `$safe()` normaliser first. The package is built locally and the helper only extracts what we uploaded — never accept a caller-supplied archive.
+
+---
+
+## 3b. The Connector receiver (`Deploy\ConnectorScript` → `templates/connector.php.txt`) — a persistent helper, so a stricter jail
+
+The Connector transport replaces FTP with a **user-installed, persistent** PHP receiver (`bs-connector-<16hex>.php`) in the destination web root, driven by `Deploy\ConnectorClient` over signed HTTPS. Because it stays on the destination, it is the highest-impact surface in the plugin and carries every `UnzipScript` guarantee plus:
+
+**Pairing / secrets**
+- One receiver = one (source site, destination) pairing: `Destinations::pair_connector()` mints a 16-hex id + 256-bit secret. The secret is stored `Crypto`-encrypted in the destination (`connectorSecret`, `secret + internal` Schema flags) and **the file embeds only `sha256(secret)`** — a host that serves the file as text leaks nothing reusable. The raw secret is returned exactly once, to the pair/download flow.
+- `connectorId` / `connectorSecret` / `connectorVersion` are `internal` Schema fields: `Destination::apply()` skips them, so **REST input can never set or clear a pairing** — only `pair_connector()` / `revoke_connector()` (and `set_connector()` they call) write them. Keep it that way.
+- Download is `GET /connector/download?token=…`: a 10-minute, **single-use transient** issued by `POST /destinations/{id}/connector/pair`, same `manage_options` + `wp_rest`-nonce auth as `/export/download`; the handler also re-checks the destination's *current* id matches the token's before streaming, so a rotated/revoked pairing can't be downloaded. Re-pairing (rotate) or revoking makes the old file fail auth (`paired_elsewhere` → the client's `ConnectorAuthException`).
+- Pairing refuses a non-`https://` Destination URL unless `UrlSafety::is_dev_host()`, and runs the URL through `is_safe_url()`.
+
+**Every request** (`ConnectorClient::send()`)
+- Goes through `UrlSafety::guarded_post()` (rule 1) with `sslverify` from `PackageDeployer::sslverify()` (rule 2).
+- Carries `X-BS-Id`, `X-BS-Timestamp`, `X-BS-Nonce` (16 bytes), `X-BS-Key` (the raw secret — bearer, checked against the stored hash with `hash_equals`), `X-BS-Signature` = HMAC-SHA256(secret, `id\nts\nnonce\nbody-hash`) and `X-BS-Version`. Body-hash is sha256 of the JSON body, or for multipart uploads sha256 of `meta \n sha256(file)`, so a captured request can't be re-pointed at other files.
+- The receiver enforces, in order and failing closed with one generic 403: method POST, id match, ±300 s timestamp window, nonce unseen (stored in `bs-connector-<id>.state.php`, a `<?php exit;` file so it's never web-readable), key hash, HMAC. The nonce is burned *before* any op runs; an unwritable state file is a hard 500, never a silent downgrade. 10 failed auths in 10 min → 429 lockout.
+
+**Filesystem jail** (`bs_safe` / `bs_target` / `bs_existing` / `bs_write_allowed`)
+- Same `$safe()` string rules as `UnzipScript`, **plus** `realpath` containment of the deepest existing ancestor (symlink-escape guard), a refusal to write through a symlink or over a directory, and a `..`-segment check.
+- **Executable write deny-list**: any extension segment in `php php3-8 phtml phar phps pht phpt cgi pl py sh bash ini htpasswd` (so `x.php.txt` is refused too), `web.config`, `.user.ini`, `php.ini`, and anything named `bs-connector-*` (the receiver can never overwrite itself, its state, or in-flight parts). `.htaccess` writes are content-scanned and refused if they contain handler/PHP directives (`AddHandler`, `AddType`, `SetHandler`, `Action`, `php_value/flag`, `php_admin_*`, `RemoveHandler`, `CGIPassAuth`). Static output never needs any of these. **Blast radius with a stolen secret: deface the static folder — never code execution, never a read outside it.**
+- `get` is allow-listed to `.htaccess` and `.htaccess.bricks-static.bak` (the two files the merge needs). There is no directory listing op.
+- `delete` removes files only (+ prunes empty parents, never BASE); `extract` is the `UnzipScript` body with the deny-list applied per entry.
+
+**Client-side handling**
+- The client treats *only our JSON* (`{ok:false,error:…}`) 403/429/409 as auth/lock/version errors; an HTML 403/404 (e.g. nginx denying PHP under `uploads/`) is a `ConnectorHostException` — a host problem, never mistaken for a bad pairing. Error strings from the receiver are `sanitize_text_field()`ed before reaching a job message.
+- Chunked uploads (`chunk` op, `offset`-idempotent, sha256-verified on the final chunk) size chunks from the receiver's reported `uploadMax`, capped at 4 MB.
+
+**Rules for changes:** any new op must go through `bs_safe` + `bs_write_allowed`/`bs_existing`, never add a read op without an allow-list, never add a "run"/"self-update"/"self-delete" op (a remote code path *is* the vulnerability), and bump `ConnectorScript::VERSION` on any wire change so mismatched files fail with the precise 409 message.
 
 ---
 
@@ -163,6 +194,7 @@ Every ability registers a `permission_callback` that:
 - New server-side fetch of a request URL → `UrlSafety::guarded_post()` / `guarded_get()` / `is_safe_url()`, never a bare `wp_remote_*`.
 - New outbound call → `sslverify` left at the WP default (verified); relax only via `UrlSafety::is_dev_host()`.
 - Touching `UnzipScript` → token + expiry + zip-slip + self-delete all intact.
+- Touching the Connector template/client → signature + nonce + timestamp + hash-only secret intact; deny-list and `realpath` jail intact; no new op without an allow-list; `VERSION` bumped on wire changes.
 - New `{@html}` / `innerHTML` → server-sanitise the source with `wp_kses_post`, or escape client-side.
 - New `$wpdb` query → `prepare()` with placeholders.
 - New `error_log` of content → gate behind `WP_DEBUG`.

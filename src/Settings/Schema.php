@@ -29,11 +29,14 @@ final class Schema {
     /**
      * Field definitions keyed by setting name.
      *
-     * @return array<string,array{type:string,default:mixed,constant:string,secret?:bool,options?:array<int,string>}>
+     * `internal` fields are managed by the plugin (the Connector pairing) and
+     * are never written from REST input — see `Destination::apply()`.
+     *
+     * @return array<string,array{type:string,default:mixed,constant:string,secret?:bool,internal?:bool,options?:array<int,string>}>
      */
     public static function fields(): array {
         return [
-            'transport'      => ['type' => 'enum',   'default' => 'ftps',          'constant' => 'BS_TRANSPORT',       'options' => ['sftp', 'ftps', 'ftp']],
+            'transport'      => ['type' => 'enum',   'default' => 'ftps',          'constant' => 'BS_TRANSPORT',       'options' => ['sftp', 'ftps', 'ftp', 'connector']],
             'host'           => ['type' => 'string', 'default' => '',              'constant' => 'BS_HOST'],
             'port'           => ['type' => 'int',    'default' => 0,               'constant' => 'BS_PORT'],
             'username'       => ['type' => 'string', 'default' => '',              'constant' => 'BS_USERNAME'],
@@ -41,7 +44,20 @@ final class Schema {
             'remotePath'     => ['type' => 'path',   'default' => '',              'constant' => 'BS_REMOTE_PATH'],
             'basePath'       => ['type' => 'path',   'default' => '/',             'constant' => 'BS_BASE_PATH'],
             'destinationUrl' => ['type' => 'url',    'default' => '',              'constant' => 'BS_DESTINATION_URL'],
+            // Connector (HTTPS) pairing — set by Destinations::pair_connector(), never by REST input.
+            'connectorId'     => ['type' => 'string', 'default' => '',             'constant' => 'BS_CONNECTOR_ID',     'internal' => true],
+            'connectorSecret' => ['type' => 'string', 'default' => '',             'constant' => 'BS_CONNECTOR_SECRET', 'internal' => true, 'secret' => true],
+            'connectorVersion'=> ['type' => 'int',    'default' => 0,              'constant' => '',                    'internal' => true],
         ];
+    }
+
+    /**
+     * Whether a field is plugin-managed (not writable from REST input).
+     *
+     * @param string $key Field key.
+     */
+    public static function is_internal(string $key): bool {
+        return !empty(self::fields()[$key]['internal']);
     }
 
     /**

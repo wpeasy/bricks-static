@@ -2,6 +2,7 @@ import type {
   CheckPreview,
   ConnectionInput,
   ConnectionResponse,
+  ConnectorPairResponse,
   DestinationsResponse,
   DiscoveryMode,
   ExportSnapshot,
@@ -96,6 +97,8 @@ export const api = {
   syncClaim: () => request<{ owner: 'cli' | 'browser' }>('/sync/claim', 'POST', {}),
   syncReset: () => request<{ ok: boolean }>('/sync/reset', 'POST', {}),
   preflight: () => request<Preflight>('/sync/preflight', 'POST', {}),
+  connectorPair: (id: string) => request<ConnectorPairResponse>(`/destinations/${id}/connector/pair`, 'POST'),
+  connectorRevoke: (id: string) => request<TestResult>(`/destinations/${id}/connector/revoke`, 'POST'),
   serverConfig: () => request<ServerConfig>('/sync/server-config'),
   serverCheck: (dest: string) => request<ServerCheck>(`/sync/server-check?dest=${encodeURIComponent(dest)}`),
   getMedia: (page = '') =>
@@ -119,6 +122,12 @@ export const api = {
  * nonce as a query param (WP core's REST cookie auth accepts `?_wpnonce=` as
  * a fallback to the `X-WP-Nonce` header a `fetch()` would normally send).
  */
+/** One-time download URL for a freshly paired connector file (see exportDownloadUrl). */
+export function connectorDownloadUrl(token: string): string {
+  const { restUrl, nonce } = config();
+  return `${restUrl.replace(/\/$/, '')}/connector/download?token=${encodeURIComponent(token)}&_wpnonce=${encodeURIComponent(nonce)}`;
+}
+
 export function exportDownloadUrl(token: string): string {
   const { restUrl, nonce } = config();
   return `${restUrl.replace(/\/$/, '')}/export/download?token=${encodeURIComponent(token)}&_wpnonce=${encodeURIComponent(nonce)}`;

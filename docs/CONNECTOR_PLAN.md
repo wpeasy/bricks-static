@@ -1,6 +1,7 @@
 # Connector transport — implementation plan
 
-> Status: **proposed** (2026-09-17). Roadmap item "Connection Agent".
+> Status: **phases 1 + 2 implemented** (2026-09-17); phase 3 (`manifest` op, probe via `ping`, WP-CLI) still open. Roadmap item "Connection Agent".
+> Implementation notes where it differs from the text below: the receiver is a lintable template (`src/Deploy/templates/connector.php.txt`) rather than a heredoc; `put` was folded into `chunk` (a final chunk with `target` moves the file into place), so the op set is `ping stat get chunk extract delete`; the UI is a Segmented FTP-vs-Connector choice (it IS the saved `transport`), with Manual ZIP as a separate always-on section; the download is an explicit single-use link rather than an auto-navigation.
 > A user-installed PHP receiver on the destination that replaces FTP/SFTP as
 > the deploy transport. Read `SECURITY_PATTERNS.md` §3 first — the connector
 > is the persistent successor of the one-shot `UnzipScript` helper and becomes

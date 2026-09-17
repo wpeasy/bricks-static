@@ -67,7 +67,7 @@ A **content-change tracker** watches post saves, status changes, Bricks meta wri
 
 ### Destinations
 
-Add any number of destinations. Each has its own transport (**SFTP / FTPS / FTP**), credentials, remote path, destination URL, and a sub-path. **Test** validates the connection; the deploy badge shows whether the host supports **packaged deploy** (one zip + server-side unzip — fast) or falls back to **per-file** upload.
+Add any number of destinations. Each has its own deploy method — **SFTP / FTPS / FTP** credentials + remote path, or the **Connector** (see below) — plus a destination URL and a sub-path. **Test** validates the connection; the deploy badge shows whether the host supports **packaged deploy** (one zip + server-side unzip — fast) or falls back to **per-file** upload.
 
 ### Replacements (accordion)
 
@@ -81,6 +81,10 @@ Per-destination find-and-replace applied to the deploy copy, so different destin
 ### Server config
 
 The generated **`.htaccess`** (uploaded automatically) and an **nginx** snippet. Stock nginx already serves the static output (index.html + directory resolution are defaults), so the snippet is an *optional* tuning — cache policy + pre-compressed serving — not a setup step.
+
+### Connector (HTTPS) transport
+
+A third way to deploy, alongside FTP/SFTP and Export ZIP: **Deploy via → Connector** pairs the destination with a single PHP receiver (`bs-connector-<id>.php`) that you download from the dashboard and upload to the destination web root once. From then on every sync is one chunked package over signed HTTPS — no FTP account. The receiver embeds only the *hash* of the pairing secret, verifies an HMAC + single-use nonce on every request, writes only inside its own folder, and refuses executable files (`.php` etc.) and handler-registering `.htaccess` lines, so a leaked secret can deface the static folder but never run code. Re-pair to rotate (the old file stops working), Revoke to disconnect. Needs PHP 7.4+ at the destination; ZipArchive there enables package deploys (else file-by-file). Spec: `docs/CONNECTOR_PLAN.md`; security notes: `SECURITY_PATTERNS.md` §3b.
 
 **Check server** (`GET /sync/server-check?dest=…`, `Sync\ServerProbe`) fetches the destination's home page and one pushed asset through the `UrlSafety` SSRF guard and reports the web server (Apache / LiteSpeed / nginx / CDN-proxied), whether the HTML is gzip-served, and whether the cache policy is actually in effect — the only way to confirm a manual nginx paste (or a working `.htaccess`) took. The last result per destination is stored and returned with `/sync/server-config`.
 
@@ -115,6 +119,7 @@ All routes require `manage_options`.
 | `GET /pages-overview` | Included / Excluded page split with reason/notice tags. |
 | `GET /connection`, `POST /connection`, `POST /connection/test` | Primary connection settings + test. |
 | `GET/POST /destinations`, `POST/DELETE /destinations/{id}`, `…/test`, `…/package-test` | Manage destinations + probe deploy strategy. |
+| `POST /destinations/{id}/connector/pair`, `…/connector/revoke`, `GET /connector/download` | Pair (rotate) / revoke the Connector; single-use download of the generated receiver. |
 | `POST /sync/start` | Begin a `check` (render-only / Process) or `sync` (push) run. |
 | `GET /sync/check?dest={id}` | Synchronous, no-render sync preview for a destination. |
 | `POST /sync/tick`, `GET /sync`, `POST /sync/cancel`, `POST /sync/retry`, `POST /sync/claim` | Drive / poll / cancel / retry / claim the active run. |

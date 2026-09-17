@@ -25,6 +25,7 @@ It crawls your site, renders each page, collects the CSS/JS/images, rewrites URL
 * **Remote pruning** — delete files that no longer exist locally
 * **Sitemap.xml + robots.txt** generation
 * Per-file **and** one-shot package (zip) deploy
+* **Connector (HTTPS)** — no FTP account needed: upload one small PHP receiver to the destination once, then every sync goes up as a single signed, chunked package
 * **Export ZIP** — download the current render as a zip instead of uploading it, for manual deploys (no FTP/SFTP needed)
 * Automatic `.htaccess` generation **plus** a copy-paste nginx snippet
 * Favicon and asset handling

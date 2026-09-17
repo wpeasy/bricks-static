@@ -14,6 +14,7 @@ namespace WPEasy\BricksStatic\Deploy;
 use WPEasy\BricksStatic\Sync\Compressor;
 use WPEasy\BricksStatic\Support\Paths;
 use WPEasy\BricksStatic\Support\UrlSafety;
+use WPEasy\BricksStatic\Transport\PackageCapableTransport;
 use WPEasy\BricksStatic\Transport\TransportInterface;
 
 defined('ABSPATH') || exit;
@@ -200,6 +201,17 @@ final class PackageDeployer {
         if ($added === 0 || !is_file($zip_path)) {
             self::cleanup_local($zip_path, $php_path);
             return $fail('No changed files to package.');
+        }
+
+        // A transport whose far end extracts for us (the Connector) takes the
+        // zip directly — no helper upload, no FTP round-trips.
+        if ($transport instanceof PackageCapableTransport) {
+            try {
+                $result = $transport->deploy_package($zip_path, $deletes, $progress);
+            } finally {
+                self::cleanup_local($zip_path);
+            }
+            return $result;
         }
 
         file_put_contents($php_path, UnzipScript::generate($token, $zip_name, time() + self::TTL, Compressor::extensions(), Compressor::min_bytes()));
