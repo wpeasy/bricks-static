@@ -4,6 +4,7 @@
   const sections = [
     { id: 'features', label: 'Features' },
     { id: 'how', label: 'How it works' },
+    { id: 'connector', label: 'Connector' },
     { id: 'issues', label: 'Common issues' },
     { id: 'troubleshooting', label: 'Troubleshooting' },
     { id: 'cli', label: 'CLI & reference' },
@@ -20,7 +21,11 @@
     },
     {
       title: 'Multiple destinations',
-      body: 'Push to any number of FTP, explicit-FTPS, or SFTP destinations, each enabled independently. SFTP verifies the server host key (trust-on-first-use). Credentials are encrypted at rest (AES-256-GCM).',
+      body: 'Push to any number of destinations, each enabled independently and each deploying via FTP / FTPS / SFTP or the Connector. SFTP verifies the server host key (trust-on-first-use). Credentials and pairing secrets are encrypted at rest (AES-256-GCM).',
+    },
+    {
+      title: 'Connector (HTTPS) — no FTP account',
+      body: 'Pair a destination, upload one small PHP file to its web root, and every sync from then on travels to that file over signed HTTPS as a single package. The file holds no password (only a fingerprint of a secret that stays on your site), writes only inside its own folder, and refuses anything a server could execute. Re-pair to rotate, Revoke to disconnect.',
     },
     {
       title: 'Fast package deploy',
@@ -39,8 +44,8 @@
       body: 'Push just one changed page (plus any new pages it links to, so you never publish a dead link) from a draggable floating button on the front end and inside the Bricks editor — where it saves the editor first.',
     },
     {
-      title: 'Export ZIP',
-      body: 'Each destination deploys via FTP / SFTP or the Connector (one or the other); Manual deploy is always available underneath. Its "Export ZIP" button packages the current render into a downloadable zip — for hosts you deploy manually, no FTP/SFTP needed. Uses that destination’s configured replacements, same as a real Sync, and never touches its sync stats since nothing is uploaded. Includes gzip .gz files, sitemap.xml and robots.txt.',
+      title: 'Export ZIP (manual deploy)',
+      body: 'Every destination also has a Manual deploy section: "Export ZIP" packages the current render into a downloadable zip you upload and extract yourself — no server access needed. Uses that destination’s configured replacements, same as a real Sync, and never touches its sync stats since nothing is uploaded. Includes gzip .gz files, sitemap.xml and robots.txt.',
     },
     {
       title: 'gzip + server config',
@@ -85,10 +90,47 @@
           <li><strong>Render</strong> each page through a loopback request and rewrite absolute site URLs to root-relative so the copy works on any domain.</li>
           <li><strong>Collect assets</strong> (CSS, JS, images, fonts) referenced by those pages.</li>
           <li><strong>Transform per destination</strong> — apply that destination’s text/media/link replacements and rewrite sitemap/robots URLs to its domain.</li>
-          <li><strong>Deploy</strong> only what changed (delta against the last push) via package deploy or per-file upload.</li>
+          <li><strong>Deploy</strong> only what changed (delta against the last push) — over FTP/SFTP (as a package with a one-shot helper, or per file) or through the Connector.</li>
         </ol>
         <p class="bs-docs__muted">
           <strong>Check</strong> is a dry run: it renders and catalogues everything (and lists anything that won’t work on a static host) without uploading. <strong>Sync</strong> renders and uploads. <strong>Export ZIP</strong> packages the current render for one destination into a downloadable zip instead of uploading it — for manual deploys, with no effect on that destination’s sync stats. <strong>Reset sync state</strong> forgets every destination’s push record so the next sync re-uploads in full.
+        </p>
+      </section>
+
+      <!-- Connector -->
+      <section id="connector" class="bs-docs__section bs-stack bs-stack--sm">
+        <h2>Deploying with the Connector</h2>
+        <p class="bs-docs__muted">
+          The Connector replaces the FTP account. You upload a single PHP file — the <em>connector</em> — to the folder your static site is served from, once. After that, each sync sends the changed files to that connector over an encrypted, signed connection as one package, which is both simpler to set up and faster than uploading file by file. Each destination uses <strong>either</strong> FTP / SFTP <strong>or</strong> the Connector; pick one under <em>Deploy via</em>.
+        </p>
+
+        <h3>Set-up</h3>
+        <ol class="bs-docs__steps">
+          <li>On the destination, enter the <strong>Destination URL</strong> — the public <code>https://</code> address of the folder the static site is served from — and choose <strong>Connector (HTTPS)</strong> under <em>Deploy via</em>. Press <strong>Save</strong>.</li>
+          <li>Press <strong>Pair</strong>. The plugin generates a pairing for this destination only and shows a <strong>Download bs-connector-…php</strong> link. The link works once and expires after ten minutes; if you miss it, press <em>Re-pair</em> for a new one.</li>
+          <li>Upload that file, unchanged, to the folder served at the Destination URL — next to where <code>index.html</code> will go. Any method works: your host’s file manager, SFTP, a one-off drag into cPanel.</li>
+          <li>Press <strong>Test</strong>. A good result reads “Connector reached — PHP x.y, package deploy available, N GB free”. <strong>Check</strong> and <strong>Sync</strong> then work exactly as they do for FTP destinations, and so does single-page sync.</li>
+        </ol>
+
+        <h3>Requirements</h3>
+        <ul class="bs-docs__list">
+          <li>The destination must run <strong>PHP 7.4 or newer</strong> for that folder. Purely static hosts (Netlify, S3, Cloudflare Pages) can’t run the connector — use Export ZIP or their own deploy tooling instead.</li>
+          <li>The Destination URL must be <strong>HTTPS</strong> (the pairing secret travels with every request). <code>*.local</code> / <code>*.test</code> development hosts are exempt.</li>
+          <li>If the destination’s PHP has <code>ZipArchive</code>, syncs go up as one package and are extracted there. Without it, files are sent one at a time — same result, slower.</li>
+          <li>The folder must be writable by PHP. Test tells you if it isn’t.</li>
+        </ul>
+
+        <h3>Managing a pairing</h3>
+        <ul class="bs-docs__list">
+          <li><strong>Re-pair (new file)</strong> — generates a fresh pairing and a new file. The file currently on the destination stops working immediately, so upload the new one before the next sync. Use it if you lose the download, suspect the secret leaked, or moved the site to a new server.</li>
+          <li><strong>Revoke</strong> — forgets the pairing on this site. The connector file on the destination then refuses every request; delete it when convenient.</li>
+          <li><strong>Rebuild push record</strong> — after <em>Reset sync state</em> or a re-pair, the plugin no longer knows what’s on the destination and would re-upload everything. This asks the connector for an inventory and marks every file that’s already there and identical as done, so the next Sync sends only what really changed. Files it finds that Bricks Static never uploaded are left alone. Needs a current render (Process first).</li>
+          <li><strong>Check server</strong> (Destination Server Configuration tab) reads the destination’s exact web server through the connector, even behind a CDN.</li>
+        </ul>
+
+        <h3>What the connector can and can’t do</h3>
+        <p class="bs-docs__muted">
+          The file is made for one destination and one source site. It contains only a fingerprint of the pairing secret, never the secret itself, so nothing reusable leaks even if a host mistakenly serves it as text. Every request must carry a valid signature, a timestamp within five minutes and a never-before-seen nonce; ten bad requests lock it for ten minutes. It only ever writes inside its own folder, never through symlinks, never anything a server could run (<code>.php</code> and the like, including <code>x.php.txt</code>, <code>.user.ini</code>, <code>web.config</code>), and it refuses <code>.htaccess</code> lines that register handlers. It can read back only the <code>.htaccess</code> it manages. In short: a leaked secret could at most overwrite your static pages — it can’t run code on your server or read anything else. Delete the file at any time to disconnect.
         </p>
       </section>
 
@@ -109,6 +151,21 @@
         <details class="bs-docs__faq">
           <summary>A destination is deploying per-file instead of as a fast package</summary>
           <p>Package deploy needs <code>ZipArchive</code> on this server, a <strong>Destination URL</strong> set (so the helper can be reached), and a host that can run the uploaded PHP helper. If it failed once it’s disabled for that destination — set the URL and use <strong>Re-test</strong> on the destination to re-enable it.</p>
+        </details>
+
+        <details class="bs-docs__faq">
+          <summary>Connector Test says “No connector answered” or “Connector file not found”</summary>
+          <p>The plugin reached the Destination URL but our file didn’t respond. Check that the file is in the folder served at <em>exactly</em> that URL (open <code>https://your-destination/bs-connector-…php</code> in a browser: the right answer is a small “method” message, not a 404 and not the file’s source). Some hosts refuse to run PHP in certain folders — nginx setups commonly block it under <code>uploads/</code> — so if you see the web server’s own 403 page, move the static site (and the connector) to a folder where PHP runs, or use FTP/SFTP instead.</p>
+        </details>
+
+        <details class="bs-docs__faq">
+          <summary>Connector says it “rejected this site’s credentials”</summary>
+          <p>The file on the destination was paired with a different secret than the one this site holds — usually an old file left in place after a <em>Re-pair</em>, or a file copied from another site. Press <strong>Re-pair (new file)</strong>, upload the new file over the old one, and Test again. If you see “temporarily locked”, wait ten minutes first.</p>
+        </details>
+
+        <details class="bs-docs__faq">
+          <summary>“The connector file on the destination is outdated”</summary>
+          <p>After a plugin update the connector may need a newer version of the file. Re-pair, upload the new file, and you’re done — nothing else on the destination changes.</p>
         </details>
 
         <details class="bs-docs__faq">
@@ -175,7 +232,13 @@
 wp bricks-static sync --all      # push to every enabled destination
 wp bricks-static sync --dest=ID  # push to one destination
 wp bricks-static sync --check    # dry run (render + catalogue, no upload)
-wp bricks-static sync --prune    # also remove remote files no longer present</pre>
+wp bricks-static sync --prune    # also remove remote files no longer present
+
+wp bricks-static connector status                                  # pairing state per destination
+wp bricks-static connector pair ID --dest-url=https://… --to=DIR   # pair + write the connector file
+wp bricks-static connector test ID                                 # ping the connector
+wp bricks-static connector rebuild ID                              # rebuild the push record from it
+wp bricks-static connector revoke ID                               # disconnect</pre>
         <ul class="bs-docs__list">
           <li><strong>Cache:</strong> the staging copy lives under <code>wp-content/cache/bricks-static</code> (or uploads if that isn’t writable).</li>
           <li><strong>Server config:</strong> the managed <code>.htaccess</code> is uploaded automatically (Apache/LiteSpeed). nginx has no per-directory config, so it serves the static site with its defaults; the <em>Server config</em> tab has an optional tuning snippet to paste, plus <strong>Check server</strong>, which probes the destination and reports the web server and whether the cache rules are in effect.</li>
@@ -261,6 +324,13 @@ wp bricks-static sync --prune    # also remove remote files no longer present</p
   .bs-docs__section h2 {
     margin: 0 0 var(--ab-space-4);
     font-size: var(--ab-text-lg);
+    font-weight: var(--ab-weight-semibold);
+  }
+
+  /* Sub-headings inside a prose section (the Connector guide). */
+  .bs-docs__section > h3 {
+    margin: var(--ab-space-3) 0 0;
+    font-size: var(--ab-text-md);
     font-weight: var(--ab-weight-semibold);
   }
 
