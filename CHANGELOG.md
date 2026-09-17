@@ -5,6 +5,21 @@ All notable changes to **Bricks Static** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-09-17
+
+### Added
+- **Connector (HTTPS) transport — deploy without an FTP account.** Each destination now has a *Deploy via* choice: **FTP / SFTP** or **Connector**. The Connector pairs the destination with a single PHP receiver (`bs-connector-<id>.php`) that you download from the dashboard and upload to the destination web root once; from then on every sync goes up as one chunked package over signed HTTPS (`Deploy\ConnectorScript` + `templates/connector.php.txt`, `Deploy\ConnectorClient`, `Transport\ConnectorTransport`, a new `PackageCapableTransport` branch in `PackageDeployer`). Security model (SECURITY_PATTERNS.md §3b): the file embeds only the *hash* of the pairing secret; every request carries an HMAC-SHA256 signature over id + timestamp + nonce + body hash, single-use nonces, a ±5-minute window and a lockout after ten failures; the receiver writes only inside its own folder (`realpath`-jailed, no symlink writes), refuses executable files (`.php` and friends, `x.php.txt`, `.user.ini`, `web.config`) and `.htaccess` lines that register handlers, and can read only `.htaccess` — so a leaked secret can at most deface the static folder, never run code. **Re-pair** rotates (the old file stops working), **Revoke** disconnects, **Rebuild push record** re-establishes what's already on the destination after a reset or re-pair so identical files aren't re-uploaded (files the plugin never pushed are never recorded, so prune leaves them alone). Test reports the receiver's PHP version, ZipArchive support and free space. REST: `POST /destinations/{id}/connector/pair|revoke|rebuild`, single-use `GET /connector/download?token=`. WP-CLI: `wp bricks-static connector pair|test|rebuild|revoke|status`. Needs PHP 7.4+ at the destination; ZipArchive there enables package deploys, otherwise files upload one by one. Spec: `docs/CONNECTOR_PLAN.md`.
+- **"Check server" on the Destination Server Configuration tab** (`Sync\ServerProbe`, `GET /sync/server-check?dest=…`). Fetches the destination's home page and one pushed asset through the SSRF guard and reports the web server (Apache / LiteSpeed / nginx / CDN-proxied — or the exact origin via the Connector), whether HTML is gzip-served, both `Cache-Control` values and an applied / partial / not-applied verdict with a server-specific next step. This is the only way to confirm a manual nginx paste — or a working `.htaccess` — actually took effect. The last result per destination is kept and shown on reload.
+- **Manual deploy section** on every destination: Export ZIP (moved off the toolbar) plus a collapsible how-to. Export no longer requires a tested connection — only an enabled destination — since nothing is uploaded.
+- `UrlSafety::guarded_get()` (GET/HEAD) alongside `guarded_post()`, sharing one guard.
+
+### Changed
+- **The nginx snippet is now framed as optional tuning, not a setup step.** Stock nginx already serves the static output (`index.html` and directory resolution are defaults); the snippet only adds the cache policy and pre-compressed serving. The dashboard copy, snippet header and docs say so, and "Check server" verifies it.
+- Destination URL and *Served from sub-path* moved above the deploy-method choice, since every method uses them.
+- The `.htaccess` backup is only taken when the remote file isn't already our own generated block — previously a second sync could "back up" our own output, or clobber the genuine original saved by the first. `DirectoryIndex` now lists `index.php` after `index.html` as a safety net for destination roots that sit above a PHP app (Apache inherits `.htaccess` into subdirectories).
+- Settings gear is twice its previous size.
+- Translations regenerated: fr_FR, de_DE, it_IT, es_ES and nl_NL now cover every UI string (163 previously untranslated strings — connector, server check, manual deploy, setup wizard, settings, export, image replacer, sync diagnostics).
+
 ## [2.0.1] - 2026-08-05
 
 ### Fixed

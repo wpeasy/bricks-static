@@ -4,7 +4,7 @@ Tags: static site, bricks, performance, static html, deployment
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 2.0.1
+Stable tag: 2.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,14 @@ SFTP, FTP and explicit-TLS FTPS. SFTP uses a bundled pure-PHP library, so no spe
 3. The "sync this page" button on the front end.
 
 == Changelog ==
+
+= 2.1.0 =
+* Added: Connector (HTTPS) transport — pair a destination with a single PHP receiver you upload once, then sync over signed HTTPS with no FTP account. Re-pair to rotate, Revoke to disconnect, Rebuild push record after a reset. Also available from WP-CLI (`wp bricks-static connector`).
+* Added: "Check server" — probes the destination and reports the web server, gzip, and whether the cache rules are actually in effect (the way to verify a manual nginx paste).
+* Added: Manual deploy section on each destination (Export ZIP + how-to), no longer gated on a tested FTP connection.
+* Changed: the nginx snippet is presented as optional tuning — stock nginx already serves the static site.
+* Fixed: the .htaccess backup is no longer overwritten with our own generated file on later syncs; DirectoryIndex keeps index.php as a fallback for destination roots above a PHP app.
+* Changed: all five bundled translations now cover every UI string.
 
 = 2.0.1 =
 * Fixed: renders no longer capture the maintenance / coming-soon screen — the whole site could publish as the holding page, silently, because "coming soon" returns HTTP 200.
