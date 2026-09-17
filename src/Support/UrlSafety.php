@@ -81,6 +81,35 @@ final class UrlSafety {
      * @return array<mixed>|WP_Error The response, or a WP_Error on block / redirect / transport failure.
      */
     public static function guarded_post(string $url, array $args = []) {
+        $args['method'] = 'POST';
+
+        return self::guarded_request($url, $args);
+    }
+
+    /**
+     * GET (or HEAD, via `$args['method']`) a user-supplied URL with the same SSRF
+     * protection as `guarded_post()`. Used by the destination server probe.
+     *
+     * @param string              $url  URL to fetch.
+     * @param array<string,mixed> $args wp_remote_request args (redirection is forced to 0).
+     * @return array<mixed>|WP_Error The response, or a WP_Error on block / redirect / transport failure.
+     */
+    public static function guarded_get(string $url, array $args = []) {
+        if (!isset($args['method'])) {
+            $args['method'] = 'GET';
+        }
+
+        return self::guarded_request($url, $args);
+    }
+
+    /**
+     * Shared guarded fetch: validate, force `redirection => 0`, reject 3xx.
+     *
+     * @param string              $url  URL to fetch.
+     * @param array<string,mixed> $args wp_remote_request args (`method` set by the caller).
+     * @return array<mixed>|WP_Error
+     */
+    private static function guarded_request(string $url, array $args) {
         if (!self::is_safe_url($url)) {
             return new WP_Error(
                 'bs_unsafe_url',
@@ -93,7 +122,7 @@ final class UrlSafety {
             $args['reject_unsafe_urls'] = true;
         }
 
-        $response = wp_remote_post($url, $args);
+        $response = wp_remote_request($url, $args);
         if (is_wp_error($response)) {
             return $response;
         }

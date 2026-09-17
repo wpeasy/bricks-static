@@ -62,6 +62,16 @@ final class HtaccessBuilder {
     }
 
     /**
+     * The long-cache asset extensions, as a list. Shared with `ServerProbe` so
+     * the probe checks an extension the rules actually mark immutable.
+     *
+     * @return array<int,string>
+     */
+    public static function asset_extensions(): array {
+        return explode('|', self::ASSET_EXT);
+    }
+
+    /**
      * Remove a "# BEGIN Name … # END Name" block from content.
      *
      * @param string $content Content.
@@ -180,8 +190,11 @@ HTACCESS;
             : '';
 
         return <<<NGINX
-# Bricks Static — nginx equivalent. Paste inside your server { } block, then reload nginx.
-# (nginx config cannot be applied over FTP/SFTP, so this is manual.)
+# Bricks Static — optional nginx tuning. Stock nginx already serves the static
+# site (index.html + directory resolution are defaults); this adds the cache
+# policy and pre-compressed serving. Paste inside your server { } block, then
+# reload nginx. (nginx has no per-directory config, so this can't be applied
+# over FTP/SFTP — use "Check server" in the dashboard to verify it took effect.)
 
 index index.html;
 $gzip

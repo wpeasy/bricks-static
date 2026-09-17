@@ -80,7 +80,9 @@ Per-destination find-and-replace applied to the deploy copy, so different destin
 
 ### Server config
 
-The generated **`.htaccess`** (uploaded automatically) and an **nginx** snippet for manual paste.
+The generated **`.htaccess`** (uploaded automatically) and an **nginx** snippet. Stock nginx already serves the static output (index.html + directory resolution are defaults), so the snippet is an *optional* tuning — cache policy + pre-compressed serving — not a setup step.
+
+**Check server** (`GET /sync/server-check?dest=…`, `Sync\ServerProbe`) fetches the destination's home page and one pushed asset through the `UrlSafety` SSRF guard and reports the web server (Apache / LiteSpeed / nginx / CDN-proxied), whether the HTML is gzip-served, and whether the cache policy is actually in effect — the only way to confirm a manual nginx paste (or a working `.htaccess`) took. The last result per destination is stored and returned with `/sync/server-config`.
 
 ### AI tools (Abilities API / MCP)
 
@@ -117,7 +119,7 @@ All routes require `manage_options`.
 | `GET /sync/check?dest={id}` | Synchronous, no-render sync preview for a destination. |
 | `POST /sync/tick`, `GET /sync`, `POST /sync/cancel`, `POST /sync/retry`, `POST /sync/claim` | Drive / poll / cancel / retry / claim the active run. |
 | `POST /sync/page`, `GET /sync/page-status` | Single-page sync + its per-destination state. |
-| `POST /sync/reset`, `POST /sync/preflight`, `GET /sync/server-config` | Reset push state, probe loopback, get `.htaccess`/nginx. |
+| `POST /sync/reset`, `POST /sync/preflight`, `GET /sync/server-config`, `GET /sync/server-check` | Reset push state, probe loopback, get `.htaccess`/nginx + last checks, probe a destination's server. |
 | `POST /editor/include`, `…/include-bulk`, `GET /editor/links`, `GET /editor/inbound` | Manual-mode include toggles + link integrity. |
 | `GET /media`, `GET /links`, `GET /videos` | Replacement catalogs from the last render. |
 | `GET /sitemap/test` | Preview the generated sitemap. |

@@ -44,7 +44,7 @@
     },
     {
       title: 'gzip + server config',
-      body: 'Pre-compresses text assets and uploads a managed .htaccess that serves them with the right headers; an equivalent nginx snippet is provided for manual paste.',
+      body: 'Pre-compresses text assets and uploads a managed .htaccess that serves them with the right headers. nginx serves the output as-is; an optional tuning snippet is provided, and "Check server" verifies what the destination is actually doing.',
     },
   ];
 </script>
@@ -178,7 +178,7 @@ wp bricks-static sync --check    # dry run (render + catalogue, no upload)
 wp bricks-static sync --prune    # also remove remote files no longer present</pre>
         <ul class="bs-docs__list">
           <li><strong>Cache:</strong> the staging copy lives under <code>wp-content/cache/bricks-static</code> (or uploads if that isn’t writable).</li>
-          <li><strong>Server config:</strong> the managed <code>.htaccess</code> is uploaded automatically; the <em>Destination Server Configuration</em> tab has the nginx equivalent to paste manually.</li>
+          <li><strong>Server config:</strong> the managed <code>.htaccess</code> is uploaded automatically (Apache/LiteSpeed). nginx has no per-directory config, so it serves the static site with its defaults; the <em>Server config</em> tab has an optional tuning snippet to paste, plus <strong>Check server</strong>, which probes the destination and reports the web server and whether the cache rules are in effect.</li>
           <li><strong>Filters:</strong> behaviour is adjustable via <code>bs_*</code> hooks (e.g. <code>bs_generate_sitemaps</code>, <code>bs_include_favicon</code>, <code>bs_seed_from_sitemap</code>, <code>bs_excluded_post_types</code>).</li>
         </ul>
       </section>

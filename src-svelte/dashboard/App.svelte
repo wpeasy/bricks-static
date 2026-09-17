@@ -536,7 +536,7 @@
         {:else}
           <div class="bs-panels">
             <MethodPanel method={status?.method ?? null} mode={status?.discoveryMode} />
-            <ServerConfigPanel />
+            <ServerConfigPanel {destinations} defaultDestId={activeTab} />
           </div>
         {/if}
       </div>

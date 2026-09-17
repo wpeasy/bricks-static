@@ -16,6 +16,7 @@ use WPEasy\BricksStatic\CLI\Background;
 use WPEasy\BricksStatic\Render\PageRenderer;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Sync\HtaccessBuilder;
+use WPEasy\BricksStatic\Sync\ServerProbe;
 use WPEasy\BricksStatic\Sync\Job;
 use WPEasy\BricksStatic\Sync\ChangeTracker;
 use WPEasy\BricksStatic\Sync\Manifest;
@@ -104,6 +105,15 @@ final class SyncController {
             'methods'             => 'GET',
             'callback'            => [self::class, 'server_config'],
             'permission_callback' => [self::class, 'can_manage'],
+        ]);
+
+        register_rest_route(self::NS, '/sync/server-check', [
+            'methods'             => 'GET',
+            'callback'            => [self::class, 'server_check'],
+            'permission_callback' => [self::class, 'can_manage'],
+            'args'                => [
+                'dest' => ['type' => 'string', 'required' => true, 'sanitize_callback' => 'sanitize_text_field'],
+            ],
         ]);
 
         register_rest_route(self::NS, '/sync/reset', [
@@ -387,13 +397,23 @@ final class SyncController {
     }
 
     /**
-     * GET /sync/server-config — the .htaccess (uploaded automatically) and the
-     * nginx snippet (for manual paste).
+     * GET /sync/server-config — the .htaccess (uploaded automatically), the
+     * nginx snippet (for manual paste), and the last server check per destination.
      */
     public static function server_config(): WP_REST_Response {
         return new WP_REST_Response([
             'htaccess' => HtaccessBuilder::htaccess(),
             'nginx'    => HtaccessBuilder::nginx(),
+            'checks'   => (object) ServerProbe::all_last(),
         ]);
+    }
+
+    /**
+     * GET /sync/server-check?dest=… — probe the destination's public URL
+     * (`UrlSafety`-guarded) and report the server type + whether our cache
+     * rules are in effect. Synchronous; two short requests.
+     */
+    public static function server_check(WP_REST_Request $request): WP_REST_Response {
+        return new WP_REST_Response(ServerProbe::run((string) $request->get_param('dest')));
     }
 }

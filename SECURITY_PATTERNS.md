@@ -28,7 +28,7 @@ Every REST route in `src/REST/*` registers `permission_callback => [self::class,
 
 ## 1. SSRF guard for user-supplied URLs (`Support\UrlSafety`)
 
-SSRF risk is asymmetric: a remote browser can't reach `127.0.0.1` or the cloud-metadata endpoint `169.254.169.254`, but the WordPress server can. The plugin fetches one **user-supplied** URL server-side: a destination's public URL, POSTed to trigger the deploy helper (`PackageDeployer::deploy()`).
+SSRF risk is asymmetric: a remote browser can't reach `127.0.0.1` or the cloud-metadata endpoint `169.254.169.254`, but the WordPress server can. The plugin fetches one **user-supplied** URL server-side — a destination's public URL — in two places: POSTed to trigger the deploy helper (`PackageDeployer::deploy()`), and GET/HEAD by the server probe (`Sync\ServerProbe`, `GET /sync/server-check`).
 
 **Rule:** any server-side fetch of a URL that originated from a request MUST go through `UrlSafety`:
 
@@ -43,7 +43,8 @@ $response = UrlSafety::guarded_post($url, ['timeout' => 120, 'body' => $body]);
 if (is_wp_error($response)) { /* blocked, redirected, or transport error */ }
 ```
 
-- `UrlSafety::is_safe_url($url)` is the validator; `guarded_post()` is the validator + fetch with `redirection => 0`. Use `guarded_post()` for any new POST to a user URL; add a `guarded_get()` the same way if a GET case appears.
+- `UrlSafety::is_safe_url($url)` is the validator; `guarded_post()` / `guarded_get()` (GET, or HEAD via `$args['method']`) are the validator + fetch with `redirection => 0`, both delegating to one private `guarded_request()`. Use them for any new fetch of a user URL — never a bare `wp_remote_*`.
+- **`ServerProbe` is read-only and blind by design:** it reads response *headers* only (`Server`, `Cache-Control`, `Content-Encoding`), fetches with `decompress => false` + `limit_response_size`, and never returns a body to the caller. It uses `PackageDeployer::sslverify()` for TLS (rule 2 applies). Keep it that way — a probe that echoed bodies would turn the admin-only SSRF residual into a read primitive.
 - **Why redirects-off matters:** `is_safe_url()` resolves the host once, then `wp_remote_*` does its own DNS lookup at fetch time (DNS-rebinding TOCTOU) and follows up to 5 redirects by default. `redirection => 0` + 3xx-reject closes both.
 - **Known limitation / TODO:** the resolve-then-fetch gap is not fully closed (no IP pinning). Pin the resolved IP via a one-shot `http_api_curl` / `CURLOPT_RESOLVE` filter if this fetch is ever exposed below `manage_options`. Today it's admin-only and the helper response body is never returned to the caller (blind), so the residual risk is low.
 - **`PageRenderer` is exempt by design:** it fetches the *site's own* pages/assets (home URL + same-origin crawl from `AssetExtractor`, which only emits same-origin links), so it is not a user-supplied-URL surface and it legitimately needs `redirection => 5` to crawl. Do not route it through `guarded_post`. If you ever make the renderer follow author-supplied off-site URLs, that changes and the guard applies.
@@ -159,7 +160,7 @@ Every ability registers a `permission_callback` that:
 ## Audit checklist for new code
 
 - New REST route → `manage_options` unless justified; nonce intact; ownership check if it touches a request-supplied object id.
-- New server-side fetch of a request URL → `UrlSafety::guarded_post()` / `is_safe_url()`, never a bare `wp_remote_*`.
+- New server-side fetch of a request URL → `UrlSafety::guarded_post()` / `guarded_get()` / `is_safe_url()`, never a bare `wp_remote_*`.
 - New outbound call → `sslverify` left at the WP default (verified); relax only via `UrlSafety::is_dev_host()`.
 - Touching `UnzipScript` → token + expiry + zip-slip + self-delete all intact.
 - New `{@html}` / `innerHTML` → server-sanitise the source with `wp_kses_post`, or escape client-side.

@@ -167,6 +167,7 @@ final class Destinations {
                     delete_option(self::pushed_option($id));
                     delete_option('bs_pkg_off_' . $id);
                     delete_option('bs_sync_sig_' . $id);
+                    \WPEasy\BricksStatic\Sync\ServerProbe::forget($id);
 
                     // Re-pointed at a different server — forget the old target's
                     // trusted SFTP host key so the new one is established afresh.
@@ -177,6 +178,7 @@ final class Destinations {
                     // package-deploy probe result for the OLD guessed/explicit URL
                     // no longer applies, so give the new URL a fresh chance.
                     delete_option('bs_pkg_off_' . $id);
+                    \WPEasy\BricksStatic\Sync\ServerProbe::forget($id);
                 }
 
                 return $after;
@@ -221,6 +223,7 @@ final class Destinations {
 
         update_option(self::OPTION, $kept, false);
         delete_option(self::pushed_option($id));
+        \WPEasy\BricksStatic\Sync\ServerProbe::forget($id);
 
         return true;
     }

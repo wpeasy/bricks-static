@@ -11,6 +11,7 @@ import type {
   Preflight,
   ReplacementPage,
   VideoItem,
+  ServerCheck,
   ServerConfig,
   Status,
   SyncSnapshot,
@@ -96,6 +97,7 @@ export const api = {
   syncReset: () => request<{ ok: boolean }>('/sync/reset', 'POST', {}),
   preflight: () => request<Preflight>('/sync/preflight', 'POST', {}),
   serverConfig: () => request<ServerConfig>('/sync/server-config'),
+  serverCheck: (dest: string) => request<ServerCheck>(`/sync/server-check?dest=${encodeURIComponent(dest)}`),
   getMedia: (page = '') =>
     request<{ pages: ReplacementPage[]; page: string; media: MediaItem[] }>(
       `/media${page ? `?page=${encodeURIComponent(page)}` : ''}`,

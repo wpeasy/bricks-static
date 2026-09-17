@@ -350,6 +350,31 @@ export interface ExportSnapshot {
 export interface ServerConfig {
   htaccess: string;
   nginx: string;
+  /** Last server check per destination id (GET /sync/server-check results). */
+  checks: Record<string, ServerCheck>;
+}
+
+export type ServerKind = 'apache' | 'litespeed' | 'nginx' | 'proxied' | 'other' | 'unknown';
+
+/** Result of probing a destination's public URL (Sync\ServerProbe). */
+export interface ServerCheck {
+  destId: string;
+  /** The probe reached the destination (headers below are populated). */
+  ok: boolean;
+  error: string;
+  url: string;
+  /** No Destination URL was set, so the probe guessed https://<host>. */
+  urlGuessed: boolean;
+  /** The destination has a pushed manifest (a sync has completed). */
+  synced: boolean;
+  server: ServerKind;
+  serverHeader: string;
+  html: { code: number; gzip: boolean; cacheControl: string; revalidate: boolean } | null;
+  asset: { path: string; code: number; cacheControl: string; immutable: boolean } | null;
+  /** Whether the HtaccessBuilder cache policy is in effect. */
+  applied: 'yes' | 'partial' | 'no' | 'unknown';
+  message: string;
+  checkedAt: number;
 }
 
 /** Payload sent to the connection/destination save + test endpoints. */
