@@ -60,6 +60,10 @@ No. It generates a static copy and deploys it to a destination you choose (a sep
 
 No. Any standard WordPress content exports fine: block editor, Classic Editor, archives, any theme. The name reflects the extra Bricks handling (ignoring the random element IDs Bricks regenerates on every render, and rendering through Bricks' maintenance mode), not a requirement.
 
+= Where do I get support? =
+
+In the plugin's support forum on WordPress.org: https://wordpress.org/support/plugin/bricks-static/
+
 = How many pages can I export? =
 
 There's no limit — Bricks Static renders and syncs every page in your export.
@@ -97,6 +101,7 @@ Bricks Static sends data only to destinations you configure yourself. Nothing is
 = 2.1.2 =
 * Added: deleting the plugin now removes everything it stored — settings, destinations (including saved passwords and API tokens) and its cache folder. Files already deployed to your destinations are not touched.
 * Fixed: WordPress can now offer updates for the plugin.
+* Changed: the plugin is published by BRXProd; support is via the WordPress.org forum.
 * Changed: for developers, every option, hook/filter and constant now uses the `bricks_static_` / `BRICKS_STATIC_` prefix (was `bs_` / `BS_`), and the REST namespace is `bricks-static/v1`. Rename any `wp-config.php` constants (e.g. `BS_HOST` → `BRICKS_STATIC_HOST`) and custom filters.
 * Changed: the documentation explains the name — Bricks Static is Bricks-aware but works with all standard WordPress content.
 * Changed: translations cover the Cloudflare deploy method again; exported pages' generator tag names Bricks Static.

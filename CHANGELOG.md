@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - readme, plugin description, README and the Docs page explain the name: Bricks Static is Bricks-aware (it ignores the random element IDs Bricks regenerates on every render, and renders through Bricks' maintenance mode), but works with all standard WordPress content.
 
 ### Changed
+- Plugin author is now **BRXProd** (`https://brxprod.com`, no email); the obsolete alanblair.co Plugin URI is removed (the wordpress.org listing is the home page). `composer.json` authors/description updated, with `support` links to the wordpress.org forum and GitHub. readme: new "Where do I get support?" FAQ (wordpress.org forum). `WORDPRESS.md` header template updated to match.
 - Plugin header: removed `Update URI: false`, which stopped WordPress from offering updates from wordpress.org.
 - Exported pages' generator meta now reads `Bricks Static <ver> by BRXProd` (was the old name, `Bricks Sync`).
 - Plugin header: removed `Network: false` (only `true` is valid); `Tested up to` 7.1.

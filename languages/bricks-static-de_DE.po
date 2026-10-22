@@ -1,10 +1,10 @@
-# Copyright (C) 2026 Alan Blair <alan@alanblair.co>
+# Copyright (C) 2026 BRXProd
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
 "Project-Id-Version: bricks-static\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/bricks-static\n"
-"POT-Creation-Date: 2026-10-22T23:45:11+00:00\n"
+"POT-Creation-Date: 2026-10-22T23:50:34+00:00\n"
 "PO-Revision-Date: 2026-06-22 00:00+0000\n"
 "Last-Translator: Claude Code (machine translation)\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,11 +23,6 @@ msgstr ""
 msgid "Bricks Static"
 msgstr "Bricks Static"
 
-#. Plugin URI of the plugin
-#: bricks-static.php
-msgid "https://alanblair.co/bricks-static"
-msgstr ""
-
 #. Description of the plugin
 #: bricks-static.php
 msgid ""
@@ -40,12 +35,12 @@ msgstr ""
 
 #. Author of the plugin
 #: bricks-static.php
-msgid "Alan Blair <alan@alanblair.co>"
-msgstr ""
+msgid "BRXProd"
+msgstr "BRXProd"
 
 #. Author URI of the plugin
 #: bricks-static.php
-msgid "https://alanblair.co"
+msgid "https://brxprod.com"
 msgstr ""
 
 #: src/Abilities/AbilityRegistry.php:104

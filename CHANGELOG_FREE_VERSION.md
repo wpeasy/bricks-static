@@ -9,6 +9,9 @@ Deleting the plugin now cleans up after itself. It removes its settings, your de
 WordPress can now offer updates for Bricks Static. A setting in the plugin file was stopping update checks.
 
 ### Improved
+Support for Bricks Static is now provided in its WordPress.org support forum.
+
+### Improved
 The documentation now explains the name. Bricks Static is Bricks-aware: Bricks gives page elements new random IDs every time a page is built, and the plugin ignores them, so only pages that really changed are uploaded. It works just as well with any standard WordPress content, including block editor and Classic Editor pages, archives and other themes.
 
 ### Improved

@@ -7,20 +7,17 @@ This file defines the standard WordPress plugin header structure. All project-sp
 ```php
 /**
  * Plugin Name:       {from CLAUDE.md: Plugin Name}
- * Plugin URI:        https://alanblair.co/{from CLAUDE.md: Textdomain}
  * Description:       {from CLAUDE.md: Description}
  * Version:           0.0.1-beta
  * Requires at least: {from CLAUDE.md: Minimum WordPress}
  * Tested up to:      {IMPORTANT: Use WebSearch to find the current latest WordPress version - do NOT guess}
  * Requires PHP:      {from CLAUDE.md: Minimum PHP}
- * Author:            Alan Blair <alan@alanblair.co>
- * Author URI:        https://alanblair.co
+ * Author:            BRXProd
+ * Author URI:        https://brxprod.com
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       {from CLAUDE.md: Textdomain}
  * Domain Path:       /languages
- * Network:           false
- * Update URI:        false
  */
 ```
 
@@ -29,20 +26,19 @@ This file defines the standard WordPress plugin header structure. All project-sp
 | Property | Source | Description |
 |----------|--------|-------------|
 | Plugin Name | CLAUDE.md: Plugin Name | Display name in admin |
-| Plugin URI | `https://alanblair.co/` + CLAUDE.md: Textdomain | Plugin homepage |
 | Description | CLAUDE.md: Description | Short description |
 | Version | Start at `0.0.1-beta` | Current version (SemVer) |
 | Requires at least | CLAUDE.md: Minimum WordPress | Minimum WordPress version |
 | Tested up to | **Use WebSearch to find current version** | Latest tested WordPress version |
 | Requires PHP | CLAUDE.md: Minimum PHP | Minimum PHP version |
-| Author | `Alan Blair <alan@alanblair.co>` | Fixed |
-| Author URI | `https://alanblair.co` | Fixed |
+| Author | `BRXProd` (no email — support is via the wordpress.org forum) | Fixed |
+| Author URI | `https://brxprod.com` | Fixed |
 | License | `GPL-2.0-or-later` | Fixed |
 | License URI | `https://www.gnu.org/licenses/gpl-2.0.html` | Fixed |
 | Text Domain | CLAUDE.md: Textdomain | Translation text domain |
 | Domain Path | `/languages` | Fixed |
-| Network | `false` | Multisite network-wide activation |
-| Update URI | `false` | Custom update server |
+| Plugin URI | — omitted | The wordpress.org listing is the plugin's home page |
+| Network / Update URI | — omitted | wordpress.org rejects `Network: false`, and `Update URI` blocks wordpress.org updates |
 
 ## Slugs Reference
 

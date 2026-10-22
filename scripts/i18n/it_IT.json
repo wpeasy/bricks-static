@@ -579,5 +579,6 @@
   "<strong>Limits:</strong> 25 MiB per file (larger files are left out and reported) and 20,000 files on the Free plan (100,000 on paid plans). Forms that post back to WordPress don’t work on a static copy.": "<strong>Limiti:</strong> 25 MiB per file (i file più grandi vengono esclusi e segnalati) e 20.000 file con il piano Free (100.000 con i piani a pagamento). I moduli che inviano dati a WordPress non funzionano su una copia statica.",
   "The Destination URL has been set to this address — Save to keep it.": "L’URL di destinazione è stato impostato su questo indirizzo — salva per mantenerlo.",
   "Sent automatically with every Cloudflare deploy — nothing to paste.": "Inviato automaticamente a ogni distribuzione su Cloudflare — niente da incollare.",
-  "Cloudflare — the cache rules are not in effect yet. They are published with every Cloudflare deploy, so run a Sync, then check again.": "Cloudflare — le regole di cache non sono ancora attive. Vengono pubblicate a ogni distribuzione su Cloudflare: esegui una sincronizzazione, poi verifica di nuovo."
+  "Cloudflare — the cache rules are not in effect yet. They are published with every Cloudflare deploy, so run a Sync, then check again.": "Cloudflare — le regole di cache non sono ancora attive. Vengono pubblicate a ogni distribuzione su Cloudflare: esegui una sincronizzazione, poi verifica di nuovo.",
+  "BRXProd": "BRXProd"
 }

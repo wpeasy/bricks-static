@@ -1,14 +1,13 @@
 <?php
 /**
  * Plugin Name:       Bricks Static
- * Plugin URI:        https://alanblair.co/bricks-static
  * Description:       Publish your WordPress site as static HTML over SFTP/FTP, HTTPS or Cloudflare. Bricks-aware; works with any WordPress content.
  * Version:           2.1.2
  * Requires at least: 6.5
  * Tested up to:      7.1
  * Requires PHP:      8.0
- * Author:            Alan Blair <alan@alanblair.co>
- * Author URI:        https://alanblair.co
+ * Author:            BRXProd
+ * Author URI:        https://brxprod.com
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       bricks-static

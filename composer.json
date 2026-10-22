@@ -1,13 +1,12 @@
 {
     "name": "wpeasy/bricks-static",
-    "description": "Generate and serve static HTML versions of Bricks-built pages for performance.",
+    "description": "Publish your WordPress site as static HTML over SFTP/FTP, HTTPS or Cloudflare. Bricks-aware; works with any WordPress content.",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
     "authors": [
         {
-            "name": "Alan Blair",
-            "email": "alan@alanblair.co",
-            "homepage": "https://alanblair.co"
+            "name": "BRXProd",
+            "homepage": "https://brxprod.com"
         }
     ],
     "require": {
@@ -21,5 +20,9 @@
     },
     "config": {
         "optimize-autoloader": true
+    },
+    "support": {
+        "forum": "https://wordpress.org/support/plugin/bricks-static/",
+        "source": "https://github.com/wpeasy/bricks-static"
     }
 }

@@ -6,6 +6,9 @@
     "msgid": "Publish your WordPress site as static HTML over SFTP/FTP, HTTPS or Cloudflare. Bricks-aware; works with any WordPress content."
   },
   {
+    "msgid": "BRXProd"
+  },
+  {
     "msgid": "Inspect and drive the Bricks Static export/sync engine."
   },
   {
