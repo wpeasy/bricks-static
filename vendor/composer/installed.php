@@ -3,11 +3,11 @@
         'name' => 'wpeasy/bricks-static',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '969f26fd0823d3be00d33fe7c04be0c688670a6e',
+        'reference' => '105013173901f423c2976de58e8ad2d17a1c3de4',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'dev' => true,
+        'dev' => false,
     ),
     'versions' => array(
         'paragonie/constant_time_encoding' => array(
@@ -29,9 +29,9 @@
             'dev_requirement' => false,
         ),
         'phpseclib/phpseclib' => array(
-            'pretty_version' => '3.0.53',
-            'version' => '3.0.53.0',
-            'reference' => '511ddc8e352d5d1f1e33bea468b6f4ef48438cf9',
+            'pretty_version' => '3.0.57',
+            'version' => '3.0.57.0',
+            'reference' => 'd17e0ddaeaf6f22f7e007cbb437d78792fe2a0e4',
             'type' => 'library',
             'install_path' => __DIR__ . '/../phpseclib/phpseclib',
             'aliases' => array(),
@@ -40,7 +40,7 @@
         'wpeasy/bricks-static' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '969f26fd0823d3be00d33fe7c04be0c688670a6e',
+            'reference' => '105013173901f423c2976de58e8ad2d17a1c3de4',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

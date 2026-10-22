@@ -4,7 +4,7 @@ Tags: static site, bricks, performance, static html, deployment
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 2.1.0
+Stable tag: 2.1.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,6 +63,11 @@ SFTP, FTP and explicit-TLS FTPS. SFTP uses a bundled pure-PHP library, so no spe
 
 == Changelog ==
 
+= 2.1.1 =
+* Added: Cloudflare deploy method — publish the static site to Cloudflare's global network (as a static Worker) with just an account ID, an API token and a Worker name; no web host, PHP or FTP needed. Each sync uploads only the files Cloudflare doesn't already have and switches the site over in one step. Also available from WP-CLI (`wp bricks-static cloudflare`).
+* Security: the Connector file is stricter (protocol 2) — `.htaccess` files are checked in every folder against a list of safe rules, unsigned requests can no longer hold a lockout, and the secret is never sent if the Destination URL is changed to http://. Connector destinations must be re-paired once (Re-pair, then upload the new file).
+* Security: bundled phpseclib updated to 3.0.57.
+
 = 2.1.0 =
 * Added: Connector (HTTPS) transport — pair a destination with a single PHP receiver you upload once, then sync over signed HTTPS with no FTP account. Re-pair to rotate, Revoke to disconnect, Rebuild push record after a reset. Also available from WP-CLI (`wp bricks-static connector`).
 * Added: "Check server" — probes the destination and reports the web server, gzip, and whether the cache rules are actually in effect (the way to verify a manual nginx paste).
@@ -85,6 +90,9 @@ SFTP, FTP and explicit-TLS FTPS. SFTP uses a bundled pure-PHP library, so no spe
 * Text replacements, `.htaccess` + nginx config, favicon, single-page sync, and WP-CLI sync.
 
 == Upgrade Notice ==
+
+= 2.1.1 =
+Security update for the Connector: after updating, press Re-pair on each Connector destination and upload the new connector file — older files report "outdated" until replaced. Also adds Cloudflare as a deploy method.
 
 = 2.0.1 =
 Important fix if you use maintenance or coming-soon mode: renders captured the holding screen and published it over the whole site without failing.

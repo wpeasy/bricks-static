@@ -404,6 +404,8 @@ final class SyncController {
         return new WP_REST_Response([
             'htaccess' => HtaccessBuilder::htaccess(),
             'nginx'    => HtaccessBuilder::nginx(),
+            // Published automatically with every Cloudflare deploy (shown for reference).
+            'cloudflareHeaders' => \WPEasy\BricksStatic\Deploy\CloudflareHeaders::headers(),
             'checks'   => (object) ServerProbe::all_last(),
         ]);
     }

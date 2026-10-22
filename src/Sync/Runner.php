@@ -23,6 +23,7 @@ use WPEasy\BricksStatic\Render\StableHash;
 use WPEasy\BricksStatic\Render\UrlRewriter;
 use WPEasy\BricksStatic\Support\Paths;
 use WPEasy\BricksStatic\Support\Url;
+use WPEasy\BricksStatic\Transport\SnapshotCapableTransport;
 use WPEasy\BricksStatic\Transport\TransportFactory;
 use WPEasy\BricksStatic\Transport\TransportInterface;
 
@@ -318,6 +319,9 @@ final class Runner {
                 break;
             case 'package':
                 self::tick_package($job);
+                break;
+            case 'snapshot':
+                self::tick_snapshot($job);
                 break;
             case 'upload':
                 self::tick_upload($job);
@@ -1043,7 +1047,7 @@ final class Runner {
         $job->data['prune']       = $prune;
         $job->data['targets']     = [$dest_id];
         $job->data['targetIndex'] = 0;
-        self::start_target($job); // → phase 'package'|'upload' for THIS destination
+        self::start_target($job); // → phase 'snapshot'|'package'|'upload' for THIS destination
         $job->save();
 
         while (!in_array($job->data['phase'], ['done', 'error', 'cancelled'], true)) {
@@ -1060,6 +1064,9 @@ final class Runner {
             switch ($job->data['phase']) {
                 case 'package':
                     self::tick_package($job);
+                    break;
+                case 'snapshot':
+                    self::tick_snapshot($job);
                     break;
                 case 'upload':
                     self::tick_upload($job);
@@ -1375,9 +1382,16 @@ final class Runner {
         $job->data['htaccessDone']       = false;
         $job->data['holdingShown']       = false;
 
-        // Prefer the package strategy (one zip + server-side extract) when the
-        // host can run it; otherwise fall back to per-file uploads.
-        if (self::should_package($dest_id)) {
+        // A snapshot destination (Cloudflare) publishes the WHOLE deploy
+        // manifest every time and has no filesystem: no package, no per-file
+        // upload, no prune (see tick_snapshot()). The diff above still drives
+        // the progress counts and the Check preview.
+        if ($dest !== null && $dest->is_snapshot()) {
+            $job->data['phase']   = 'snapshot';
+            $job->data['message'] = sprintf('Publishing to %s…', $name);
+        } elseif (self::should_package($dest_id)) {
+            // Prefer the package strategy (one zip + server-side extract) when
+            // the host can run it; otherwise fall back to per-file uploads.
             $job->data['phase']   = 'package';
             $job->data['message'] = sprintf('Packaging deploy for %s…', $name);
         } else {
@@ -1724,6 +1738,86 @@ final class Runner {
     }
 
     /**
+     * Publish the whole target to a snapshot destination (Cloudflare) in one
+     * operation: hand the transport the FULL deploy manifest; it uploads only
+     * what the far end doesn't already hold and swaps the new set in
+     * atomically. Removed pages are gone simply because they're not in the
+     * snapshot, so there is no prune phase — and none of the filesystem steps
+     * (.htaccess merge, holding page, home-last, .gz siblings) apply.
+     *
+     * Files the transport can't include (over Cloudflare's 25 MiB limit) are
+     * recorded as failed and left out of the pushed manifest, exactly like a
+     * failed per-file upload. A failure is reported as an error — there is no
+     * per-file fallback for a destination without a filesystem.
+     *
+     * @param Job $job Active job.
+     */
+    private static function tick_snapshot(Job $job): void {
+        try {
+            $transport = self::target_transport($job);
+        } catch (\Throwable $e) {
+            self::close_connection();
+            $job->data['phase']   = 'error';
+            $job->data['message'] = 'Cloudflare connection failed: ' . $e->getMessage();
+            $job->save();
+            return;
+        }
+
+        if (!$transport instanceof SnapshotCapableTransport) {
+            self::close_connection();
+            $job->data['phase']   = 'error';
+            $job->data['message'] = 'This destination’s transport cannot publish snapshots.';
+            $job->save();
+            return;
+        }
+
+        $manifest = Manifest::load(self::deploy_option($job));
+        $files    = [];
+        foreach ($manifest as $relative => $meta) {
+            if (is_file($meta['src'])) {
+                $files[$relative] = $meta['src'];
+            }
+        }
+
+        $progress = function (string $stage) use ($job): void {
+            $job->data['message'] = $stage;
+            self::beat();
+            $job->save();
+        };
+
+        $result = $transport->deploy_snapshot($files, $progress);
+
+        if (empty($result['ok'])) {
+            self::close_connection();
+            $job->data['phase']   = 'error';
+            $job->data['message'] = 'Publishing to Cloudflare failed: ' . (string) $result['message'];
+            $job->save();
+            return;
+        }
+
+        // The far end now serves exactly the snapshot, minus anything skipped.
+        $skipped = array_values((array) ($result['skipped'] ?? []));
+        $pushed  = array_diff_key($manifest, array_flip($skipped));
+        Manifest::save(self::pushed_option($job), Manifest::pushed_from($pushed));
+        self::mark_synced((string) ($job->data['destId'] ?? ''));
+
+        $job->data['counts']['uploaded'] += (int) $result['uploaded'];
+        $job->data['counts']['pruned']   += count((array) $job->data['removedFiles']);
+        $job->data['failed']              = array_merge((array) $job->data['failed'], $skipped);
+        $job->data['queue']['uploads']    = [];
+        $job->data['removedFiles']        = [];
+        if ($skipped !== []) {
+            $job->data['snapshotNotes'] = array_values((array) ($result['errors'] ?? []));
+        }
+
+        self::advance_target($job);
+        if (in_array($job->data['phase'], ['done', 'error', 'cancelled'], true)) {
+            self::close_connection();
+        }
+        $job->save();
+    }
+
+    /**
      * Upload a batch of changed files (plus a one-time .htaccess) to the
      * destination, over a connection kept open across batches (see
      * target_transport()).
@@ -2059,6 +2153,12 @@ final class Runner {
      * @param Job $job Active job.
      */
     private static function done_message(Job $job): string {
+        if (!empty($job->data['snapshotNotes'])) {
+            // Cloudflare left files out (e.g. over its 25 MiB limit) — a retry
+            // won't help, so say which and why instead.
+            $notes = (array) $job->data['snapshotNotes'];
+            return sprintf('Published, but %d file(s) were left out: %s', count($notes), implode('; ', array_slice($notes, 0, 3)) . (count($notes) > 3 ? '; …' : '.'));
+        }
         if (!empty($job->data['failed'])) {
             return 'Pushed with ' . count($job->data['failed']) . ' failed file(s); re-run Sync to retry them.';
         }

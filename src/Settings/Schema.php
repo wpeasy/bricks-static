@@ -36,7 +36,7 @@ final class Schema {
      */
     public static function fields(): array {
         return [
-            'transport'      => ['type' => 'enum',   'default' => 'ftps',          'constant' => 'BS_TRANSPORT',       'options' => ['sftp', 'ftps', 'ftp', 'connector']],
+            'transport'      => ['type' => 'enum',   'default' => 'ftps',          'constant' => 'BS_TRANSPORT',       'options' => ['sftp', 'ftps', 'ftp', 'connector', 'cloudflare']],
             'host'           => ['type' => 'string', 'default' => '',              'constant' => 'BS_HOST'],
             'port'           => ['type' => 'int',    'default' => 0,               'constant' => 'BS_PORT'],
             'username'       => ['type' => 'string', 'default' => '',              'constant' => 'BS_USERNAME'],
@@ -48,6 +48,10 @@ final class Schema {
             'connectorId'     => ['type' => 'string', 'default' => '',             'constant' => 'BS_CONNECTOR_ID',     'internal' => true],
             'connectorSecret' => ['type' => 'string', 'default' => '',             'constant' => 'BS_CONNECTOR_SECRET', 'internal' => true, 'secret' => true],
             'connectorVersion'=> ['type' => 'int',    'default' => 0,              'constant' => '',                    'internal' => true],
+            // Cloudflare (Workers static assets) — see docs/CLOUDFLARE_PLAN.md.
+            'cfAccountId'    => ['type' => 'cf_account', 'default' => '',          'constant' => 'BS_CF_ACCOUNT_ID'],
+            'cfWorker'       => ['type' => 'cf_worker',  'default' => '',          'constant' => 'BS_CF_WORKER'],
+            'cfApiToken'     => ['type' => 'string',     'default' => '',          'constant' => 'BS_CF_API_TOKEN', 'secret' => true],
         ];
     }
 
@@ -96,10 +100,33 @@ final class Schema {
             case 'path':
                 return self::sanitize_path((string) $value);
 
+            case 'cf_account':
+                // 32 hex chars, or nothing — it is placed in an API path.
+                $value = strtolower(trim((string) $value));
+                return preg_match('/^[a-f0-9]{32}$/', $value) ? $value : '';
+
+            case 'cf_worker':
+                return self::sanitize_worker((string) $value);
+
             case 'string':
             default:
                 return sanitize_text_field((string) $value);
         }
+    }
+
+    /**
+     * Normalise a Cloudflare Worker name to what Cloudflare accepts (and what
+     * is safe in an API path): lowercase letters, digits and dashes, no
+     * leading/trailing dash, at most 63 characters. "My Site" → "my-site".
+     *
+     * @param string $value Raw name.
+     */
+    private static function sanitize_worker(string $value): string {
+        $value = strtolower(trim($value));
+        $value = preg_replace('/[^a-z0-9-]+/', '-', $value) ?? '';
+        $value = trim(substr(trim($value, '-'), 0, 63), '-');
+
+        return $value;
     }
 
     /**

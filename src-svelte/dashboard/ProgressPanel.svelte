@@ -79,9 +79,10 @@
   let assetsTotal = $derived(Math.max(snapshot?.totals?.assets ?? 0, assetsDone));
   let uploaded = $derived(snapshot?.counts?.uploaded ?? 0);
   let uploadsTotal = $derived(Math.max(snapshot?.totals?.uploads ?? 0, uploaded));
-  // The package phase is one atomic operation, so a file counter would just sit
-  // at 0 — show an indeterminate bar and the live stage message instead.
-  let isPackaging = $derived(snapshot?.phase === 'package');
+  // The package phase (and a Cloudflare snapshot publish) is one atomic
+  // operation, so a file counter would just sit at 0 — show an indeterminate
+  // bar and the live stage message instead.
+  let isPackaging = $derived(snapshot?.phase === 'package' || snapshot?.phase === 'snapshot');
   let showUploads = $derived((snapshot?.type === 'sync') && uploadsTotal > 0 && !isPackaging);
 
   // Parallel deploy: fan-out across destinations. When active, show a per-

@@ -95,7 +95,7 @@ final class ConnectionController {
     public static function test(WP_REST_Request $request): WP_REST_Response {
         $config = self::config_from_request($request);
 
-        if (($config['transport'] ?? '') !== 'connector' && $config['host'] === '') {
+        if (TransportFactory::needs_host((string) ($config['transport'] ?? '')) && $config['host'] === '') {
             return new WP_REST_Response(['ok' => false, 'message' => 'Enter a host first.'], 200);
         }
 

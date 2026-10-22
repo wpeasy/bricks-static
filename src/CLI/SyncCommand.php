@@ -13,6 +13,7 @@ namespace WPEasy\BricksStatic\CLI;
 use WPEasy\BricksStatic\Deploy\ConnectorScript;
 use WPEasy\BricksStatic\Settings\Destinations;
 use WPEasy\BricksStatic\Sync\Runner;
+use WPEasy\BricksStatic\Transport\CloudflareTransport;
 use WPEasy\BricksStatic\Transport\ConnectorTransport;
 use WPEasy\BricksStatic\Transport\TransportFactory;
 
@@ -151,6 +152,119 @@ final class SyncCommand {
         } else {
             \WP_CLI::error((string) ($snapshot['message'] ?? 'Finished with errors.'));
         }
+    }
+
+    /**
+     * Set up or test a destination's Cloudflare (Workers static assets)
+     * connection without the dashboard. See docs/CLOUDFLARE_PLAN.md.
+     *
+     * ## OPTIONS
+     *
+     * <action>
+     * : What to do.
+     * ---
+     * options:
+     *   - set
+     *   - test
+     *   - status
+     * ---
+     *
+     * [<dest>]
+     * : Destination id (see `status`). Defaults to the primary destination.
+     *
+     * [--account=<id>]
+     * : For `set`: the Cloudflare account ID (32 hex characters).
+     *
+     * [--worker=<name>]
+     * : For `set`: the Worker name to publish to (created on first sync).
+     *
+     * [--token-from-env]
+     * : For `set`: read the API token from the CLOUDFLARE_API_TOKEN environment variable (keeps it out of shell history).
+     *
+     * [--dest-url=<url>]
+     * : For `set`: the Destination URL (your custom domain or the workers.dev address). (`--url` is WP-CLI's own flag, hence the name.)
+     *
+     * ## EXAMPLES
+     *
+     *     wp bricks-static cloudflare status
+     *     CLOUDFLARE_API_TOKEN=… wp bricks-static cloudflare set ab12cd34ef56 --account=0123…cdef --worker=my-site --token-from-env
+     *     wp bricks-static cloudflare test ab12cd34ef56
+     *
+     * @param array<int,string>    $args       [action, dest].
+     * @param array<string,string> $assoc_args Flags.
+     * @when after_wp_load
+     */
+    public function cloudflare(array $args, array $assoc_args): void {
+        $action  = (string) ($args[0] ?? 'status');
+        $dest_id = (string) ($args[1] ?? Destinations::primary()->id());
+        $dest    = Destinations::get($dest_id);
+        if ($dest === null) {
+            \WP_CLI::error('Unknown destination: ' . $dest_id);
+        }
+
+        switch ($action) {
+            case 'status':
+                foreach (Destinations::visible_objects() as $d) {
+                    if (!$d->is_cloudflare()) {
+                        continue;
+                    }
+                    \WP_CLI::log(sprintf(
+                        '%s  %-24s worker=%-20s account=%s token=%s url=%s',
+                        $d->id(),
+                        (string) $d->get('name'),
+                        (string) $d->get('cfWorker'),
+                        (string) $d->get('cfAccountId'),
+                        (string) $d->get('cfApiToken') !== '' ? 'set' : 'missing',
+                        (string) $d->get('destinationUrl')
+                    ));
+                }
+                return;
+
+            case 'set':
+                $input = ['transport' => 'cloudflare'];
+                if (isset($assoc_args['account'])) {
+                    $input['cfAccountId'] = (string) $assoc_args['account'];
+                }
+                if (isset($assoc_args['worker'])) {
+                    $input['cfWorker'] = (string) $assoc_args['worker'];
+                }
+                if (isset($assoc_args['dest-url'])) {
+                    $input['destinationUrl'] = (string) $assoc_args['dest-url'];
+                }
+                if (!empty($assoc_args['token-from-env'])) {
+                    $token = (string) getenv('CLOUDFLARE_API_TOKEN');
+                    if ($token === '') {
+                        \WP_CLI::error('CLOUDFLARE_API_TOKEN is not set.');
+                    }
+                    $input['cfApiToken'] = $token;
+                }
+                Destinations::update($dest_id, $input);
+                \WP_CLI::success('Saved. Run `wp bricks-static cloudflare test ' . $dest_id . '` next.');
+                return;
+
+            case 'test':
+                if (!$dest->is_cloudflare()) {
+                    \WP_CLI::error('That destination does not use the Cloudflare transport (`cloudflare set` switches it).');
+                }
+                $transport = TransportFactory::make($dest->connection_config());
+                try {
+                    $transport->connect();
+                } catch (\Throwable $e) {
+                    update_option('bs_conn_' . $dest_id, ['ok' => false, 'time' => time(), 'message' => $e->getMessage()], false);
+                    \WP_CLI::error($e->getMessage());
+                }
+                if (!$transport instanceof CloudflareTransport) {
+                    \WP_CLI::error('Not a Cloudflare transport.');
+                }
+                update_option('bs_conn_' . $dest_id, ['ok' => true, 'time' => time(), 'message' => $transport->describe()], false);
+                \WP_CLI::success('Cloudflare token accepted — ' . $transport->describe() . '.');
+                if (trim((string) $dest->get('destinationUrl')) === '' && $transport->workers_dev_url() !== '') {
+                    \WP_CLI::log('Tip: set the Destination URL with `cloudflare set ' . $dest_id . ' --dest-url=' . $transport->workers_dev_url() . '`.');
+                }
+                return;
+        }
+
+        \WP_CLI::error('Unknown action: ' . $action);
     }
 
     /**

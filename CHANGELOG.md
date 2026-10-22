@@ -5,6 +5,25 @@ All notable changes to **Bricks Static** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-10-22
+
+### Added
+- **Cloudflare deploy method — publish to Cloudflare with no web host.** *Deploy via* gains a third choice, **Cloudflare**: enter an account ID, an API token (Account → Workers Scripts → Edit) and a Worker name, and each sync publishes the export as an assets-only Cloudflare Worker (Workers static assets — Cloudflare's current product for static sites). Every deploy is a **whole-site snapshot**: the plugin sends the full file list with a content hash per file, Cloudflare asks only for the files it doesn't already hold, those are uploaded in batches, and the new version goes live atomically — so there is no holding page, and a removed page disappears without a prune step. Cache headers are published as Cloudflare `_headers` rules (same policy as the `.htaccess`); Cloudflare compresses at the edge, so no `.htaccess` or `.gz` files are sent. `/about/` serves `about/index.html`, and the export's `404.html` is used for missing pages. Test validates the token and account and fills an empty Destination URL with the Worker's `workers.dev` address (enabled automatically unless the destination uses a custom domain). Files over Cloudflare's 25 MiB limit are left out and named in the result. New: `Transport\CloudflareTransport`, `Transport\SnapshotCapableTransport` (a new `snapshot` Runner phase), `Deploy\CloudflareClient`, `Deploy\CloudflareHeaders`; Schema fields `cfAccountId` / `cfWorker` / `cfApiToken` (encrypted; wp-config constants `BS_CF_ACCOUNT_ID` / `BS_CF_WORKER` / `BS_CF_API_TOKEN`); filters `bs_cloudflare_headers` / `bs_cloudflare_redirects`; WP-CLI `wp bricks-static cloudflare set|test|status`. "Check server" recognises Cloudflare destinations. Security model: SECURITY_PATTERNS.md §3c. Design + verification checklist: `docs/CLOUDFLARE_PLAN.md`.
+
+### Security
+- **Connector receiver (protocol v2) — re-pair existing Connector destinations.** From a security review:
+  - **`.htaccess` files in subfolders are now checked** (HIGH). The `chunk` upload path only content-checked a root `.htaccess`, so one placed in a subfolder skipped the check, letting anyone holding the pairing secret register a server handler there — breaking the "a stolen secret can only deface, never run code" guarantee. Both write paths now check `.htaccess` at every depth and in any letter case, and a `.htaccess` that arrives without its content is refused.
+  - **`.htaccess` is now allow-listed** (MEDIUM). Instead of refusing a list of known-dangerous directives, the receiver accepts only caching, rewrite, redirect and index/error-page directives (no rewrite handler/type flags; `Options` may only switch features off). Lines already in the destination's own `.htaccess` can still be written back, so merging into a host's existing file keeps working.
+  - **Strangers can't hold a lockout** (LOW). The lockout after ten failed requests used to refuse everything, so anyone who knew the connector's URL could block deploys indefinitely. Correctly signed requests now still get through and clear it.
+  - **Names ending in a dot or space are refused** (Windows strips them, which could turn `x.php.` into `x.php`).
+
+  `ConnectorScript::VERSION` is now 2: a connector file from 2.1.0 answers "outdated — re-pair", so press **Re-pair (new file)** and upload the new file. SECURITY_PATTERNS.md §3b updated.
+- **The Connector secret is never sent over plain HTTP** (LOW). HTTPS was required at pairing only; changing the Destination URL to `http://` afterwards made every request carry the secret in cleartext. `ConnectorClient` now refuses to send unless the URL is HTTPS (or a local dev host).
+- **phpseclib 3.0.53 → 3.0.57** (bundled in `vendor/`), fixing CVE-2026-84308 (non-constant-time X25519, used in SFTP key exchange) and CVE-2026-55599 (X.509 AIA SSRF — not reachable from this plugin).
+
+### Changed
+- Places that special-cased the Connector as "the transport without an FTP host" now ask `TransportFactory::needs_host()` / `Destination::is_snapshot()`, so a new non-FTP transport doesn't need another special case.
+
 ## [2.1.0] - 2026-09-17
 
 ### Added

@@ -26,7 +26,7 @@
     onExport: (id: string) => void;
   } = $props();
 
-  type FtpTransport = Exclude<Transport, 'connector'>;
+  type FtpTransport = Exclude<Transport, 'connector' | 'cloudflare'>;
   const DEFAULT_PORTS: Record<FtpTransport, number> = { sftp: 22, ftps: 21, ftp: 21 };
   const KNOWN_DEFAULT_PORTS = [0, 21, 22];
 
@@ -34,12 +34,16 @@
 
   let transport = $state<Transport>(d.transport.value);
   let host = $state(d.host.value);
-  let port = $state<number>(d.port.value || (d.transport.value === 'connector' ? 21 : DEFAULT_PORTS[d.transport.value]));
+  let port = $state<number>(d.port.value || DEFAULT_PORTS[d.transport.value as FtpTransport] || 21);
   let username = $state(d.username.value);
   let password = $state('');
   let remotePath = $state(d.remotePath.value);
   let basePath = $state(d.basePath.value);
   let destinationUrl = $state(d.destinationUrl.value);
+  // Cloudflare (Workers static assets). The token is write-only, like the password.
+  let cfAccountId = $state(d.cfAccountId.value);
+  let cfWorker = $state(d.cfWorker.value);
+  let cfApiToken = $state('');
 
   let saving = $state(false);
   let testing = $state(false);
@@ -47,23 +51,23 @@
   let messageOk = $state(true);
   let busy = $derived(saving || testing || running || exporting);
 
-  // ---- Deploy method: FTP/SFTP vs Connector — ONE per destination (it IS the
-  // saved `transport`), so a Segmented choice rather than tabs. The FTP
-  // protocol picker lives inside the FTP branch.
-  let method = $derived<'ftp' | 'connector'>(transport === 'connector' ? 'connector' : 'ftp');
-  let lastFtp: FtpTransport = d.transport.value === 'connector' ? 'ftps' : d.transport.value;
+  // ---- Deploy method: FTP/SFTP vs Connector vs Cloudflare — ONE per
+  // destination (it IS the saved `transport`), so a Segmented choice rather
+  // than tabs. The FTP protocol picker lives inside the FTP branch.
+  type Method = 'ftp' | 'connector' | 'cloudflare';
+  const isFtp = (t: Transport): t is FtpTransport => t !== 'connector' && t !== 'cloudflare';
+  let method = $derived<Method>(isFtp(transport) ? 'ftp' : transport);
+  let lastFtp: FtpTransport = isFtp(d.transport.value) ? d.transport.value : 'ftps';
   let methodOptions = $derived([
     { value: 'ftp', label: __('tabFtp') },
     { value: 'connector', label: __('optConnector'), disabled: !capabilities.connector },
+    { value: 'cloudflare', label: __('optCloudflare'), disabled: !capabilities.cloudflare },
   ]);
   function selectMethod(value: string): void {
-    if (value === 'connector') {
-      if (transport !== 'connector') lastFtp = transport as FtpTransport;
-      transport = 'connector';
-    } else {
-      transport = lastFtp;
-    }
+    if (isFtp(transport)) lastFtp = transport;
+    transport = value === 'ftp' ? lastFtp : (value as Transport);
   }
+
 
   // How this destination deploys (live from /destinations).
   let deployNote = $derived.by<{ tone: 'ok' | 'muted'; text: string; retest: boolean } | null>(() => {
@@ -117,14 +121,15 @@
 
   function handleTransportChange(value: string): void {
     transport = value as Transport;
-    if (transport !== 'connector' && !d.port.fromConstant && KNOWN_DEFAULT_PORTS.includes(port)) {
+    if (isFtp(transport) && !d.port.fromConstant && KNOWN_DEFAULT_PORTS.includes(port)) {
       port = DEFAULT_PORTS[transport];
     }
   }
 
   function payload(includeMeta: boolean): ConnectionInput {
-    const data: ConnectionInput = { transport, host, port, username, remotePath };
+    const data: ConnectionInput = { transport, host, port, username, remotePath, cfAccountId, cfWorker };
     if (password) data.password = password;
+    if (cfApiToken) data.cfApiToken = cfApiToken;
     if (includeMeta) {
       data.basePath = basePath;
       data.destinationUrl = destinationUrl;
@@ -138,6 +143,7 @@
     try {
       await api.updateDestination(d.id, payload(true));
       password = '';
+      cfApiToken = '';
       message = __('msgSaved');
       messageOk = true;
       onSaved();
@@ -158,6 +164,12 @@
       const r = await api.testDestination(d.id, payload(false));
       message = r.message;
       messageOk = r.ok;
+      // Cloudflare: offer the workers.dev address as the Destination URL when
+      // none is set yet (sitemap/robots/replacements all build from it).
+      if (r.ok && r.suggestedUrl && !destinationUrl && !d.destinationUrl.fromConstant) {
+        destinationUrl = r.suggestedUrl;
+        message += ' ' + __('cfUrlFilled');
+      }
       if (r.ok) {
         onSaved(); // refresh the Connected indicator from the stored test result
       }
@@ -175,6 +187,15 @@
   // is cleared on click — a lost file means re-pairing, by design.
   let paired = $derived(!!destination.connectorId.value);
   let pairedFile = $derived(`bs-connector-${destination.connectorId.value}.php`);
+
+  // Test needs whatever the chosen method connects with.
+  let canTest = $derived(
+    method === 'ftp'
+      ? !!host
+      : method === 'connector'
+        ? paired
+        : !!cfAccountId && !!cfWorker && (!!cfApiToken || d.cfApiToken.hasValue),
+  );
   let pairing = $state(false);
   let downloadToken = $state('');
 
@@ -241,6 +262,7 @@
   }
 
   let zipHelpOpen = $state(false);
+  let cfHelpOpen = $state(!d.cfApiToken.hasValue);
 </script>
 
 <section class="bs-card bs-stack bs-stack--md">
@@ -292,6 +314,25 @@
             {#if retestMsg}<span class="bs-deploy__result"> — {retestMsg}</span>{/if}
           </p>
         {/if}
+      {:else if method === 'cloudflare'}
+        <p class="bs-lead">{__('cfLead')}</p>
+        <div class="bs-grid">
+          <Input label={__('fldCfAccount')} bind:value={cfAccountId} placeholder="0123456789abcdef0123456789abcdef" autocomplete="off" disabled={d.cfAccountId.fromConstant || busy} />
+          <Input label={__('fldCfWorker')} bind:value={cfWorker} placeholder="my-site" autocomplete="off" disabled={d.cfWorker.fromConstant || busy} />
+        </div>
+        <Input label={__('fldCfToken')} type="password" bind:value={cfApiToken} autocomplete="new-password" placeholder={d.cfApiToken.hasValue ? __('phSavedBlank') : __('fldCfToken')} disabled={d.cfApiToken.fromConstant || busy} />
+        <Collapsible title={__('cfHowTo')} bind:open={cfHelpOpen}>
+          <!-- eslint-disable svelte/no-at-html-tags -- trusted PHP dictionary -->
+          <ol class="bs-steps">
+            <li>{@html __('cfStep1')}</li>
+            <li>{@html __('cfStep2')}</li>
+            <li>{@html __('cfStep3')}</li>
+            <li>{@html __('cfStep4')}</li>
+            <li>{@html __('cfStep5')}</li>
+          </ol>
+          <p class="bs-lead">{@html __('cfLimits')}</p>
+          <!-- eslint-enable svelte/no-at-html-tags -->
+        </Collapsible>
       {:else}
         <p class="bs-lead">{__('connectorLead')}</p>
         <!-- eslint-disable svelte/no-at-html-tags -- trusted PHP dictionary -->
@@ -348,7 +389,7 @@
 
   <div class="bs-row bs-row--between">
     <div class="bs-row bs-row--wrap">
-      <Button variant="secondary" onclick={test} disabled={busy || (method === 'ftp' ? !host : !paired)}>{testing ? __('btnTesting') : __('btnTest')}</Button>
+      <Button variant="secondary" onclick={test} disabled={busy || !canTest}>{testing ? __('btnTesting') : __('btnTest')}</Button>
       <Button variant="primary" onclick={save} disabled={busy}>{saving ? __('btnSaving') : __('btnSave')}</Button>
     </div>
     {#if canRemove}

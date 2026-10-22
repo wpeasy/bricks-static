@@ -5,6 +5,7 @@
     { id: 'features', label: 'Features' },
     { id: 'how', label: 'How it works' },
     { id: 'connector', label: 'Connector' },
+    { id: 'cloudflare', label: 'Cloudflare' },
     { id: 'issues', label: 'Common issues' },
     { id: 'troubleshooting', label: 'Troubleshooting' },
     { id: 'cli', label: 'CLI & reference' },
@@ -21,11 +22,15 @@
     },
     {
       title: 'Multiple destinations',
-      body: 'Push to any number of destinations, each enabled independently and each deploying via FTP / FTPS / SFTP or the Connector. SFTP verifies the server host key (trust-on-first-use). Credentials and pairing secrets are encrypted at rest (AES-256-GCM).',
+      body: 'Push to any number of destinations, each enabled independently and each deploying via FTP / FTPS / SFTP, the Connector or Cloudflare. SFTP verifies the server host key (trust-on-first-use). Credentials and pairing secrets are encrypted at rest (AES-256-GCM).',
     },
     {
       title: 'Connector (HTTPS) — no FTP account',
       body: 'Pair a destination, upload one small PHP file to its web root, and every sync from then on travels to that file over signed HTTPS as a single package. The file holds no password (only a fingerprint of a secret that stays on your site), writes only inside its own folder, and refuses anything a server could execute. Re-pair to rotate, Revoke to disconnect.',
+    },
+    {
+      title: 'Cloudflare — no web host at all',
+      body: 'Publish straight to Cloudflare’s global network as a static Worker, with just an account ID and an API token. Each sync sends Cloudflare the full file list, uploads only what it doesn’t already have, then switches the whole site over in one step — removed pages disappear automatically. Cache headers are published for you; Cloudflare handles compression.',
     },
     {
       title: 'Fast package deploy',
@@ -90,7 +95,7 @@
           <li><strong>Render</strong> each page through a loopback request and rewrite absolute site URLs to root-relative so the copy works on any domain.</li>
           <li><strong>Collect assets</strong> (CSS, JS, images, fonts) referenced by those pages.</li>
           <li><strong>Transform per destination</strong> — apply that destination’s text/media/link replacements and rewrite sitemap/robots URLs to its domain.</li>
-          <li><strong>Deploy</strong> only what changed (delta against the last push) — over FTP/SFTP (as a package with a one-shot helper, or per file) or through the Connector.</li>
+          <li><strong>Deploy</strong> only what changed (delta against the last push) — over FTP/SFTP (as a package with a one-shot helper, or per file) or through the Connector. Cloudflare destinations instead receive the complete file list each time and upload only the files Cloudflare doesn’t already hold, then go live in one step.</li>
         </ol>
         <p class="bs-docs__muted">
           <strong>Check</strong> is a dry run: it renders and catalogues everything (and lists anything that won’t work on a static host) without uploading. <strong>Sync</strong> renders and uploads. <strong>Export ZIP</strong> packages the current render for one destination into a downloadable zip instead of uploading it — for manual deploys, with no effect on that destination’s sync stats. <strong>Reset sync state</strong> forgets every destination’s push record so the next sync re-uploads in full.
@@ -114,7 +119,7 @@
 
         <h3>Requirements</h3>
         <ul class="bs-docs__list">
-          <li>The destination must run <strong>PHP 7.4 or newer</strong> for that folder. Purely static hosts (Netlify, S3, Cloudflare Pages) can’t run the connector — use Export ZIP or their own deploy tooling instead.</li>
+          <li>The destination must run <strong>PHP 7.4 or newer</strong> for that folder. Purely static hosts can’t run the connector — for Cloudflare, use the <a href="#cloudflare">Cloudflare</a> deploy method; for others (Netlify, S3), Export ZIP or their own deploy tooling.</li>
           <li>The Destination URL must be <strong>HTTPS</strong> (the pairing secret travels with every request). <code>*.local</code> / <code>*.test</code> development hosts are exempt.</li>
           <li>If the destination’s PHP has <code>ZipArchive</code>, syncs go up as one package and are extracted there. Without it, files are sent one at a time — same result, slower.</li>
           <li>The folder must be writable by PHP. Test tells you if it isn’t.</li>
@@ -130,7 +135,51 @@
 
         <h3>What the connector can and can’t do</h3>
         <p class="bs-docs__muted">
-          The file is made for one destination and one source site. It contains only a fingerprint of the pairing secret, never the secret itself, so nothing reusable leaks even if a host mistakenly serves it as text. Every request must carry a valid signature, a timestamp within five minutes and a never-before-seen nonce; ten bad requests lock it for ten minutes. It only ever writes inside its own folder, never through symlinks, never anything a server could run (<code>.php</code> and the like, including <code>x.php.txt</code>, <code>.user.ini</code>, <code>web.config</code>), and it refuses <code>.htaccess</code> lines that register handlers. It can read back only the <code>.htaccess</code> it manages. In short: a leaked secret could at most overwrite your static pages — it can’t run code on your server or read anything else. Delete the file at any time to disconnect.
+          The file is made for one destination and one source site. It contains only a fingerprint of the pairing secret, never the secret itself, so nothing reusable leaks even if a host mistakenly serves it as text. Every request must carry a valid signature, a timestamp within five minutes and a never-before-seen nonce; after ten bad requests it refuses further bad ones for ten minutes (correctly signed requests from your site still get through). It only works over HTTPS — your site won’t send it anything if the Destination URL is changed to <code>http://</code>. It only ever writes inside its own folder, never through symlinks, never anything a server could run (<code>.php</code> and the like, including <code>x.php.txt</code>, <code>.user.ini</code>, <code>web.config</code>), and it accepts an <code>.htaccess</code> (in any folder) only if every line is a caching, rewrite, redirect or index/error-page rule — or was already in that file on your server. It can read back only the <code>.htaccess</code> it manages. In short: a leaked secret could at most overwrite your static pages — it can’t run code on your server or read anything else. Delete the file at any time to disconnect.
+        </p>
+      </section>
+
+      <!-- Cloudflare -->
+      <section id="cloudflare" class="bs-docs__section bs-stack bs-stack--sm">
+        <h2>Deploying to Cloudflare</h2>
+        <p class="bs-docs__muted">
+          The Cloudflare deploy method publishes your static site directly to Cloudflare’s global network — no web host, no PHP and no FTP account. Under the hood it is a <em>Cloudflare Worker with static assets</em> (Cloudflare’s current product for static sites, and the successor to Cloudflare Pages for new projects); the Worker runs none of your code, it simply serves the files. Choose <strong>Cloudflare</strong> under <em>Deploy via</em>.
+        </p>
+
+        <h3>Set-up</h3>
+        <ol class="bs-docs__steps">
+          <li>In the Cloudflare dashboard open <strong>Workers &amp; Pages</strong> and copy your <strong>Account ID</strong> (on the right of the overview page).</li>
+          <li>Create an API token: <strong>My Profile → API Tokens → Create Token → Custom token</strong>, with the single permission <strong>Account → Workers Scripts → Edit</strong>, limited to that account. Copy the token — Cloudflare shows it only once.</li>
+          <li>On the destination, choose <strong>Cloudflare</strong>, then enter the Account ID, the token, and a <strong>Worker name</strong> for this site (lowercase letters, numbers and dashes, e.g. <code>my-site</code>). The Worker doesn’t need to exist; the first sync creates it.</li>
+          <li>Press <strong>Test</strong>. A good result reads “Cloudflare token accepted — Worker “my-site” will be served at https://my-site.&lt;you&gt;.workers.dev”. If the Destination URL is empty it is filled with that address. Press <strong>Save</strong>.</li>
+          <li><strong>Check</strong> and <strong>Sync</strong> as usual. Single-page sync works too.</li>
+        </ol>
+
+        <h3>Using your own domain</h3>
+        <p class="bs-docs__muted">
+          After the first sync, open the Worker in Cloudflare (<strong>Worker → Settings → Domains &amp; Routes → Add → Custom domain</strong>) and attach your domain — it must be on Cloudflare DNS. Then set the destination’s <strong>Destination URL</strong> to that domain and Sync again, so the sitemap, robots.txt and replacements use it. While the Destination URL is a custom domain, the plugin leaves the <code>workers.dev</code> address switched off so there is no duplicate public copy.
+        </p>
+
+        <h3>How a Cloudflare sync differs</h3>
+        <ul class="bs-docs__list">
+          <li><strong>Whole-site snapshots.</strong> Every sync sends Cloudflare the full list of files with a fingerprint of each; Cloudflare replies with the ones it doesn’t have, only those are uploaded, and the new version replaces the old one in a single step. Visitors never see a half-updated site, so there is no holding page.</li>
+          <li><strong>No pruning needed.</strong> A page you remove from the export is simply absent from the next snapshot and stops being served — whether or not “prune” is on.</li>
+          <li><strong>No <code>.htaccess</code> or <code>.gz</code> files.</strong> Cloudflare compresses (gzip/brotli) itself. The cache policy (assets cached for a year, HTML always revalidated) is published as Cloudflare <code>_headers</code> rules with each deploy; <strong>Check server</strong> confirms it is in effect.</li>
+          <li><strong>Clean URLs.</strong> <code>/about/</code> serves <code>about/index.html</code>, and the export’s <code>404.html</code> (if any) is used for missing pages.</li>
+          <li><strong>History.</strong> Every sync, including a single-page sync, creates a new version of the Worker, visible (and restorable) in Cloudflare under <em>Deployments</em>.</li>
+        </ul>
+
+        <h3>Limits</h3>
+        <ul class="bs-docs__list">
+          <li><strong>25 MiB per file.</strong> Larger files (usually videos) are left out of the deploy and listed in the result. Host them elsewhere (Cloudflare R2, YouTube, Vimeo) and point to them with a Videos replacement.</li>
+          <li><strong>20,000 files</strong> per site on Cloudflare’s Free plan, 100,000 on paid plans.</li>
+          <li><strong>Nothing runs server-side</strong> — forms that post back to WordPress, search and comments don’t work on the static copy (true of every static host).</li>
+          <li>Cloudflare rate-limits its API; the plugin waits and retries automatically, but a first sync of a very large site can take a few minutes.</li>
+        </ul>
+
+        <h3>Security</h3>
+        <p class="bs-docs__muted">
+          The API token is encrypted at rest like FTP passwords and is never shown again or sent to the browser. Requests go only to <code>api.cloudflare.com</code> over verified HTTPS. Give the token only the <em>Workers Scripts → Edit</em> permission on one account — then a leaked token could change Workers on that account, but nothing else (DNS, billing, other accounts). Roll the token in Cloudflare at any time and paste the new one into the destination.
         </p>
       </section>
 
@@ -199,6 +248,11 @@
         <h2>Troubleshooting</h2>
 
         <details class="bs-docs__faq">
+          <summary>“The connector file on the destination is outdated”</summary>
+          <p>The connector was updated for security (version 2): its <code>.htaccess</code> checks are stricter and a lockout can no longer be held by strangers. Files paired before the update answer every request with this message. Press <strong>Re-pair (new file)</strong> on the destination and upload the new file in place of the old one.</p>
+        </details>
+
+        <details class="bs-docs__faq">
           <summary>A sync stalls or never progresses (often on Local)</summary>
           <p>A browser-driven sync holds one PHP worker while its loopback page render needs another. Hosts with very few workers — Local on Windows runs just two — can deadlock. The plugin prefers <strong>WP-CLI</strong> (a separate process) and tries to auto-start it; if it can’t, a banner shows the exact command to run in a terminal. Run that command and the dashboard picks the run back up automatically.</p>
         </details>
@@ -238,11 +292,15 @@ wp bricks-static connector status                                  # pairing sta
 wp bricks-static connector pair ID --dest-url=https://… --to=DIR   # pair + write the connector file
 wp bricks-static connector test ID                                 # ping the connector
 wp bricks-static connector rebuild ID                              # rebuild the push record from it
-wp bricks-static connector revoke ID                               # disconnect</pre>
+wp bricks-static connector revoke ID                               # disconnect
+
+wp bricks-static cloudflare status                                 # Cloudflare destinations
+CLOUDFLARE_API_TOKEN=… wp bricks-static cloudflare set ID --account=… --worker=my-site --token-from-env
+wp bricks-static cloudflare test ID                                # check the token + account</pre>
         <ul class="bs-docs__list">
           <li><strong>Cache:</strong> the staging copy lives under <code>wp-content/cache/bricks-static</code> (or uploads if that isn’t writable).</li>
           <li><strong>Server config:</strong> the managed <code>.htaccess</code> is uploaded automatically (Apache/LiteSpeed). nginx has no per-directory config, so it serves the static site with its defaults; the <em>Server config</em> tab has an optional tuning snippet to paste, plus <strong>Check server</strong>, which probes the destination and reports the web server and whether the cache rules are in effect.</li>
-          <li><strong>Filters:</strong> behaviour is adjustable via <code>bs_*</code> hooks (e.g. <code>bs_generate_sitemaps</code>, <code>bs_include_favicon</code>, <code>bs_seed_from_sitemap</code>, <code>bs_excluded_post_types</code>).</li>
+          <li><strong>Filters:</strong> behaviour is adjustable via <code>bs_*</code> hooks (e.g. <code>bs_generate_sitemaps</code>, <code>bs_include_favicon</code>, <code>bs_seed_from_sitemap</code>, <code>bs_excluded_post_types</code>; for Cloudflare, <code>bs_cloudflare_headers</code> and <code>bs_cloudflare_redirects</code>).</li>
         </ul>
       </section>
     </div>

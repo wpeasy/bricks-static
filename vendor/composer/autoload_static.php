@@ -11,30 +11,30 @@ class ComposerStaticInit7bbbde3cd5c3799aa3dd0db369bbcf15
     );
 
     public static $prefixLengthsPsr4 = array (
-        'p' => 
+        'p' =>
         array (
             'phpseclib3\\' => 11,
         ),
-        'W' => 
+        'W' =>
         array (
             'WPEasy\\BricksStatic\\' => 20,
         ),
-        'P' => 
+        'P' =>
         array (
             'ParagonIE\\ConstantTime\\' => 23,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'phpseclib3\\' => 
+        'phpseclib3\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib',
         ),
-        'WPEasy\\BricksStatic\\' => 
+        'WPEasy\\BricksStatic\\' =>
         array (
             0 => __DIR__ . '/../..' . '/src',
         ),
-        'ParagonIE\\ConstantTime\\' => 
+        'ParagonIE\\ConstantTime\\' =>
         array (
             0 => __DIR__ . '/..' . '/paragonie/constant_time_encoding/src',
         ),
@@ -53,8 +53,90 @@ class ComposerStaticInit7bbbde3cd5c3799aa3dd0db369bbcf15
         'ParagonIE\\ConstantTime\\Encoding' => __DIR__ . '/..' . '/paragonie/constant_time_encoding/src/Encoding.php',
         'ParagonIE\\ConstantTime\\Hex' => __DIR__ . '/..' . '/paragonie/constant_time_encoding/src/Hex.php',
         'ParagonIE\\ConstantTime\\RFC4648' => __DIR__ . '/..' . '/paragonie/constant_time_encoding/src/RFC4648.php',
+        'WPEasy\\BricksStatic\\Abilities\\AbilityRegistry' => __DIR__ . '/../..' . '/src/Abilities/AbilityRegistry.php',
+        'WPEasy\\BricksStatic\\Admin\\Editor' => __DIR__ . '/../..' . '/src/Admin/Editor.php',
         'WPEasy\\BricksStatic\\Admin\\Menu' => __DIR__ . '/../..' . '/src/Admin/Menu.php',
+        'WPEasy\\BricksStatic\\CLI\\Background' => __DIR__ . '/../..' . '/src/CLI/Background.php',
+        'WPEasy\\BricksStatic\\CLI\\SyncCommand' => __DIR__ . '/../..' . '/src/CLI/SyncCommand.php',
+        'WPEasy\\BricksStatic\\Deploy\\CloudflareAuthException' => __DIR__ . '/../..' . '/src/Deploy/CloudflareAuthException.php',
+        'WPEasy\\BricksStatic\\Deploy\\CloudflareClient' => __DIR__ . '/../..' . '/src/Deploy/CloudflareClient.php',
+        'WPEasy\\BricksStatic\\Deploy\\CloudflareHeaders' => __DIR__ . '/../..' . '/src/Deploy/CloudflareHeaders.php',
+        'WPEasy\\BricksStatic\\Deploy\\CloudflareNotFoundException' => __DIR__ . '/../..' . '/src/Deploy/CloudflareNotFoundException.php',
+        'WPEasy\\BricksStatic\\Deploy\\ConnectorAuthException' => __DIR__ . '/../..' . '/src/Deploy/ConnectorAuthException.php',
+        'WPEasy\\BricksStatic\\Deploy\\ConnectorClient' => __DIR__ . '/../..' . '/src/Deploy/ConnectorClient.php',
+        'WPEasy\\BricksStatic\\Deploy\\ConnectorHostException' => __DIR__ . '/../..' . '/src/Deploy/ConnectorHostException.php',
+        'WPEasy\\BricksStatic\\Deploy\\ConnectorScript' => __DIR__ . '/../..' . '/src/Deploy/ConnectorScript.php',
+        'WPEasy\\BricksStatic\\Deploy\\ConnectorVersionException' => __DIR__ . '/../..' . '/src/Deploy/ConnectorVersionException.php',
+        'WPEasy\\BricksStatic\\Deploy\\PackageDeployer' => __DIR__ . '/../..' . '/src/Deploy/PackageDeployer.php',
+        'WPEasy\\BricksStatic\\Deploy\\UnzipScript' => __DIR__ . '/../..' . '/src/Deploy/UnzipScript.php',
+        'WPEasy\\BricksStatic\\Discovery\\UrlCollector' => __DIR__ . '/../..' . '/src/Discovery/UrlCollector.php',
+        'WPEasy\\BricksStatic\\Export\\ExportDownload' => __DIR__ . '/../..' . '/src/Export/ExportDownload.php',
+        'WPEasy\\BricksStatic\\Export\\ExportJob' => __DIR__ . '/../..' . '/src/Export/ExportJob.php',
+        'WPEasy\\BricksStatic\\Export\\ExportRunner' => __DIR__ . '/../..' . '/src/Export/ExportRunner.php',
+        'WPEasy\\BricksStatic\\Frontend\\Fab' => __DIR__ . '/../..' . '/src/Frontend/Fab.php',
+        'WPEasy\\BricksStatic\\Media\\LinkCollector' => __DIR__ . '/../..' . '/src/Media/LinkCollector.php',
+        'WPEasy\\BricksStatic\\Media\\MediaCollector' => __DIR__ . '/../..' . '/src/Media/MediaCollector.php',
+        'WPEasy\\BricksStatic\\Media\\VideoCollector' => __DIR__ . '/../..' . '/src/Media/VideoCollector.php',
         'WPEasy\\BricksStatic\\Plugin' => __DIR__ . '/../..' . '/src/Plugin.php',
+        'WPEasy\\BricksStatic\\REST\\ConnectionController' => __DIR__ . '/../..' . '/src/REST/ConnectionController.php',
+        'WPEasy\\BricksStatic\\REST\\DestinationsController' => __DIR__ . '/../..' . '/src/REST/DestinationsController.php',
+        'WPEasy\\BricksStatic\\REST\\EditorController' => __DIR__ . '/../..' . '/src/REST/EditorController.php',
+        'WPEasy\\BricksStatic\\REST\\ExportController' => __DIR__ . '/../..' . '/src/REST/ExportController.php',
+        'WPEasy\\BricksStatic\\REST\\LinksController' => __DIR__ . '/../..' . '/src/REST/LinksController.php',
+        'WPEasy\\BricksStatic\\REST\\MediaController' => __DIR__ . '/../..' . '/src/REST/MediaController.php',
+        'WPEasy\\BricksStatic\\REST\\SitemapController' => __DIR__ . '/../..' . '/src/REST/SitemapController.php',
+        'WPEasy\\BricksStatic\\REST\\StatusController' => __DIR__ . '/../..' . '/src/REST/StatusController.php',
+        'WPEasy\\BricksStatic\\REST\\SyncController' => __DIR__ . '/../..' . '/src/REST/SyncController.php',
+        'WPEasy\\BricksStatic\\REST\\VideosController' => __DIR__ . '/../..' . '/src/REST/VideosController.php',
+        'WPEasy\\BricksStatic\\Render\\AssetExtractor' => __DIR__ . '/../..' . '/src/Render/AssetExtractor.php',
+        'WPEasy\\BricksStatic\\Render\\CompatibilityScanner' => __DIR__ . '/../..' . '/src/Render/CompatibilityScanner.php',
+        'WPEasy\\BricksStatic\\Render\\FaviconGenerator' => __DIR__ . '/../..' . '/src/Render/FaviconGenerator.php',
+        'WPEasy\\BricksStatic\\Render\\HeadCleaner' => __DIR__ . '/../..' . '/src/Render/HeadCleaner.php',
+        'WPEasy\\BricksStatic\\Render\\LinkDeployReplacer' => __DIR__ . '/../..' . '/src/Render/LinkDeployReplacer.php',
+        'WPEasy\\BricksStatic\\Render\\LinkReplacer' => __DIR__ . '/../..' . '/src/Render/LinkReplacer.php',
+        'WPEasy\\BricksStatic\\Render\\MediaDeployReplacer' => __DIR__ . '/../..' . '/src/Render/MediaDeployReplacer.php',
+        'WPEasy\\BricksStatic\\Render\\MediaReplacer' => __DIR__ . '/../..' . '/src/Render/MediaReplacer.php',
+        'WPEasy\\BricksStatic\\Render\\PageRenderer' => __DIR__ . '/../..' . '/src/Render/PageRenderer.php',
+        'WPEasy\\BricksStatic\\Render\\StableHash' => __DIR__ . '/../..' . '/src/Render/StableHash.php',
+        'WPEasy\\BricksStatic\\Render\\TextDeployReplacer' => __DIR__ . '/../..' . '/src/Render/TextDeployReplacer.php',
+        'WPEasy\\BricksStatic\\Render\\TextReplacer' => __DIR__ . '/../..' . '/src/Render/TextReplacer.php',
+        'WPEasy\\BricksStatic\\Render\\UrlRewriter' => __DIR__ . '/../..' . '/src/Render/UrlRewriter.php',
+        'WPEasy\\BricksStatic\\Render\\VideoDeployReplacer' => __DIR__ . '/../..' . '/src/Render/VideoDeployReplacer.php',
+        'WPEasy\\BricksStatic\\Render\\VideoReplacer' => __DIR__ . '/../..' . '/src/Render/VideoReplacer.php',
+        'WPEasy\\BricksStatic\\Settings\\Destination' => __DIR__ . '/../..' . '/src/Settings/Destination.php',
+        'WPEasy\\BricksStatic\\Settings\\Destinations' => __DIR__ . '/../..' . '/src/Settings/Destinations.php',
+        'WPEasy\\BricksStatic\\Settings\\Schema' => __DIR__ . '/../..' . '/src/Settings/Schema.php',
+        'WPEasy\\BricksStatic\\Settings\\Settings' => __DIR__ . '/../..' . '/src/Settings/Settings.php',
+        'WPEasy\\BricksStatic\\Sitemap\\SitemapGenerator' => __DIR__ . '/../..' . '/src/Sitemap/SitemapGenerator.php',
+        'WPEasy\\BricksStatic\\Sitemap\\SitemapParser' => __DIR__ . '/../..' . '/src/Sitemap/SitemapParser.php',
+        'WPEasy\\BricksStatic\\Support\\Assets' => __DIR__ . '/../..' . '/src/Support/Assets.php',
+        'WPEasy\\BricksStatic\\Support\\Crypto' => __DIR__ . '/../..' . '/src/Support/Crypto.php',
+        'WPEasy\\BricksStatic\\Support\\Environment' => __DIR__ . '/../..' . '/src/Support/Environment.php',
+        'WPEasy\\BricksStatic\\Support\\I18n' => __DIR__ . '/../..' . '/src/Support/I18n.php',
+        'WPEasy\\BricksStatic\\Support\\Paths' => __DIR__ . '/../..' . '/src/Support/Paths.php',
+        'WPEasy\\BricksStatic\\Support\\Url' => __DIR__ . '/../..' . '/src/Support/Url.php',
+        'WPEasy\\BricksStatic\\Support\\UrlSafety' => __DIR__ . '/../..' . '/src/Support/UrlSafety.php',
+        'WPEasy\\BricksStatic\\Sync\\ChangeTracker' => __DIR__ . '/../..' . '/src/Sync/ChangeTracker.php',
+        'WPEasy\\BricksStatic\\Sync\\Compressor' => __DIR__ . '/../..' . '/src/Sync/Compressor.php',
+        'WPEasy\\BricksStatic\\Sync\\DeployPool' => __DIR__ . '/../..' . '/src/Sync/DeployPool.php',
+        'WPEasy\\BricksStatic\\Sync\\DeployReplacer' => __DIR__ . '/../..' . '/src/Sync/DeployReplacer.php',
+        'WPEasy\\BricksStatic\\Sync\\HtaccessBuilder' => __DIR__ . '/../..' . '/src/Sync/HtaccessBuilder.php',
+        'WPEasy\\BricksStatic\\Sync\\Job' => __DIR__ . '/../..' . '/src/Sync/Job.php',
+        'WPEasy\\BricksStatic\\Sync\\LinkGraph' => __DIR__ . '/../..' . '/src/Sync/LinkGraph.php',
+        'WPEasy\\BricksStatic\\Sync\\Manifest' => __DIR__ . '/../..' . '/src/Sync/Manifest.php',
+        'WPEasy\\BricksStatic\\Sync\\MethodResolver' => __DIR__ . '/../..' . '/src/Sync/MethodResolver.php',
+        'WPEasy\\BricksStatic\\Sync\\Pipeline' => __DIR__ . '/../..' . '/src/Sync/Pipeline.php',
+        'WPEasy\\BricksStatic\\Sync\\Runner' => __DIR__ . '/../..' . '/src/Sync/Runner.php',
+        'WPEasy\\BricksStatic\\Sync\\ServerProbe' => __DIR__ . '/../..' . '/src/Sync/ServerProbe.php',
+        'WPEasy\\BricksStatic\\System\\WpCli' => __DIR__ . '/../..' . '/src/System/WpCli.php',
+        'WPEasy\\BricksStatic\\Transport\\CloudflareTransport' => __DIR__ . '/../..' . '/src/Transport/CloudflareTransport.php',
+        'WPEasy\\BricksStatic\\Transport\\ConnectorTransport' => __DIR__ . '/../..' . '/src/Transport/ConnectorTransport.php',
+        'WPEasy\\BricksStatic\\Transport\\FtpTransport' => __DIR__ . '/../..' . '/src/Transport/FtpTransport.php',
+        'WPEasy\\BricksStatic\\Transport\\PackageCapableTransport' => __DIR__ . '/../..' . '/src/Transport/PackageCapableTransport.php',
+        'WPEasy\\BricksStatic\\Transport\\SftpTransport' => __DIR__ . '/../..' . '/src/Transport/SftpTransport.php',
+        'WPEasy\\BricksStatic\\Transport\\SnapshotCapableTransport' => __DIR__ . '/../..' . '/src/Transport/SnapshotCapableTransport.php',
+        'WPEasy\\BricksStatic\\Transport\\TransportFactory' => __DIR__ . '/../..' . '/src/Transport/TransportFactory.php',
+        'WPEasy\\BricksStatic\\Transport\\TransportInterface' => __DIR__ . '/../..' . '/src/Transport/TransportInterface.php',
         'phpseclib3\\Common\\Functions\\Strings' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Common/Functions/Strings.php',
         'phpseclib3\\Crypt\\AES' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/AES.php',
         'phpseclib3\\Crypt\\Blowfish' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Blowfish.php',

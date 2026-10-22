@@ -315,6 +315,20 @@ final class I18n {
             /* translators: %s: connector filename */
             'connectorPaired'  => __('Paired — expects %s in the destination folder.', 'bricks-static'),
             'connectorConst'   => __('Pairing is set by wp-config constants.', 'bricks-static'),
+            // Cloudflare (Workers static assets) — docs/CLOUDFLARE_PLAN.md.
+            'optCloudflare'    => __('Cloudflare', 'bricks-static'),
+            'cfLead'           => __('Publishes the site to Cloudflare’s global network as a static Worker — no web host, PHP or FTP account needed. Each sync uploads only the files Cloudflare doesn’t already have, then switches the whole site over at once.', 'bricks-static'),
+            'fldCfAccount'     => __('Account ID', 'bricks-static'),
+            'fldCfWorker'      => __('Worker name', 'bricks-static'),
+            'fldCfToken'       => __('API token', 'bricks-static'),
+            'cfHowTo'          => __('How to set it up', 'bricks-static'),
+            'cfStep1'          => __('In the Cloudflare dashboard, open <strong>Workers &amp; Pages</strong> and copy your <strong>Account ID</strong> (shown on the right of the overview).', 'bricks-static'),
+            'cfStep2'          => __('Create an API token (<strong>My Profile → API Tokens → Create Token → Custom token</strong>) with the permission <strong>Account → Workers Scripts → Edit</strong>, limited to that account.', 'bricks-static'),
+            'cfStep3'          => __('Choose a <strong>Worker name</strong> for this site (lowercase letters, numbers and dashes, e.g. <code>my-site</code>). It doesn’t need to exist — the first sync creates it.', 'bricks-static'),
+            'cfStep4'          => __('Press <strong>Test</strong>. If the Destination URL is empty it is filled with the Worker’s <code>workers.dev</code> address — or enter your own domain once it is attached to the Worker (<strong>Worker → Settings → Domains &amp; Routes</strong>). <strong>Save</strong>, then Check / Sync as usual.', 'bricks-static'),
+            'cfStep5'          => __('Cache headers are published automatically (Cloudflare’s <code>_headers</code>); Cloudflare compresses files itself, so no <code>.htaccess</code> or <code>.gz</code> files are used.', 'bricks-static'),
+            'cfLimits'         => __('<strong>Limits:</strong> 25 MiB per file (larger files are left out and reported) and 20,000 files on the Free plan (100,000 on paid plans). Forms that post back to WordPress don’t work on a static copy.', 'bricks-static'),
+            'cfUrlFilled'      => __('The Destination URL has been set to this address — Save to keep it.', 'bricks-static'),
             'btnRepair'        => __('Re-pair (new file)', 'bricks-static'),
             'btnPairing'       => __('Pairing…', 'bricks-static'),
             'btnRevoke'        => __('Revoke', 'bricks-static'),
@@ -637,6 +651,7 @@ final class I18n {
             'checkedAt'        => __('Checked %s', 'bricks-static'),
             'serverUnknown'    => __('unknown', 'bricks-static'),
             'serverProxied'    => __('CDN / proxy', 'bricks-static'),
+            'cfHeadersNote'    => __('Sent automatically with every Cloudflare deploy — nothing to paste.', 'bricks-static'),
         ];
     }
 

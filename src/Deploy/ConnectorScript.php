@@ -30,10 +30,13 @@ final class ConnectorScript {
 
     /**
      * Protocol version. Bump the number when a request/response shape changes
-     * incompatibly; the receiver rejects a mismatched client with 409 so the
-     * dashboard can say "re-download the connector" precisely.
+     * incompatibly — or when the receiver's security checks change, so every
+     * deployed copy is replaced — the receiver rejects a mismatched client with
+     * 409 so the dashboard can say "re-download the connector" precisely.
+     *
+     * 2: .htaccess allow-list at every depth; junk requests can't hold a lockout.
      */
-    public const VERSION = 1;
+    public const VERSION = 2;
 
     /**
      * Basename of the receiver for a connector id.

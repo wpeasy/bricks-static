@@ -41,6 +41,8 @@ final class TransportFactory {
         }
 
         switch ($config['transport'] ?? 'sftp') {
+            case 'cloudflare':
+                return new CloudflareTransport($config);
             case 'connector':
                 return new ConnectorTransport($config);
             case 'ftps':
@@ -56,14 +58,38 @@ final class TransportFactory {
     /**
      * Which transports are usable on this server.
      *
-     * @return array{sftp:bool,ftps:bool,ftp:bool,connector:bool}
+     * @return array{sftp:bool,ftps:bool,ftp:bool,connector:bool,cloudflare:bool}
      */
     public static function capabilities(): array {
         return [
-            'sftp'      => SftpTransport::is_available(),
-            'ftps'      => FtpTransport::is_secure_available(),
-            'ftp'       => FtpTransport::is_available(),
-            'connector' => ConnectorTransport::is_available(),
+            'sftp'       => SftpTransport::is_available(),
+            'ftps'       => FtpTransport::is_secure_available(),
+            'ftp'        => FtpTransport::is_available(),
+            'connector'  => ConnectorTransport::is_available(),
+            'cloudflare' => CloudflareTransport::is_available(),
         ];
+    }
+
+    /**
+     * Whether a transport id connects to an FTP/SFTP host (and so needs the
+     * host/port/username/password fields). The Connector and Cloudflare are
+     * reached over HTTPS without one.
+     *
+     * @param string $transport Transport id.
+     */
+    public static function needs_host(string $transport): bool {
+        return in_array($transport, ['sftp', 'ftps', 'ftp'], true);
+    }
+
+    /**
+     * Whether a transport id publishes whole snapshots (a
+     * {@see SnapshotCapableTransport}) instead of uploading a delta to a
+     * remote filesystem. Decided from the id alone so callers don't have to
+     * build — or connect — a transport to ask.
+     *
+     * @param string $transport Transport id.
+     */
+    public static function is_snapshot(string $transport): bool {
+        return $transport === 'cloudflare';
     }
 }

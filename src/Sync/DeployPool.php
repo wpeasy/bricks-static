@@ -332,9 +332,10 @@ final class DeployPool {
                 'status'    => $status,
                 'uploaded'  => $tdata !== null ? (int) ($tdata['counts']['uploaded'] ?? 0) : 0,
                 'total'     => $tdata !== null ? (int) ($tdata['totals']['uploads'] ?? 0) : 0,
-                // Package deploy is a single server-side extract — one atomic step,
-                // no per-file %; the UI shows an indeterminate bar for it.
-                'packaging' => $phase === 'package',
+                // Package deploy (one server-side extract) and a Cloudflare
+                // snapshot publish are single atomic steps with no per-file %;
+                // the UI shows an indeterminate bar for them.
+                'packaging' => $phase === 'package' || $phase === 'snapshot',
                 'message'   => $tdata !== null ? (string) ($tdata['message'] ?? '') : '',
             ];
         }

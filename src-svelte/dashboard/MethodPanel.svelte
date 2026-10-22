@@ -17,7 +17,7 @@
     if (!method) {
       return '…';
     }
-    const labels: Record<string, string> = { sftp: 'SFTP', ftps: 'FTPS', ftp: 'FTP', connector: __('optConnector') };
+    const labels: Record<string, string> = { sftp: 'SFTP', ftps: 'FTPS', ftp: 'FTP', connector: __('optConnector'), cloudflare: __('optCloudflare') };
     return labels[method.transport] ?? method.transport;
   });
 
@@ -30,6 +30,7 @@
     const parts: string[] = [];
     if (method.serverTarget.htaccess) parts.push('.htaccess');
     if (method.serverTarget.nginxSnippet) parts.push('nginx snippet');
+    if (method.serverTarget.cloudflareHeaders) parts.push('Cloudflare _headers');
     return parts.join(' + ');
   });
 </script>

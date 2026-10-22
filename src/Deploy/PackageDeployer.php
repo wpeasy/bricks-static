@@ -102,6 +102,12 @@ final class PackageDeployer {
      * @param \WPEasy\BricksStatic\Settings\Destination|null  $dest    Destination.
      */
     public static function would_package(string $dest_id, $dest): bool {
+        // A snapshot destination (Cloudflare) has no filesystem to extract a
+        // zip into — it publishes through its own phase.
+        if ($dest !== null && $dest->is_snapshot()) {
+            return false;
+        }
+
         return self::base_url($dest) !== ''
             && !get_option(self::OFF_PREFIX . $dest_id);
     }

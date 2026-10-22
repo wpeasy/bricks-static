@@ -109,10 +109,13 @@ long timeout (`bs_package_timeout`, existing filter).
 - **Write deny-list by extension** (case-insensitive, checked on the *final*
   extension and on any double extension like `x.php.txt` → reject if any
   segment is denied): `php php3 php4 php5 php7 php8 phtml phar phps pht cgi pl
-  py sh htaccess-with-handlers` — concretely: refuse any `.htaccess` write that
-  contains `AddHandler`, `AddType`, `SetHandler`, `php_value`, `php_flag`, or
-  `Action` (a stolen secret must not be able to turn the jail into code exec).
-  Static output never contains these, so nothing legitimate is blocked.
+  py sh`. **`.htaccess` (protocol v2, superseding the original deny-list):**
+  allow-listed at every depth and in any case — only caching, rewrite,
+  redirect and index/error-page directives, no rewrite handler/type flags,
+  `Options` only switching features off; lines already in the file being
+  replaced may be written back; an `.htaccess` arriving without its content is
+  refused. See SECURITY_PATTERNS.md §3b for the authoritative rule (a stolen
+  secret must not be able to turn the jail into code exec).
 - Never touch its own file, the nonce file, or `*.part` files via `put`/`delete`.
 - `delete` and `extract` deletes only remove **files**; directories are pruned
   only when empty and only under `$base`.

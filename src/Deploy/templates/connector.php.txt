@@ -87,16 +87,22 @@ $state = bs_state_load($STATE_FILE);
 $state['nonces'] = array_filter($state['nonces'], static fn(int $t): bool => $t > $now - $SKEW_SECONDS * 2);
 $state['fails']  = array_values(array_filter($state['fails'], static fn(int $t): bool => $t > $now - $LOCK_WINDOW));
 
-$fail = static function () use (&$state, $STATE_FILE, $now): void {
+// Lockout: after LOCK_FAILURES failed requests in LOCK_WINDOW, every request
+// that fails auth gets 429 instead of 403. The lock is checked only on FAILURE
+// — a request that passes every check below (valid key + HMAC + fresh nonce)
+// still gets through and clears the counter — so anyone who merely knows this
+// file's URL can't keep the paired site locked out with junk requests.
+$locked = count($state['fails']) >= $LOCK_FAILURES;
+
+$fail = static function () use (&$state, $STATE_FILE, $now, $locked): void {
+    if ($locked) {
+        bs_out(429, ['ok' => false, 'error' => 'locked']);
+    }
     $state['fails'][] = $now;
     bs_state_save($STATE_FILE, $state);
     // One generic answer for every auth failure — probes learn nothing.
     bs_out(403, ['ok' => false, 'error' => 'forbidden']);
 };
-
-if (count($state['fails']) >= $LOCK_FAILURES) {
-    bs_out(429, ['ok' => false, 'error' => 'locked']);
-}
 
 $req_id    = $hdr('X-BS-Id');
 $req_ts    = $hdr('X-BS-Timestamp');
@@ -139,8 +145,10 @@ if ($req_sig === '' || !hash_equals($expected, $req_sig)) {
     $fail();
 }
 
-// Authenticated. Burn the nonce before doing anything else.
+// Authenticated. Burn the nonce before doing anything else, and clear any
+// lockout that junk requests built up.
 $state['nonces'][$req_nonce] = $now;
+$state['fails']              = [];
 if (!bs_state_save($STATE_FILE, $state)) {
     // No replay protection possible → refuse rather than silently degrade.
     bs_out(500, ['ok' => false, 'error' => 'state unwritable']);
@@ -173,9 +181,17 @@ function bs_safe(string $rel): ?string {
  * Whether a file may be WRITTEN at this relative path. Refuses anything a web
  * server could execute (so a stolen secret can deface, never run code), our
  * own connector files, and server-config files that can register handlers.
+ *
+ * Every `.htaccess` (at ANY depth, any letter case) must come with its content
+ * so it can be checked — without it, the write is refused (fail closed).
  */
-function bs_write_allowed(string $rel, ?string $content_probe): bool {
+function bs_write_allowed(string $base, string $rel, ?string $content_probe): bool {
     $name = strtolower(basename($rel));
+    // Windows silently strips a trailing dot/space ("x.php." → "x.php"), which
+    // would slip past the extension check below.
+    if ($name === '' || preg_match('/[. ]$/', $name)) {
+        return false;
+    }
     if (strpos($name, 'bs-connector-') === 0) {
         return false;
     }
@@ -190,10 +206,83 @@ function bs_write_allowed(string $rel, ?string $content_probe): bool {
             return false; // catches x.php and x.php.txt alike
         }
     }
-    if ($name === '.htaccess' && $content_probe !== null) {
-        // Cache/rewrite rules are fine; anything that maps a type to a handler is not.
-        if (preg_match('/^\s*(AddHandler|AddType|SetHandler|Action|php_value|php_flag|php_admin_value|php_admin_flag|RemoveHandler|CGIPassAuth)\b/im', $content_probe)) {
+    if ($name === '.htaccess') {
+        if ($content_probe === null) {
             return false;
+        }
+        $current = bs_existing($base, $rel);
+        return bs_htaccess_allowed($content_probe, $current !== null ? (string) @file_get_contents($current) : '');
+    }
+    return true;
+}
+
+/**
+ * Split .htaccess content into logical directive lines: backslash line
+ * continuations joined (Apache does the same), trimmed, blanks and comments
+ * dropped.
+ *
+ * @return array<int,string>
+ */
+function bs_htaccess_lines(string $content): array {
+    $content = str_replace(["\r\n", "\r"], "\n", $content);
+    $content = (string) preg_replace('/\\\\\n/', ' ', $content);
+    $out = [];
+    foreach (explode("\n", $content) as $line) {
+        $line = trim($line);
+        if ($line !== '' && $line[0] !== '#') {
+            $out[] = $line;
+        }
+    }
+    return $out;
+}
+
+/**
+ * ALLOW-LIST check for .htaccess content. Static output needs only caching,
+ * rewrites, redirects and index/error pages, so only those directives are
+ * accepted — anything else (handlers, types, filters, PHP settings, CGI/SSI
+ * options, …) is refused, rather than trying to enumerate every dangerous
+ * directive. Arguments that can change how a file is handled are refused too:
+ * RewriteRule's handler/type flags and any Options other than switching
+ * features OFF (or symlink following).
+ *
+ * A line that is NOT allowed is still accepted if exactly that line is already
+ * in the file being replaced: the plugin merges its block into the host's
+ * existing .htaccess, and must be able to write the host's own rules back. A
+ * request can therefore never ADD a disallowed line, only keep one the server
+ * owner put there.
+ */
+function bs_htaccess_allowed(string $content, string $existing): bool {
+    static $allowed = [
+        '<ifmodule', '</ifmodule>', '<files', '</files>', '<filesmatch', '</filesmatch>',
+        'directoryindex', 'errordocument', 'header',
+        'expiresactive', 'expiresbytype', 'expiresdefault',
+        'rewriteengine', 'rewritebase', 'rewritecond', 'rewriterule',
+        'redirect', 'redirectmatch', 'redirectpermanent', 'redirecttemp',
+        'options',
+    ];
+    $keep = array_flip(bs_htaccess_lines($existing));
+    foreach (bs_htaccess_lines($content) as $line) {
+        if (isset($keep[$line])) {
+            continue; // Already in the server owner's file.
+        }
+        $parts     = preg_split('/\s+/', $line, 2);
+        $directive = strtolower((string) ($parts[0] ?? ''));
+        $args      = (string) ($parts[1] ?? '');
+        if (substr($directive, 0, 1) === '<' && substr($directive, -1) === '>' && substr($directive, 1, 1) !== '/') {
+            $directive = substr($directive, 0, -1); // "<IfModule>" with no argument
+        }
+        if (!in_array($directive, $allowed, true)) {
+            return false;
+        }
+        if ($directive === 'rewriterule' && preg_match('/\[[^\]]*\b(h|handler|t|type)\s*=/i', $args)) {
+            return false;
+        }
+        if ($directive === 'options') {
+            foreach (preg_split('/\s+/', strtolower(trim($args))) as $opt) {
+                if (!($opt !== '' && ($opt[0] === '-' || in_array($opt, ['+followsymlinks', '+symlinksifownermatch', 'followsymlinks', 'symlinksifownermatch', 'none'], true)))) {
+                    return false;
+                }
+            }
         }
     }
     return true;
@@ -400,8 +489,11 @@ switch ($op) {
                 }
             }
             if ($target !== null) {
-                $probe = $target === '.htaccess' ? (string) file_get_contents($part) : null;
-                if (!bs_write_allowed($target, $probe)) {
+                // Probe by basename, any case: a nested `sub/.htaccess` is
+                // checked exactly like the root one (bs_write_allowed refuses
+                // an .htaccess that arrives without its content).
+                $probe = strtolower(basename($target)) === '.htaccess' ? (string) file_get_contents($part) : null;
+                if (!bs_write_allowed($BASE, $target, $probe)) {
                     @unlink($part);
                     bs_out(400, ['ok' => false, 'error' => 'not allowed: ' . $target]);
                 }
@@ -452,8 +544,8 @@ switch ($op) {
                 $out['errors'][] = 'unsafe:' . $name;
                 continue;
             }
-            $probe = basename($rel) === '.htaccess' ? (string) $zip->getFromIndex($i) : null;
-            if (!bs_write_allowed($rel, $probe)) {
+            $probe = strtolower(basename($rel)) === '.htaccess' ? (string) $zip->getFromIndex($i) : null;
+            if (!bs_write_allowed($BASE, $rel, $probe)) {
                 $out['errors'][] = 'denied:' . $rel;
                 continue;
             }

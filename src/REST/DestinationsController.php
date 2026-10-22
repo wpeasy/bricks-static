@@ -15,9 +15,11 @@ use WP_REST_Response;
 use WPEasy\BricksStatic\Deploy\ConnectorScript;
 use WPEasy\BricksStatic\Deploy\PackageDeployer;
 use WPEasy\BricksStatic\Settings\Destinations;
+use WPEasy\BricksStatic\Settings\Schema;
 use WPEasy\BricksStatic\Support\UrlSafety;
 use WPEasy\BricksStatic\Sync\Manifest;
 use WPEasy\BricksStatic\Sync\Runner;
+use WPEasy\BricksStatic\Transport\CloudflareTransport;
 use WPEasy\BricksStatic\Transport\ConnectorTransport;
 use WPEasy\BricksStatic\Transport\TransportFactory;
 
@@ -128,7 +130,7 @@ final class DestinationsController {
         if ($url === '' || $host === '') {
             return new WP_REST_Response(['ok' => false, 'message' => __('Enter and save the Destination URL first — the connector is called at that address.', 'bricks-static')]);
         }
-        if (strtolower((string) wp_parse_url($url, PHP_URL_SCHEME)) !== 'https' && !UrlSafety::is_dev_host($host)) {
+        if (!\WPEasy\BricksStatic\Deploy\ConnectorClient::url_is_secure($url)) {
             return new WP_REST_Response(['ok' => false, 'message' => __('The connector needs an HTTPS Destination URL (the pairing secret travels in each request).', 'bricks-static')]);
         }
         if (!UrlSafety::is_safe_url($url)) {
@@ -253,6 +255,9 @@ final class DestinationsController {
         if ($dest === null) {
             return new WP_REST_Response(['ok' => false, 'message' => 'Unknown destination.'], 404);
         }
+        if ($dest->is_snapshot()) {
+            return new WP_REST_Response(['ok' => false, 'message' => __('Cloudflare destinations publish whole snapshots — package deploy does not apply.', 'bricks-static')]);
+        }
 
         if (!PackageDeployer::can_build()) {
             return new WP_REST_Response(['ok' => false, 'message' => 'ZipArchive is not available on this server.']);
@@ -370,23 +375,39 @@ final class DestinationsController {
                 $config[$key] = $key === 'port' ? (int) $input[$key] : sanitize_text_field((string) $input[$key]);
             }
         }
+        // Cloudflare fields go through the Schema sanitiser (strict character
+        // sets — they end up in an API path).
+        foreach (['cfAccountId', 'cfWorker'] as $key) {
+            if (array_key_exists($key, $input) && !$dest->is_from_constant($key)) {
+                $config[$key] = (string) Schema::sanitize($key, $input[$key]);
+            }
+        }
         if (!empty($input['password']) && !$dest->is_from_constant('password')) {
             $config['password'] = (string) $input['password'];
         }
+        if (!empty($input['cfApiToken']) && !$dest->is_from_constant('cfApiToken')) {
+            $config['cfApiToken'] = trim((string) $input['cfApiToken']);
+        }
 
-        $is_connector = ($config['transport'] ?? '') === 'connector';
-        if (!$is_connector && $config['host'] === '') {
+        if (TransportFactory::needs_host((string) ($config['transport'] ?? '')) && $config['host'] === '') {
             return new WP_REST_Response(['ok' => false, 'message' => 'Enter a host first.'], 200);
         }
 
+        $suggested = '';
         $transport = TransportFactory::make($config);
         try {
             $transport->connect();
             $ok = true;
-            $message = $transport instanceof ConnectorTransport
+            if ($transport instanceof ConnectorTransport) {
                 /* translators: %s: receiver summary (PHP version, zip support, free space) */
-                ? sprintf(__('Connector reached — %s.', 'bricks-static'), $transport->describe())
-                : 'Connected successfully.';
+                $message = sprintf(__('Connector reached — %s.', 'bricks-static'), $transport->describe());
+            } elseif ($transport instanceof CloudflareTransport) {
+                /* translators: %s: Worker summary (name + workers.dev address) */
+                $message   = sprintf(__('Cloudflare token accepted — %s.', 'bricks-static'), $transport->describe());
+                $suggested = $transport->workers_dev_url();
+            } else {
+                $message = 'Connected successfully.';
+            }
         } catch (\Throwable $e) {
             $ok = false;
             $message = $e->getMessage();
@@ -396,7 +417,13 @@ final class DestinationsController {
 
         update_option(self::conn_state_option((string) $request['id']), ['ok' => $ok, 'time' => time(), 'message' => $message], false);
 
-        return new WP_REST_Response(['ok' => $ok, 'message' => $message], 200);
+        $out = ['ok' => $ok, 'message' => $message];
+        if ($suggested !== '') {
+            // The dashboard fills an empty Destination URL with this.
+            $out['suggestedUrl'] = $suggested;
+        }
+
+        return new WP_REST_Response($out, 200);
     }
 
     /**

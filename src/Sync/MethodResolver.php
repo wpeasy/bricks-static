@@ -39,14 +39,23 @@ final class MethodResolver {
             default  => 'Internal-link crawl from the home page — only pages reachable by following links.',
         };
 
+        $transport  = (string) Settings::get('transport');
+        $cloudflare = $transport === 'cloudflare';
+
         return [
             'discovery'    => [
                 'mode'        => $mode,
                 'description' => $description,
             ],
-            'transport'    => (string) Settings::get('transport'),
-            'compression'  => ['gzip' => function_exists('gzencode')],
-            'serverTarget' => ['htaccess' => true, 'nginxSnippet' => true],
+            'transport'    => $transport,
+            // Cloudflare compresses at the edge itself (no .gz siblings needed).
+            'compression'  => ['gzip' => $cloudflare || function_exists('gzencode')],
+            // Cloudflare gets `_headers` instead of .htaccess / the nginx snippet.
+            'serverTarget' => [
+                'htaccess'          => !$cloudflare,
+                'nginxSnippet'      => !$cloudflare,
+                'cloudflareHeaders' => $cloudflare,
+            ],
             'links'        => 'root-relative',
         ];
     }

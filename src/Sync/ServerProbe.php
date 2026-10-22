@@ -108,6 +108,13 @@ final class ServerProbe {
             $result['viaConnector'] = true;
         }
 
+        // A Cloudflare destination IS the edge (there's no origin server behind
+        // it to look for), and its cache rules are the `_headers` we publish —
+        // so report it as Cloudflare rather than "a CDN hiding the origin".
+        if ($dest->is_cloudflare()) {
+            $result['server'] = 'cloudflare';
+        }
+
         $cc = self::header($html, 'cache-control');
 
         $result['html'] = [
@@ -285,7 +292,8 @@ final class ServerProbe {
      * real server, so that is reported as its own kind rather than "other".
      *
      * @param string $header Raw Server header.
-     * @return string apache|litespeed|nginx|proxied|other|unknown
+     * @return string apache|litespeed|nginx|proxied|other|unknown (`cloudflare`
+     *                is set by run() for Cloudflare destinations, never here)
      */
     private static function classify(string $header): string {
         $h = strtolower($header);
@@ -400,6 +408,7 @@ final class ServerProbe {
             'apache'    => 'Apache',
             'litespeed' => 'LiteSpeed',
             'nginx'     => 'nginx',
+            'cloudflare'=> 'Cloudflare',
             'proxied'   => $r['serverHeader'],
             'other'     => $r['serverHeader'],
             'unknown'   => __('an unidentified server', 'bricks-static'),
@@ -428,6 +437,9 @@ final class ServerProbe {
         }
 
         switch ($r['server']) {
+            case 'cloudflare':
+                return __('Cloudflare — the cache rules are not in effect yet. They are published with every Cloudflare deploy, so run a Sync, then check again.', 'bricks-static');
+
             case 'nginx':
                 return __('nginx detected. The site is being served, but the optional cache tuning is not applied — paste the nginx snippet into your server block and reload nginx, then check again.', 'bricks-static');
 

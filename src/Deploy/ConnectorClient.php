@@ -67,6 +67,20 @@ final class ConnectorClient {
     }
 
     /**
+     * Whether a Destination URL may carry the pairing secret: HTTPS, or a
+     * local/dev host that can't hold a public certificate. Checked at pairing
+     * AND before every request, so editing the URL to `http://` after pairing
+     * can't make the client send the secret in cleartext.
+     *
+     * @param string $url Destination URL.
+     */
+    public static function url_is_secure(string $url): bool {
+        $host = (string) (wp_parse_url($url, PHP_URL_HOST) ?? '');
+
+        return $host !== '' && (strtolower((string) wp_parse_url($url, PHP_URL_SCHEME)) === 'https' || UrlSafety::is_dev_host($host));
+    }
+
+    /**
      * Whether this client has everything it needs to talk to a receiver.
      */
     public function configured(): bool {
@@ -255,6 +269,10 @@ final class ConnectorClient {
     private function send(string $body, string $body_hash, array $headers, int $timeout, int $tries): array {
         if (!$this->configured()) {
             throw new ConnectorAuthException('This destination is not paired with a connector yet.');
+        }
+        // The raw secret travels in every request — never over plain HTTP.
+        if (!self::url_is_secure($this->url)) {
+            throw new ConnectorHostException('The connector needs an HTTPS Destination URL (the pairing secret travels in each request). Change the Destination URL back to https://.');
         }
 
         $last = null;

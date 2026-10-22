@@ -21,7 +21,7 @@ WordPress install stays private/origin; the destination serves only flat files.
 | URL rewriting | Root-relative; sweep whole document + CSS; normalize http/https and www/non-www |
 | Job execution | Browser-driven batched REST "tick" loop; resumable persisted queue |
 | Sync strategy | Hash **manifest + delta** upload; "in sync" = current render manifest == last pushed manifest |
-| Transport | SFTP (phpseclib, bundled) + FTP (ext-ftp); connection reused across a run |
+| Transport | SFTP (phpseclib, bundled) + FTP (ext-ftp) + Connector (HTTPS receiver, `docs/CONNECTOR_PLAN.md`) + Cloudflare (Workers static assets, whole-site snapshots, `docs/CLOUDFLARE_PLAN.md`); connection reused across a run |
 | Credentials | Encrypted in `wp_options` (key derived from WP salts); **wp-config constants override** |
 | Destination server | Generate `.htaccess` **and** an nginx snippet (target may be Apache/LiteSpeed or nginx) |
 | Scale | Tuned for <100 URLs by default; queue + delta scale to thousands |
@@ -56,7 +56,9 @@ src/
 ├── Transport/
 │   ├── TransportInterface    # connect, put, mkdir, exists, listing, disconnect
 │   ├── SftpTransport         # phpseclib
-│   └── FtpTransport          # ext-ftp
+│   ├── FtpTransport          # ext-ftp
+│   ├── ConnectorTransport    # signed HTTPS to the user-installed receiver (+ PackageCapableTransport)
+│   └── CloudflareTransport   # Cloudflare API (SnapshotCapableTransport — full set per deploy, no prune)
 ├── Sync/
 │   ├── Job                   # persisted job + queue state
 │   ├── Manifest              # per-file content hashes; delta diff
@@ -78,7 +80,7 @@ src/
 3. **Per page (batched)** — loopback render → harvest internal links (enqueue new unique) → rewrite origin → root-relative → extract assets → write `…/<relative>/index.html` → write `.gz` sibling if zlib.
 4. **Assets (batched)** — fetch each unique same-origin asset → store under the same relative path → parse CSS for nested `url()`.
 5. **Manifest diff** — hash every output, compare to `bs_pushed_manifest` → compute the new/changed upload set.
-6. **Upload (batched)** — push changed files + `.gz` over the chosen transport, preserving paths.
+6. **Upload (batched)** — push changed files + `.gz` over the chosen transport, preserving paths. (A snapshot transport — Cloudflare — instead publishes the full deploy set in one `snapshot` phase; the far end dedupes, so only new/changed files travel, and nothing is pruned.)
 7. **`.htaccess`** — back up any existing one, then write: serve `.gz` when present; cache-control HTML short/revalidate, static assets long + `immutable`. Emit an nginx snippet for manual paste.
 8. **Finalize** — store the pushed manifest; status → *In sync*.
 

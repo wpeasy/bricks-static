@@ -202,6 +202,12 @@ final class Destinations {
             return 'connector|' . strtolower(rtrim((string) ($c['url'] ?? ''), '/'));
         }
 
+        // A Cloudflare destination IS its account + Worker; the token can be
+        // rotated without the published files changing.
+        if ($d->is_cloudflare()) {
+            return 'cloudflare|' . (string) ($c['cfAccountId'] ?? '') . '|' . (string) ($c['cfWorker'] ?? '');
+        }
+
         return implode('|', [
             (string) ($c['transport'] ?? ''),
             strtolower((string) ($c['host'] ?? '')),

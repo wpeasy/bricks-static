@@ -114,6 +114,10 @@ final class Destination {
             'connectorId'     => (string) $this->get('connectorId'),
             'connectorSecret' => (string) $this->get('connectorSecret'),
             'connectorVersion'=> (int) $this->get('connectorVersion'),
+            // Cloudflare transport.
+            'cfAccountId'     => (string) $this->get('cfAccountId'),
+            'cfWorker'        => (string) $this->get('cfWorker'),
+            'cfApiToken'      => (string) $this->get('cfApiToken'),
         ];
     }
 
@@ -122,6 +126,21 @@ final class Destination {
      */
     public function is_connector(): bool {
         return (string) $this->get('transport') === 'connector';
+    }
+
+    /**
+     * Whether this destination publishes to Cloudflare (Workers static assets).
+     */
+    public function is_cloudflare(): bool {
+        return (string) $this->get('transport') === 'cloudflare';
+    }
+
+    /**
+     * Whether this destination publishes whole snapshots (see
+     * `Transport\SnapshotCapableTransport`) rather than uploading a delta.
+     */
+    public function is_snapshot(): bool {
+        return \WPEasy\BricksStatic\Transport\TransportFactory::is_snapshot((string) $this->get('transport'));
     }
 
     /**

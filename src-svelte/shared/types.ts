@@ -1,6 +1,6 @@
 // Shared types mirroring the REST payloads (src/REST/*Controller.php).
 
-export type Transport = 'sftp' | 'ftps' | 'ftp' | 'connector';
+export type Transport = 'sftp' | 'ftps' | 'ftp' | 'connector' | 'cloudflare';
 
 export interface ValueField<T> {
   value: T;
@@ -25,6 +25,10 @@ export interface SettingsDisplay {
   connectorId: ValueField<string>;
   connectorSecret: SecretField;
   connectorVersion: ValueField<number>;
+  /** Cloudflare (Workers static assets) — see docs/CLOUDFLARE_PLAN.md. */
+  cfAccountId: ValueField<string>;
+  cfWorker: ValueField<string>;
+  cfApiToken: SecretField;
 }
 
 export interface Capabilities {
@@ -32,6 +36,7 @@ export interface Capabilities {
   ftps: boolean;
   ftp: boolean;
   connector: boolean;
+  cloudflare: boolean;
 }
 
 /** POST /destinations/{id}/connector/pair */
@@ -177,7 +182,7 @@ export interface Method {
   discovery: DiscoveryMethod;
   transport: string;
   compression: { gzip: boolean };
-  serverTarget: { htaccess: boolean; nginxSnippet: boolean };
+  serverTarget: { htaccess: boolean; nginxSnippet: boolean; cloudflareHeaders?: boolean };
   links: string;
 }
 
@@ -246,6 +251,8 @@ export interface Preflight {
 export interface TestResult {
   ok: boolean;
   message: string;
+  /** Cloudflare Test: the Worker's workers.dev address, when the account has one. */
+  suggestedUrl?: string;
 }
 
 export interface SyncCounts {
@@ -275,7 +282,7 @@ export interface ParallelTarget {
 }
 
 export interface SyncSnapshot {
-  phase: 'idle' | 'collect' | 'render' | 'assets' | 'finalize' | 'package' | 'upload' | 'deploy' | 'done' | 'error' | 'cancelled';
+  phase: 'idle' | 'collect' | 'render' | 'assets' | 'finalize' | 'package' | 'snapshot' | 'upload' | 'deploy' | 'done' | 'error' | 'cancelled';
   type?: 'check' | 'sync';
   message?: string;
   counts?: SyncCounts;
@@ -365,11 +372,13 @@ export interface ExportSnapshot {
 export interface ServerConfig {
   htaccess: string;
   nginx: string;
+  /** Cloudflare `_headers` rules — published automatically with each Cloudflare deploy. */
+  cloudflareHeaders: string;
   /** Last server check per destination id (GET /sync/server-check results). */
   checks: Record<string, ServerCheck>;
 }
 
-export type ServerKind = 'apache' | 'litespeed' | 'nginx' | 'proxied' | 'other' | 'unknown';
+export type ServerKind = 'apache' | 'litespeed' | 'nginx' | 'cloudflare' | 'proxied' | 'other' | 'unknown';
 
 /** Result of probing a destination's public URL (Sync\ServerProbe). */
 export interface ServerCheck {
@@ -403,6 +412,10 @@ export interface ConnectionInput {
   remotePath?: string;
   basePath?: string;
   destinationUrl?: string;
+  /** Cloudflare transport. `cfApiToken` is write-only (never echoed back). */
+  cfAccountId?: string;
+  cfWorker?: string;
+  cfApiToken?: string;
   name?: string;
   enabled?: boolean;
   replacements?: Replacement[];

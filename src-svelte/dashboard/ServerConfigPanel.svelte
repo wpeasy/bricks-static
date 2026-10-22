@@ -85,6 +85,7 @@
     apache: () => 'Apache',
     litespeed: () => 'LiteSpeed',
     nginx: () => 'nginx',
+    cloudflare: () => 'Cloudflare',
     proxied: () => __('serverProxied'),
     other: () => __('serverUnknown'),
     unknown: () => __('serverUnknown'),
@@ -212,6 +213,15 @@
         </Button>
       </div>
       <pre class="bs-sc__code">{config.nginx}</pre>
+
+      <div class="bs-row bs-row--between">
+        <strong>Cloudflare <code>_headers</code></strong>
+        <Button variant="ghost" size="sm" onclick={() => copy(config!.cloudflareHeaders, 'cloudflare')}>
+          {copied === 'cloudflare' ? __('btnCopied') : __('btnCopy')}
+        </Button>
+      </div>
+      <p class="bs-sc__lead">{__('cfHeadersNote')}</p>
+      <pre class="bs-sc__code">{config.cloudflareHeaders}</pre>
     </div>
   {/if}
 </section>
