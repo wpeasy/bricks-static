@@ -167,9 +167,9 @@ final class Paths {
      * fallback to uploads/ when wp-content is not writable.
      */
     private static function resolve(): string {
-        if (defined('BS_CACHE_DIR') && BS_CACHE_DIR) {
+        if (defined('BRICKS_STATIC_CACHE_DIR') && BRICKS_STATIC_CACHE_DIR) {
             /** This filter is documented below. */
-            return (string) apply_filters('bs_cache_dir', (string) BS_CACHE_DIR);
+            return (string) apply_filters('bricks_static_cache_dir', (string) BRICKS_STATIC_CACHE_DIR);
         }
 
         $dir = trailingslashit(WP_CONTENT_DIR) . 'cache/bricks-static';
@@ -189,7 +189,7 @@ final class Paths {
          *
          * @param string $dir Resolved cache directory.
          */
-        return (string) apply_filters('bs_cache_dir', $dir);
+        return (string) apply_filters('bricks_static_cache_dir', $dir);
     }
 
     /**

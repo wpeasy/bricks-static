@@ -50,7 +50,7 @@ final class Environment {
          *
          * @param bool $local Detected value.
          */
-        return (bool) apply_filters('bs_is_local', $local);
+        return (bool) apply_filters('bricks_static_is_local', $local);
     }
 
     /**

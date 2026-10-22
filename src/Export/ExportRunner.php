@@ -20,6 +20,8 @@ use WPEasy\BricksStatic\Support\Paths;
 
 defined('ABSPATH') || exit;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception messages are plain text for JSON responses (rendered as text by the dashboard) and WP-CLI, never echoed into HTML; esc_html() here would show entities to the user.
+
 /**
  * A deliberately separate, much smaller state machine than {@see Runner} —
  * export never renders, never touches a transport, and never records
@@ -343,6 +345,7 @@ final class ExportRunner {
         }
 
         $final = Paths::export_dir() . '/' . $job->data['finalName'];
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- atomic move between two dirs under uploads/; WP_Filesystem::move() would copy+delete a large zip.
         if (!@rename($tmp, $final)) {
             throw new \RuntimeException(__('Could not save the export archive.', 'bricks-static'));
         }
@@ -353,7 +356,7 @@ final class ExportRunner {
         self::cleanup_stale_exports();
 
         $token = bin2hex(random_bytes(24));
-        set_transient('bs_export_dl_' . $token, [
+        set_transient('bricks_static_export_dl_' . $token, [
             'path'     => $final,
             'filename' => $job->data['finalName'],
         ], 30 * MINUTE_IN_SECONDS);
@@ -402,7 +405,7 @@ final class ExportRunner {
 
         foreach ((array) glob($dir . '/*.zip') as $file) {
             if (is_file($file) && (time() - (int) filemtime($file)) > 2 * HOUR_IN_SECONDS) {
-                @unlink($file);
+                wp_delete_file($file);
             }
         }
     }
@@ -415,7 +418,7 @@ final class ExportRunner {
     private static function cleanup_tmp(ExportJob $job): void {
         $tmp = (string) ($job->data['zipTmpPath'] ?? '');
         if ($tmp !== '' && is_file($tmp)) {
-            @unlink($tmp);
+            wp_delete_file($tmp);
         }
     }
 
@@ -450,7 +453,7 @@ final class ExportRunner {
 
     /**
      * No-progress window (seconds) before a running export is treated as
-     * abandoned. Filter `bs_export_stale_seconds`.
+     * abandoned. Filter `bricks_static_export_stale_seconds`.
      */
     private static function stale_seconds(): int {
         /**
@@ -459,6 +462,6 @@ final class ExportRunner {
          *
          * @param int $seconds Window in seconds.
          */
-        return (int) apply_filters('bs_export_stale_seconds', 90);
+        return (int) apply_filters('bricks_static_export_stale_seconds', 90);
     }
 }

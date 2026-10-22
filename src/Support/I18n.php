@@ -4,7 +4,7 @@
  *
  * Single source of truth for every string the Free admin UI renders. PHP owns
  * the strings (so one `.mo` translates both PHP and JS); `Admin\Menu` localises
- * `self::all()` onto `window.bsData.i18n` and the Svelte `shared/i18n.ts` helper
+ * `self::all()` onto `window.bricksStaticData.i18n` and the Svelte `shared/i18n.ts` helper
  * looks each key up. Keep keys stable — they are referenced by the JS bundle.
  *
  * @package WPEasy\BricksStatic
@@ -670,7 +670,7 @@ final class I18n {
             'lblFind'        => __('Find', 'bricks-static'),
             'lblReplace'     => __('Replace', 'bricks-static'),
             'valEmpty'       => __('(empty)', 'bricks-static'),
-            'richEmpty'      => __('<em>(empty)</em>', 'bricks-static'),
+            'richEmpty'      => '<em>' . esc_html__('(empty)', 'bricks-static') . '</em>',
             'confirmDelete'  => __('Confirm delete', 'bricks-static'),
             'keep'           => __('Keep', 'bricks-static'),
             'edit'           => __('Edit', 'bricks-static'),

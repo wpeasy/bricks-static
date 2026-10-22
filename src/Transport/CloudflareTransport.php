@@ -241,6 +241,9 @@ final class CloudflareTransport implements TransportInterface, SnapshotCapableTr
      */
     public static function hash_file(string $path, string $relative): string {
         $ctx = hash_init('sha256');
+        // Streamed (WP_Filesystem has no partial-read API) so a large file is
+        // never held in memory whole.
+        // phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fopen, WordPress.WP.AlternativeFunctions.file_system_operations_fread, WordPress.WP.AlternativeFunctions.file_system_operations_fclose
         $fh  = fopen($path, 'rb');
         if ($fh === false) {
             throw new \RuntimeException('Could not read a staged file for hashing.');
@@ -258,6 +261,7 @@ final class CloudflareTransport implements TransportInterface, SnapshotCapableTr
         } finally {
             fclose($fh);
         }
+        // phpcs:enable WordPress.WP.AlternativeFunctions.file_system_operations_fopen, WordPress.WP.AlternativeFunctions.file_system_operations_fread, WordPress.WP.AlternativeFunctions.file_system_operations_fclose
         hash_update($ctx, strtolower((string) pathinfo($relative, PATHINFO_EXTENSION)));
 
         return substr(hash_final($ctx), 0, 32);

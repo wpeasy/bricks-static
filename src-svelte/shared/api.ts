@@ -26,14 +26,14 @@ interface BsData {
 
 declare global {
   interface Window {
-    bsData?: BsData;
+    bricksStaticData?: BsData;
   }
 }
 
 function config(): BsData {
-  const data = window.bsData;
+  const data = window.bricksStaticData;
   if (!data) {
-    throw new Error('Bricks Static: bsData was not localised.');
+    throw new Error('Bricks Static: bricksStaticData was not localised.');
   }
   return data;
 }

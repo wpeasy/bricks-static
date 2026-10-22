@@ -35,7 +35,7 @@
   // startedAt so a NEW run re-shows the card (the next run has a fresh id), and
   // persisted to localStorage so a dismissed run stays dismissed across reloads
   // (the status endpoint still returns the last finished snapshot on reload).
-  const DISMISS_KEY = 'bs_progress_dismissed';
+  const DISMISS_KEY = 'bricks_static_progress_dismissed';
 
   function loadDismissed(): number | null {
     try {

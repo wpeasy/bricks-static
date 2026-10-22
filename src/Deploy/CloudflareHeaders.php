@@ -54,7 +54,7 @@ final class CloudflareHeaders {
          *
          * @param string $text `_headers` file contents.
          */
-        return (string) apply_filters('bs_cloudflare_headers', $text);
+        return (string) apply_filters('bricks_static_cloudflare_headers', $text);
     }
 
     /**
@@ -68,6 +68,6 @@ final class CloudflareHeaders {
          *
          * @param string $text `_redirects` file contents.
          */
-        return (string) apply_filters('bs_cloudflare_redirects', '');
+        return (string) apply_filters('bricks_static_cloudflare_redirects', '');
     }
 }

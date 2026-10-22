@@ -35,12 +35,12 @@ final class DeployPool {
     /**
      * Prefix for a per-destination deploy worker's job state option.
      */
-    private const TARGET_PREFIX = 'bs_target_';
+    private const TARGET_PREFIX = 'bricks_static_target_';
 
     /**
      * Prefix for a per-destination atomic claim row (one worker owns a target).
      */
-    private const CLAIM_PREFIX = 'bs_tclaim_';
+    private const CLAIM_PREFIX = 'bricks_static_tclaim_';
 
     /**
      * Seconds a claimed-but-unfinished target may go without its worker updating
@@ -53,7 +53,7 @@ final class DeployPool {
     /**
      * Option storing the user's max-concurrent-deploys preference.
      */
-    private const OPTION = 'bs_concurrent_syncs';
+    private const OPTION = 'bricks_static_concurrent_syncs';
 
     /**
      * Default number of destinations deployed at once.
@@ -83,7 +83,7 @@ final class DeployPool {
          *
          * @param int $raw Stored value.
          */
-        $raw = (int) apply_filters('bs_concurrent_syncs', $raw);
+        $raw = (int) apply_filters('bricks_static_concurrent_syncs', $raw);
 
         return self::clamp($raw);
     }

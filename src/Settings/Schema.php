@@ -24,7 +24,7 @@ final class Schema {
     /**
      * Option key holding the settings array.
      */
-    public const OPTION = 'bs_settings';
+    public const OPTION = 'bricks_static_settings';
 
     /**
      * Field definitions keyed by setting name.
@@ -36,22 +36,22 @@ final class Schema {
      */
     public static function fields(): array {
         return [
-            'transport'      => ['type' => 'enum',   'default' => 'ftps',          'constant' => 'BS_TRANSPORT',       'options' => ['sftp', 'ftps', 'ftp', 'connector', 'cloudflare']],
-            'host'           => ['type' => 'string', 'default' => '',              'constant' => 'BS_HOST'],
-            'port'           => ['type' => 'int',    'default' => 0,               'constant' => 'BS_PORT'],
-            'username'       => ['type' => 'string', 'default' => '',              'constant' => 'BS_USERNAME'],
-            'password'       => ['type' => 'string', 'default' => '',              'constant' => 'BS_PASSWORD', 'secret' => true],
-            'remotePath'     => ['type' => 'path',   'default' => '',              'constant' => 'BS_REMOTE_PATH'],
-            'basePath'       => ['type' => 'path',   'default' => '/',             'constant' => 'BS_BASE_PATH'],
-            'destinationUrl' => ['type' => 'url',    'default' => '',              'constant' => 'BS_DESTINATION_URL'],
+            'transport'      => ['type' => 'enum',   'default' => 'ftps',          'constant' => 'BRICKS_STATIC_TRANSPORT',       'options' => ['sftp', 'ftps', 'ftp', 'connector', 'cloudflare']],
+            'host'           => ['type' => 'string', 'default' => '',              'constant' => 'BRICKS_STATIC_HOST'],
+            'port'           => ['type' => 'int',    'default' => 0,               'constant' => 'BRICKS_STATIC_PORT'],
+            'username'       => ['type' => 'string', 'default' => '',              'constant' => 'BRICKS_STATIC_USERNAME'],
+            'password'       => ['type' => 'string', 'default' => '',              'constant' => 'BRICKS_STATIC_PASSWORD', 'secret' => true],
+            'remotePath'     => ['type' => 'path',   'default' => '',              'constant' => 'BRICKS_STATIC_REMOTE_PATH'],
+            'basePath'       => ['type' => 'path',   'default' => '/',             'constant' => 'BRICKS_STATIC_BASE_PATH'],
+            'destinationUrl' => ['type' => 'url',    'default' => '',              'constant' => 'BRICKS_STATIC_DESTINATION_URL'],
             // Connector (HTTPS) pairing — set by Destinations::pair_connector(), never by REST input.
-            'connectorId'     => ['type' => 'string', 'default' => '',             'constant' => 'BS_CONNECTOR_ID',     'internal' => true],
-            'connectorSecret' => ['type' => 'string', 'default' => '',             'constant' => 'BS_CONNECTOR_SECRET', 'internal' => true, 'secret' => true],
+            'connectorId'     => ['type' => 'string', 'default' => '',             'constant' => 'BRICKS_STATIC_CONNECTOR_ID',     'internal' => true],
+            'connectorSecret' => ['type' => 'string', 'default' => '',             'constant' => 'BRICKS_STATIC_CONNECTOR_SECRET', 'internal' => true, 'secret' => true],
             'connectorVersion'=> ['type' => 'int',    'default' => 0,              'constant' => '',                    'internal' => true],
             // Cloudflare (Workers static assets) — see docs/CLOUDFLARE_PLAN.md.
-            'cfAccountId'    => ['type' => 'cf_account', 'default' => '',          'constant' => 'BS_CF_ACCOUNT_ID'],
-            'cfWorker'       => ['type' => 'cf_worker',  'default' => '',          'constant' => 'BS_CF_WORKER'],
-            'cfApiToken'     => ['type' => 'string',     'default' => '',          'constant' => 'BS_CF_API_TOKEN', 'secret' => true],
+            'cfAccountId'    => ['type' => 'cf_account', 'default' => '',          'constant' => 'BRICKS_STATIC_CF_ACCOUNT_ID'],
+            'cfWorker'       => ['type' => 'cf_worker',  'default' => '',          'constant' => 'BRICKS_STATIC_CF_WORKER'],
+            'cfApiToken'     => ['type' => 'string',     'default' => '',          'constant' => 'BRICKS_STATIC_CF_API_TOKEN', 'secret' => true],
         ];
     }
 

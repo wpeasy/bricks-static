@@ -29,6 +29,8 @@ use WPEasy\BricksStatic\Transport\TransportInterface;
 
 defined('ABSPATH') || exit;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception messages are plain text for JSON responses (rendered as text by the dashboard) and WP-CLI, never echoed into HTML; esc_html() here would show entities to the user.
+
 /**
  * Drives a run as resumable batches: collect → render → assets → finalize.
  * Each tick() does a bounded slice of work and returns a UI snapshot. M2 stops
@@ -341,12 +343,12 @@ final class Runner {
      * Option holding the cancel flag, kept separate from the job blob so a
      * concurrent tick's save() cannot clobber it.
      */
-    private const CANCEL_FLAG = 'bs_cancel';
+    private const CANCEL_FLAG = 'bricks_static_cancel';
 
     /**
      * Option holding the last "a driver is actively working" timestamp.
      */
-    private const HEARTBEAT = 'bs_driver_heartbeat';
+    private const HEARTBEAT = 'bricks_static_driver_heartbeat';
 
     /**
      * Seconds since the last heartbeat after which the driver is presumed dead.
@@ -359,7 +361,7 @@ final class Runner {
      * Separate from the coordinator heartbeat so worker death is detectable even
      * while the coordinator keeps monitoring (which keeps HEARTBEAT/cliAlive warm).
      */
-    private const WORKER_HEARTBEAT = 'bs_worker_heartbeat';
+    private const WORKER_HEARTBEAT = 'bricks_static_worker_heartbeat';
 
     /**
      * Seconds to wait for the deploy pool to come alive before giving up. Guards
@@ -376,7 +378,7 @@ final class Runner {
      * this OUT of the job blob makes the monitor the sole writer of that blob, so
      * the two processes never clobber each other's writes.
      */
-    private const DISPATCH_MARK = 'bs_deploy_dispatch_at';
+    private const DISPATCH_MARK = 'bricks_static_deploy_dispatch_at';
 
     /**
      * Stamp the worker heartbeat (called by a deploy worker as files upload).
@@ -410,7 +412,7 @@ final class Runner {
     /**
      * Option naming the single process allowed to drive the job ('cli' | 'browser').
      */
-    private const DRIVER_OPTION = 'bs_driver';
+    private const DRIVER_OPTION = 'bricks_static_driver';
 
     /**
      * Atomically claim the right to drive the active job. Only ONE driver may
@@ -514,7 +516,7 @@ final class Runner {
 
     /**
      * The no-progress window before a running job is auto-discarded. Filterable
-     * so a site that raised {@see bs_render_timeout}/{@see bs_asset_timeout}
+     * so a site that raised {@see bricks_static_render_timeout}/{@see bricks_static_asset_timeout}
      * above the default can keep this window comfortably larger than a single
      * request, or the watchdog could reap a job that's still working.
      */
@@ -525,7 +527,7 @@ final class Runner {
          *
          * @param int $seconds Window in seconds.
          */
-        return max(30, (int) apply_filters('bs_stale_seconds', self::STALE_SECONDS));
+        return max(30, (int) apply_filters('bricks_static_stale_seconds', self::STALE_SECONDS));
     }
 
     /**
@@ -1289,7 +1291,7 @@ final class Runner {
      */
     private static function emit_favicon(Job $job): void {
         /** Filters whether a root /favicon.ico is included in the export. */
-        if (!apply_filters('bs_include_favicon', true) || isset($job->data['plan']['favicon.ico'])) {
+        if (!apply_filters('bricks_static_include_favicon', true) || isset($job->data['plan']['favicon.ico'])) {
             return;
         }
 
@@ -1560,7 +1562,8 @@ final class Runner {
             \RecursiveIteratorIterator::CHILD_FIRST
         );
         foreach ($items as $item) {
-            $item->isDir() ? @rmdir($item->getPathname()) : @unlink($item->getPathname());
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- removes an emptied directory inside the plugin's own cache dir.
+            $item->isDir() ? @rmdir($item->getPathname()) : wp_delete_file($item->getPathname());
         }
     }
 
@@ -1675,7 +1678,7 @@ final class Runner {
 
         // Server config first (merge-safe), same as the per-file path.
         self::upload_htaccess($transport);
-        update_option('bs_nginx_snippet', HtaccessBuilder::nginx(), false);
+        update_option('bricks_static_nginx_snippet', HtaccessBuilder::nginx(), false);
         self::beat();
 
         $files = [];
@@ -1856,7 +1859,7 @@ final class Runner {
                 }
 
                 self::upload_htaccess($transport);
-                update_option('bs_nginx_snippet', HtaccessBuilder::nginx(), false);
+                update_option('bricks_static_nginx_snippet', HtaccessBuilder::nginx(), false);
                 $job->data['htaccessDone'] = true;
                 // +1 for the home page only when we'll actually (re)upload it:
                 // because it changed, or to replace a holding page we put up.
@@ -2022,7 +2025,7 @@ final class Runner {
     /**
      * Option-name prefix for a destination's last-synced signature.
      */
-    public const SYNC_SIG = 'bs_sync_sig_';
+    public const SYNC_SIG = 'bricks_static_sync_sig_';
 
     /**
      * A fingerprint of what a destination's deploy depends on: the current
@@ -2208,7 +2211,7 @@ final class Runner {
         $tmp = self::worker_tmp('holding.out');
         file_put_contents($tmp, self::holding_html());
         self::put_retry($transport, $tmp, self::HOME_FILE);
-        @unlink($tmp);
+        wp_delete_file($tmp);
     }
 
     /**
@@ -2311,13 +2314,13 @@ HTML;
             $bak = self::worker_tmp('htaccess.bak.out');
             file_put_contents($bak, $existing);
             self::put_retry($transport, $bak, self::HTACCESS_BAK);
-            @unlink($bak);
+            wp_delete_file($bak);
         }
 
         $tmp = self::worker_tmp('htaccess.out');
         file_put_contents($tmp, HtaccessBuilder::merge($existing));
         self::put_retry($transport, $tmp, '.htaccess');
-        @unlink($tmp);
+        wp_delete_file($tmp);
     }
 
     /**
@@ -2342,7 +2345,7 @@ HTML;
         $tmp = self::worker_tmp('upload.gz');
         if (Compressor::gzip_to($source, $tmp)) {
             self::put_retry($transport, $tmp, $relative . '.gz');
-            @unlink($tmp);
+            wp_delete_file($tmp);
         }
     }
 
@@ -2436,9 +2439,10 @@ HTML;
 
         foreach ($items as $item) {
             if ($item->isDir()) {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- removes an emptied directory inside the plugin's own cache dir.
                 @rmdir($item->getPathname());
             } else {
-                @unlink($item->getPathname());
+                wp_delete_file($item->getPathname());
             }
         }
     }

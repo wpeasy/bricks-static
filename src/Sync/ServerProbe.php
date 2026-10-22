@@ -40,7 +40,7 @@ final class ServerProbe {
     /**
      * Option prefix for the last result, per destination id.
      */
-    private const OPTION_PREFIX = 'bs_server_check_';
+    private const OPTION_PREFIX = 'bricks_static_server_check_';
 
     /**
      * Per-request timeout (seconds).

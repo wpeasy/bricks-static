@@ -35,7 +35,7 @@ final class TransportFactory {
          * @param TransportInterface|null $transport Override, or null for default.
          * @param array<string,mixed>     $config    Connection config.
          */
-        $override = apply_filters('bs_transport', null, $config);
+        $override = apply_filters('bricks_static_transport', null, $config);
         if ($override instanceof TransportInterface) {
             return $override;
         }

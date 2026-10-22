@@ -12,6 +12,8 @@ namespace WPEasy\BricksStatic\Transport;
 
 defined('ABSPATH') || exit;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception messages are plain text for JSON responses (rendered as text by the dashboard) and WP-CLI, never echoed into HTML; esc_html() here would show entities to the user.
+
 /**
  * FTP / FTPS destination using PHP's ext-ftp.
  *
@@ -176,12 +178,12 @@ final class FtpTransport implements TransportInterface {
         }
 
         if (!@ftp_get($conn, $tmp, $this->absolute($remote_path), FTP_BINARY)) {
-            @unlink($tmp);
+            wp_delete_file($tmp);
             return '';
         }
 
         $data = (string) file_get_contents($tmp);
-        @unlink($tmp);
+        wp_delete_file($tmp);
 
         return $data;
     }

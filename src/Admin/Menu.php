@@ -38,12 +38,12 @@ final class Menu {
     /**
      * Script handle for the dashboard bundle (loaded as an ES module).
      */
-    private const SCRIPT_HANDLE = 'bs-dashboard';
+    private const SCRIPT_HANDLE = 'bricks-static-dashboard';
 
     /**
      * Script handle for the documentation bundle.
      */
-    private const DOCS_HANDLE = 'bs-docs';
+    private const DOCS_HANDLE = 'bricks-static-docs';
 
     /**
      * Page hook suffixes (dashboard, docs), used to scope asset enqueuing.
@@ -116,8 +116,8 @@ final class Menu {
             wp_enqueue_media();
             self::enqueue_app('src-svelte/dashboard/main.ts', self::SCRIPT_HANDLE, [
                 // Whether the setup wizard has never been shown/dismissed yet —
-                // dashboard-only, so it never leaks onto the docs page's bsData.
-                'isFirstRun' => get_option('bs_wizard_seen', '0') === '0',
+                // dashboard-only, so it never leaks onto the docs page's bricksStaticData.
+                'isFirstRun' => get_option('bricks_static_wizard_seen', '0') === '0',
             ]);
         } elseif ($hook === self::$docs_hook) {
             self::enqueue_app('src-svelte/docs/main.ts', self::DOCS_HANDLE);
@@ -130,7 +130,7 @@ final class Menu {
      *
      * @param string               $entry_key Vite manifest input key.
      * @param string               $handle    Script handle (also the CSS handle prefix).
-     * @param array<string,mixed>  $extra     Extra key/value pairs merged into `bsData`.
+     * @param array<string,mixed>  $extra     Extra key/value pairs merged into `bricksStaticData`.
      */
     private static function enqueue_app(string $entry_key, string $handle, array $extra = []): void {
         $entry = self::manifest_entry($entry_key);
@@ -148,15 +148,15 @@ final class Menu {
         // by the dashboard AND editor) is split by Vite into a shared chunk whose
         // CSS lives outside this entry's own `css[]` — walk imports so it loads.
         foreach (Assets::css_files($entry_key) as $i => $css_file) {
-            wp_enqueue_style($handle . '-' . $i, BS_PLUGIN_URL . 'assets/dist/' . $css_file, [], BS_VERSION);
+            wp_enqueue_style($handle . '-' . $i, BRICKS_STATIC_PLUGIN_URL . 'assets/dist/' . $css_file, [], BRICKS_STATIC_VERSION);
         }
 
-        wp_enqueue_script($handle, BS_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BS_VERSION, true);
+        wp_enqueue_script($handle, BRICKS_STATIC_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BRICKS_STATIC_VERSION, true);
 
-        wp_localize_script($handle, 'bsData', array_merge([
-            'restUrl' => esc_url_raw(rest_url('bs/v1')),
+        wp_localize_script($handle, 'bricksStaticData', array_merge([
+            'restUrl' => esc_url_raw(rest_url('bricks-static/v1')),
             'nonce'   => wp_create_nonce('wp_rest'),
-            'version' => BS_VERSION,
+            'version' => BRICKS_STATIC_VERSION,
             // Translated UI strings for the Svelte bundle (shared/i18n.ts).
             'i18n'    => I18n::all(),
         ], $extra));
@@ -174,11 +174,12 @@ final class Menu {
             return $tag;
         }
 
-        return sprintf(
-            '<script type="module" src="%s" id="%s-js"></script>' . "\n",
-            esc_url($src),
-            esc_attr($handle)
-        );
+        // wp_get_script_tag() escapes the attributes itself.
+        return wp_get_script_tag([
+            'type' => 'module',
+            'src'  => $src,
+            'id'   => $handle . '-js',
+        ]);
     }
 
     /**
@@ -188,7 +189,7 @@ final class Menu {
      * @return array<string,mixed>|null Entry data, or null if the build is missing.
      */
     private static function manifest_entry(string $entry_key): ?array {
-        $path = BS_PLUGIN_DIR . 'assets/dist/.vite/manifest.json';
+        $path = BRICKS_STATIC_PLUGIN_DIR . 'assets/dist/.vite/manifest.json';
 
         if (!is_readable($path)) {
             return null;
@@ -208,7 +209,7 @@ final class Menu {
             return;
         }
 
-        require BS_PLUGIN_DIR . 'templates/admin/page.php';
+        require BRICKS_STATIC_PLUGIN_DIR . 'templates/admin/page.php';
     }
 
     /**
@@ -219,6 +220,6 @@ final class Menu {
             return;
         }
 
-        require BS_PLUGIN_DIR . 'templates/admin/docs.php';
+        require BRICKS_STATIC_PLUGIN_DIR . 'templates/admin/docs.php';
     }
 }

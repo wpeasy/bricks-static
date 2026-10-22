@@ -14,6 +14,8 @@ use WPEasy\BricksStatic\Support\UrlSafety;
 
 defined('ABSPATH') || exit;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception messages are plain text for JSON responses (rendered as text by the dashboard) and WP-CLI, never echoed into HTML; esc_html() here would show entities to the user.
+
 /**
  * Speaks the Connector wire protocol (see docs/CONNECTOR_PLAN.md §4 and the
  * receiver template). Every request is:
@@ -161,6 +163,9 @@ final class ConnectorClient {
      * @throws \RuntimeException On any failure.
      */
     public function upload(string $local, ?string $target, int $chunk, ?callable $progress = null): string {
+        // Streamed in chunks: WP_Filesystem has no partial-read API, and reading a
+        // multi-MB package whole would defeat chunking.
+        // phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fopen, WordPress.WP.AlternativeFunctions.file_system_operations_fread, WordPress.WP.AlternativeFunctions.file_system_operations_fclose
         $fh = @fopen($local, 'rb');
         if ($fh === false) {
             throw new \RuntimeException('Cannot read ' . basename($local) . ' for upload.');
@@ -196,6 +201,7 @@ final class ConnectorClient {
         } finally {
             fclose($fh);
         }
+        // phpcs:enable WordPress.WP.AlternativeFunctions.file_system_operations_fopen, WordPress.WP.AlternativeFunctions.file_system_operations_fread, WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 
         return $upload;
     }

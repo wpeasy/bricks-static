@@ -25,7 +25,7 @@ final class SitemapController {
     /**
      * REST namespace.
      */
-    private const NS = 'bs/v1';
+    private const NS = 'bricks-static/v1';
 
     /**
      * Register routes.

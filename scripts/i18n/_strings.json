@@ -3,7 +3,7 @@
     "msgid": "Bricks Static"
   },
   {
-    "msgid": "Generate and serve static HTML versions of Bricks-built pages for performance."
+    "msgid": "Publish your WordPress site as static HTML over SFTP/FTP, HTTPS or Cloudflare. Bricks-aware; works with any WordPress content."
   },
   {
     "msgid": "Inspect and drive the Bricks Static export/sync engine."
@@ -246,7 +246,13 @@
     "msgid": "This pairing is no longer current — pair again."
   },
   {
+    "msgid": "Cloudflare destinations publish whole snapshots — package deploy does not apply."
+  },
+  {
     "msgid": "Connector reached — %s."
+  },
+  {
+    "msgid": "Cloudflare token accepted — %s."
   },
   {
     "msgid": "(no title)"
@@ -694,6 +700,45 @@
   },
   {
     "msgid": "Pairing is set by wp-config constants."
+  },
+  {
+    "msgid": "Cloudflare"
+  },
+  {
+    "msgid": "Publishes the site to Cloudflare’s global network as a static Worker — no web host, PHP or FTP account needed. Each sync uploads only the files Cloudflare doesn’t already have, then switches the whole site over at once."
+  },
+  {
+    "msgid": "Account ID"
+  },
+  {
+    "msgid": "Worker name"
+  },
+  {
+    "msgid": "API token"
+  },
+  {
+    "msgid": "How to set it up"
+  },
+  {
+    "msgid": "In the Cloudflare dashboard, open <strong>Workers &amp; Pages</strong> and copy your <strong>Account ID</strong> (shown on the right of the overview)."
+  },
+  {
+    "msgid": "Create an API token (<strong>My Profile → API Tokens → Create Token → Custom token</strong>) with the permission <strong>Account → Workers Scripts → Edit</strong>, limited to that account."
+  },
+  {
+    "msgid": "Choose a <strong>Worker name</strong> for this site (lowercase letters, numbers and dashes, e.g. <code>my-site</code>). It doesn’t need to exist — the first sync creates it."
+  },
+  {
+    "msgid": "Press <strong>Test</strong>. If the Destination URL is empty it is filled with the Worker’s <code>workers.dev</code> address — or enter your own domain once it is attached to the Worker (<strong>Worker → Settings → Domains &amp; Routes</strong>). <strong>Save</strong>, then Check / Sync as usual."
+  },
+  {
+    "msgid": "Cache headers are published automatically (Cloudflare’s <code>_headers</code>); Cloudflare compresses files itself, so no <code>.htaccess</code> or <code>.gz</code> files are used."
+  },
+  {
+    "msgid": "<strong>Limits:</strong> 25 MiB per file (larger files are left out and reported) and 20,000 files on the Free plan (100,000 on paid plans). Forms that post back to WordPress don’t work on a static copy."
+  },
+  {
+    "msgid": "The Destination URL has been set to this address — Save to keep it."
   },
   {
     "msgid": "Re-pair (new file)"
@@ -1215,6 +1260,9 @@
     "msgid": "CDN / proxy"
   },
   {
+    "msgid": "Sent automatically with every Cloudflare deploy — nothing to paste."
+  },
+  {
     "msgid": "Text replacements"
   },
   {
@@ -1237,9 +1285,6 @@
   },
   {
     "msgid": "(empty)"
-  },
-  {
-    "msgid": "<em>(empty)</em>"
   },
   {
     "msgid": "Confirm delete"
@@ -1394,6 +1439,9 @@
   },
   {
     "msgid": "%s — the cache policy is only partly in effect. Compare the headers below with the rules."
+  },
+  {
+    "msgid": "Cloudflare — the cache rules are not in effect yet. They are published with every Cloudflare deploy, so run a Sync, then check again."
   },
   {
     "msgid": "nginx detected. The site is being served, but the optional cache tuning is not applied — paste the nginx snippet into your server block and reload nginx, then check again."

@@ -35,7 +35,7 @@ final class PackageDeployer {
      * Option-name prefix flagging a destination where package deploy failed, so
      * we stop retrying it (cleared when the connection changes or on reset).
      */
-    public const OFF_PREFIX = 'bs_pkg_off_';
+    public const OFF_PREFIX = 'bricks_static_pkg_off_';
 
     /**
      * Whether this server can build a package locally.
@@ -57,7 +57,7 @@ final class PackageDeployer {
         $local = UrlSafety::is_dev_host((string) wp_parse_url($url, PHP_URL_HOST));
 
         /** Filters TLS verification for the package-deploy helper call. */
-        return (bool) apply_filters('bs_package_sslverify', !$local, $url);
+        return (bool) apply_filters('bricks_static_package_sslverify', !$local, $url);
     }
 
     /**
@@ -245,7 +245,7 @@ final class PackageDeployer {
              *
              * @param int $timeout Seconds.
              */
-            'timeout'   => max(10, (int) apply_filters('bs_package_timeout', 120)),
+            'timeout'   => max(10, (int) apply_filters('bricks_static_package_timeout', 120)),
             'sslverify' => $sslverify,
             'body'      => ['token' => $token, 'deletes' => wp_json_encode(array_values($deletes))],
         ]);
@@ -290,7 +290,7 @@ final class PackageDeployer {
     private static function cleanup_local(string ...$paths): void {
         foreach ($paths as $p) {
             if (is_file($p)) {
-                @unlink($p);
+                wp_delete_file($p);
             }
         }
     }

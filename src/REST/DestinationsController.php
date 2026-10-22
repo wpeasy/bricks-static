@@ -33,7 +33,7 @@ final class DestinationsController {
     /**
      * REST namespace.
      */
-    private const NS = 'bs/v1';
+    private const NS = 'bricks-static/v1';
 
     /**
      * Register routes.
@@ -96,7 +96,7 @@ final class DestinationsController {
         ]);
 
         // Streams the generated receiver (single-use token from /connector/pair).
-        // Same shape as /export/download — a bs/v1 REST route, not admin_post_*.
+        // Same shape as /export/download — a bricks-static/v1 REST route, not admin_post_*.
         register_rest_route(self::NS, '/connector/download', [
             'methods'             => 'GET',
             'callback'            => [self::class, 'connector_download'],
@@ -107,7 +107,7 @@ final class DestinationsController {
     /**
      * Transient prefix for connector download tokens.
      */
-    private const CONNECTOR_DL = 'bs_connector_dl_';
+    private const CONNECTOR_DL = 'bricks_static_connector_dl_';
 
     /**
      * POST /destinations/{id}/connector/pair — generate a fresh pairing
@@ -292,10 +292,10 @@ final class DestinationsController {
             }
             $transport->disconnect();
         } catch (\Throwable $e) {
-            @unlink($tmp);
+            wp_delete_file($tmp);
             return new WP_REST_Response(['ok' => false, 'message' => $e->getMessage()]);
         }
-        @unlink($tmp);
+        wp_delete_file($tmp);
 
         if (!empty($result['ok'])) {
             delete_option(PackageDeployer::OFF_PREFIX . $id);
@@ -432,7 +432,7 @@ final class DestinationsController {
      * @param string $id Destination id.
      */
     public static function conn_state_option(string $id): string {
-        return 'bs_conn_' . $id;
+        return 'bricks_static_conn_' . $id;
     }
 
     /**

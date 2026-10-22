@@ -31,11 +31,11 @@ WordPress install stays private/origin; the destination serves only flat files.
 ## Storage layout
 
 - **Staging cache** `wp-content/cache/bricks-static/` — rendered HTML, `.gz` siblings, mirrored assets (relative paths preserved), current-render manifest. Locked down with an `index.html` + deny drop-in; never the source of truth.
-  - Overridable via `BS_CACHE_DIR` constant or a `bs_cache_dir` filter; falls back to `wp-content/uploads/bricks-static/` if `wp-content/` is not writable.
+  - Overridable via `BRICKS_STATIC_CACHE_DIR` constant or a `bricks_static_cache_dir` filter; falls back to `wp-content/uploads/bricks-static/` if `wp-content/` is not writable.
 - **Durable (DB):**
-  - `bs_settings` option — destination config + encrypted credentials (constants override at read time).
-  - `bs_pushed_manifest` — hashes of what was last successfully pushed (drives "in sync").
-  - `{$wpdb->prefix}bs_jobs` table (large sites) / option (small) — job phase, counts, per-item status, errors, for resumability.
+  - `bricks_static_settings` option — destination config + encrypted credentials (constants override at read time).
+  - `bricks_static_pushed_manifest` — hashes of what was last successfully pushed (drives "in sync").
+  - `{$wpdb->prefix}bricks_static_jobs` table (large sites) / option (small) — job phase, counts, per-item status, errors, for resumability.
 
 ## PHP structure (`WPEasy\BricksStatic\…`, PSR-4 from `src/`)
 
@@ -65,7 +65,7 @@ src/
 │   ├── Compressor            # gzencode .gz siblings (if zlib)
 │   └── HtaccessBuilder       # .htaccess + nginx snippet
 ├── Settings/
-│   ├── Settings              # typed read/write of bs_settings (+ constant override)
+│   ├── Settings              # typed read/write of bricks_static_settings (+ constant override)
 │   └── Schema                # field definitions / sanitisation
 └── Support/
     ├── Crypto                # encrypt/decrypt creds via WP salts
@@ -79,12 +79,12 @@ src/
 2. **Collect URLs** — WP content + sitemap; if no sitemap, seed the homepage. Enqueue.
 3. **Per page (batched)** — loopback render → harvest internal links (enqueue new unique) → rewrite origin → root-relative → extract assets → write `…/<relative>/index.html` → write `.gz` sibling if zlib.
 4. **Assets (batched)** — fetch each unique same-origin asset → store under the same relative path → parse CSS for nested `url()`.
-5. **Manifest diff** — hash every output, compare to `bs_pushed_manifest` → compute the new/changed upload set.
+5. **Manifest diff** — hash every output, compare to `bricks_static_pushed_manifest` → compute the new/changed upload set.
 6. **Upload (batched)** — push changed files + `.gz` over the chosen transport, preserving paths. (A snapshot transport — Cloudflare — instead publishes the full deploy set in one `snapshot` phase; the far end dedupes, so only new/changed files travel, and nothing is pruned.)
 7. **`.htaccess`** — back up any existing one, then write: serve `.gz` when present; cache-control HTML short/revalidate, static assets long + `immutable`. Emit an nginx snippet for manual paste.
 8. **Finalize** — store the pushed manifest; status → *In sync*.
 
-## Admin dashboard (Svelte 5, `.bs` framework, REST `bs/v1`)
+## Admin dashboard (Svelte 5, `.bs` framework, REST `bricks-static/v1`)
 
 - **Connection** — transport (SFTP/FTP), host/port/user/remote path, *Test connection*; indicates whether creds come from DB or wp-config constants.
 - **Status** — three indicators: *Connected* · *Pushed yet?* · *In sync*.
@@ -118,16 +118,16 @@ Proper form support (later): keep dynamic endpoints pointing at the live origin
 and `<img>` src/srcset only; "All Destinations" syncs **sequentially**.
 
 **Data model**
-- `bs_common` — shared settings + master enable (shown above the tabs).
-- `bs_destinations` — list; each `{ id, name, enabled,
+- `bricks_static_common` — shared settings + master enable (shown above the tabs).
+- `bricks_static_destinations` — list; each `{ id, name, enabled,
   includeInSinglePageSync, connection (transport/host/port/user/password(enc)/
   remotePath/basePath/destinationUrl), replacements: [{search, replace}] }`.
   - **enabled** — include this destination in full syncs / "All Destinations".
   - **includeInSinglePageSync** — include it when a single page is pushed from
     the editor (that editor button is TBA; the switch is wired now).
-- `bs_pushed_{id}` — per-destination pushed manifest (independent sync state).
-- Migration: existing single `bs_settings` → `destinations[0]`; `bs_pushed_manifest`
-  → `bs_pushed_{id0}`.
+- `bricks_static_pushed_{id}` — per-destination pushed manifest (independent sync state).
+- Migration: existing single `bricks_static_settings` → `destinations[0]`; `bricks_static_pushed_manifest`
+  → `bricks_static_pushed_{id0}`.
 
 **Render once, deploy many**
 - Render the base static site **once** (source-derived → cache + render manifest).

@@ -44,7 +44,7 @@ final class Assets {
     public static function manifest(): ?array {
         if (!self::$loaded) {
             self::$loaded = true;
-            $path = BS_PLUGIN_DIR . 'assets/dist/.vite/manifest.json';
+            $path = BRICKS_STATIC_PLUGIN_DIR . 'assets/dist/.vite/manifest.json';
             if (is_readable($path)) {
                 $decoded        = json_decode((string) file_get_contents($path), true);
                 self::$manifest = is_array($decoded) ? $decoded : null;
@@ -124,8 +124,8 @@ final class Assets {
     public static function enqueue_ab_ui_css(array $deps = []): void {
         foreach (self::ab_ui_css_files() as $file) {
             $base   = (string) preg_replace('/-[A-Za-z0-9_-]{6,}$/', '', basename((string) $file, '.css'));
-            $handle = 'bs-css-' . sanitize_key($base !== '' ? $base : $file);
-            wp_enqueue_style($handle, BS_PLUGIN_URL . 'assets/dist/' . $file, $deps, BS_VERSION);
+            $handle = 'bricks-static-css-' . sanitize_key($base !== '' ? $base : $file);
+            wp_enqueue_style($handle, BRICKS_STATIC_PLUGIN_URL . 'assets/dist/' . $file, $deps, BRICKS_STATIC_VERSION);
         }
     }
 
@@ -140,8 +140,8 @@ final class Assets {
         foreach (self::css_files($key) as $file) {
             $base   = basename((string) $file, '.css');
             $base   = (string) preg_replace('/-[A-Za-z0-9_-]{6,}$/', '', $base); // strip hash
-            $handle = 'bs-css-' . sanitize_key($base !== '' ? $base : $file);
-            wp_enqueue_style($handle, BS_PLUGIN_URL . 'assets/dist/' . $file, $deps, BS_VERSION);
+            $handle = 'bricks-static-css-' . sanitize_key($base !== '' ? $base : $file);
+            wp_enqueue_style($handle, BRICKS_STATIC_PLUGIN_URL . 'assets/dist/' . $file, $deps, BRICKS_STATIC_VERSION);
         }
     }
 }

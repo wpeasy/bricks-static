@@ -35,7 +35,7 @@ final class Background {
          *
          * @param bool $can Whether spawning is allowed.
          */
-        return (bool) apply_filters('bs_can_spawn_cli', $available);
+        return (bool) apply_filters('bricks_static_can_spawn_cli', $available);
     }
 
     /**

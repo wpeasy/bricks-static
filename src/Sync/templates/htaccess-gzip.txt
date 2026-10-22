@@ -1,0 +1,15 @@
+
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Serve a pre-compressed sibling (file.gz) when the client accepts gzip.
+    RewriteCond %{HTTP:Accept-Encoding} gzip
+    RewriteCond %{REQUEST_FILENAME}\.gz -f
+    RewriteRule ^(.*)$ $1.gz [L]
+
+    # Same, for directory requests resolved to index.html.
+    RewriteCond %{HTTP:Accept-Encoding} gzip
+    RewriteCond %{REQUEST_FILENAME}index.html.gz -f
+    RewriteRule ^(.*)/?$ $1/index.html.gz [L]
+</IfModule>

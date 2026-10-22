@@ -14,13 +14,15 @@ use WPEasy\BricksStatic\Support\UrlSafety;
 
 defined('ABSPATH') || exit;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception messages are plain text for JSON responses (rendered as text by the dashboard) and WP-CLI, never echoed into HTML; esc_html() here would show entities to the user.
+
 /**
  * Fetches the final rendered output of a URL via an internal HTTP request.
  *
  * Builder-agnostic: it captures whatever the site outputs (Bricks, Gutenberg,
  * etc.). SSL verification is relaxed for local/dev hosts (self-signed certs) so
  * loopback requests to *.local / *.test / localhost succeed; override via the
- * `bs_render_sslverify` and `bs_render_request_args` filters.
+ * `bricks_static_render_sslverify` and `bricks_static_render_request_args` filters.
  */
 final class PageRenderer {
 
@@ -39,7 +41,7 @@ final class PageRenderer {
     /**
      * Option holding that shared secret (not autoloaded).
      */
-    private const TOKEN_OPTION = 'bs_render_token';
+    private const TOKEN_OPTION = 'bricks_static_render_token';
 
     /**
      * Whether the CURRENT request is one of our loopback render requests.
@@ -125,12 +127,12 @@ final class PageRenderer {
         /**
          * Filters the per-asset fetch timeout (seconds). Raise it on slow hosts
          * that serve large/generated assets; keep it below the sync watchdog
-         * window ({@see bs_stale_seconds}) so an in-flight fetch isn't reaped.
+         * window ({@see bricks_static_stale_seconds}) so an in-flight fetch isn't reaped.
          *
          * @param int    $timeout Seconds.
          * @param string $url     Asset URL.
          */
-        $args['timeout'] = max(5, (int) apply_filters('bs_asset_timeout', 60, $url));
+        $args['timeout'] = max(5, (int) apply_filters('bricks_static_asset_timeout', 60, $url));
 
         $response = wp_remote_get($url, $args);
 
@@ -156,15 +158,15 @@ final class PageRenderer {
             /**
              * Filters the per-page loopback render timeout (seconds). Raise it for
              * heavy pages; keep it below the sync watchdog window
-             * ({@see bs_stale_seconds}) so an in-flight render isn't reaped.
+             * ({@see bricks_static_stale_seconds}) so an in-flight render isn't reaped.
              *
              * @param int    $timeout Seconds.
              * @param string $url     Page URL.
              */
-            'timeout'     => max(5, (int) apply_filters('bs_render_timeout', 60, $url)),
+            'timeout'     => max(5, (int) apply_filters('bricks_static_render_timeout', 60, $url)),
             'redirection' => 5,
             'sslverify'   => self::should_verify_ssl(),
-            'user-agent'  => self::USER_AGENT_PREFIX . BS_VERSION,
+            'user-agent'  => self::USER_AGENT_PREFIX . BRICKS_STATIC_VERSION,
             // Proves the request originated here, so it may pass gates the site
             // owner put up for visitors (see is_trusted_render_request()).
             'headers'     => [self::TOKEN_HEADER => self::token()],
@@ -176,7 +178,7 @@ final class PageRenderer {
          * @param array<string,mixed> $args Request args.
          * @param string              $url  Requested URL.
          */
-        return (array) apply_filters('bs_render_request_args', $args, $url);
+        return (array) apply_filters('bricks_static_render_request_args', $args, $url);
     }
 
     /**
@@ -205,6 +207,6 @@ final class PageRenderer {
          *
          * @param bool $verify Whether to verify.
          */
-        return (bool) apply_filters('bs_render_sslverify', $verify);
+        return (bool) apply_filters('bricks_static_render_sslverify', $verify);
     }
 }

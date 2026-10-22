@@ -5,6 +5,26 @@ All notable changes to **Bricks Static** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-10-23
+
+### Changed — breaking (no installs yet, so no migration)
+- **Prefix renamed** for wordpress.org's 4+ character rule: options, transients, hooks/filters and error codes `bs_*` → `bricks_static_*`; post meta `_bs_manual_include` → `_bricks_static_manual_include`; constants `BS_*` → `BRICKS_STATIC_*` (including the `wp-config.php` connection constants, e.g. `BRICKS_STATIC_HOST`); REST namespace `bs/v1` → `bricks-static/v1`; JS globals `bsData`/`bsEditorData`/`bsFabData`/`bsListData` → `bricksStatic…`; script/style handles `bs-*` → `bricks-static-*`; editor metabox id `bricks-static`. CSS classes (`.bs-`) and the Connector receiver's internal names are unchanged.
+
+### Added
+- `uninstall.php` now removes everything the plugin stores: options (including saved passwords and API tokens), transients, the per-post include meta, and the staging cache folder (only when it's the plugin's own `bricks-static` folder). Multisite-aware. Deployed files are never touched.
+- Translations (fr_FR, de_DE, it_IT, es_ES, nl_NL) now cover the Cloudflare deploy method and the new plugin description — every UI string is translated again.
+- readme, plugin description, README and the Docs page explain the name: Bricks Static is Bricks-aware (it ignores the random element IDs Bricks regenerates on every render, and renders through Bricks' maintenance mode), but works with all standard WordPress content.
+
+### Changed
+- Plugin header: removed `Update URI: false`, which stopped WordPress from offering updates from wordpress.org.
+- Exported pages' generator meta now reads `Bricks Static <ver> by BRXProd` (was the old name, `Bricks Sync`).
+- Plugin header: removed `Network: false` (only `true` is valid); `Tested up to` 7.1.
+- Generated files (the one-shot unzip helper, `.htaccess`, nginx snippet) now come from `*.txt` templates instead of PHP heredocs — output is byte-identical. wordpress.org's Plugin Check disallows heredocs.
+- Files are deleted with `wp_delete_file()`; the dashboard's module script tag is built with `wp_get_script_tag()`; the Abilities category registration is guarded for WordPress < 6.9.
+- The release zip now includes `composer.json`/`composer.lock` beside `vendor/`.
+- Plugin Check: 0 errors (was 66); justified `phpcs:ignore` comments on the remaining necessary direct file/process calls.
+- `readme.txt`: added an External services section (own servers, Cloudflare API, YouTube thumbnails), a source-code/build FAQ and a shell-commands FAQ; listed Cloudflare among the features.
+
 ## [2.1.1] - 2026-10-22
 
 ### Added

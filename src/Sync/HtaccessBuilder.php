@@ -151,23 +151,7 @@ final class HtaccessBuilder {
 
         $rewrite = '';
         if (Compressor::available()) {
-            $rewrite = <<<HTACCESS
-
-
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-
-    # Serve a pre-compressed sibling (file.gz) when the client accepts gzip.
-    RewriteCond %{HTTP:Accept-Encoding} gzip
-    RewriteCond %{REQUEST_FILENAME}\.gz -f
-    RewriteRule ^(.*)\$ \$1.gz [L]
-
-    # Same, for directory requests resolved to index.html.
-    RewriteCond %{HTTP:Accept-Encoding} gzip
-    RewriteCond %{REQUEST_FILENAME}index.html.gz -f
-    RewriteRule ^(.*)/?\$ \$1/index.html.gz [L]
-</IfModule>
-HTACCESS;
+            $rewrite = self::template('htaccess-gzip.txt');
         }
 
         // Pre-compressed Content-Encoding/Type headers. Without them a .gz
@@ -180,21 +164,11 @@ HTACCESS;
         // subdomain docroot is a common layout) would otherwise lose its own
         // DirectoryIndex and 403. Static output never contains an index.php, so
         // index.html still wins wherever we actually deploy.
-        return <<<HTACCESS
-DirectoryIndex index.html index.php
-$rewrite
-
-<IfModule mod_headers.c>
-$precompressed
-    # Cache policy: assets immutable for a year, HTML always revalidated.
-    <FilesMatch "\.($assets)\$">
-        Header set Cache-Control "public, max-age=31536000, immutable"
-    </FilesMatch>
-    <FilesMatch "\.html\$">
-        Header set Cache-Control "public, max-age=0, must-revalidate"
-    </FilesMatch>
-</IfModule>
-HTACCESS;
+        return strtr(self::template('htaccess.txt'), [
+            '__BS_REWRITE__'       => $rewrite,
+            '__BS_PRECOMPRESSED__' => $precompressed,
+            '__BS_ASSETS__'        => $assets,
+        ]);
     }
 
     /**
@@ -208,28 +182,19 @@ HTACCESS;
             ? "\n# Serve pre-compressed .gz when available.\ngzip_static on;\n"
             : '';
 
-        return <<<NGINX
-# Bricks Static — optional nginx tuning. Stock nginx already serves the static
-# site (index.html + directory resolution are defaults); this adds the cache
-# policy and pre-compressed serving. Paste inside your server { } block, then
-# reload nginx. (nginx has no per-directory config, so this can't be applied
-# over FTP/SFTP — use "Check server" in the dashboard to verify it took effect.)
+        return strtr(self::template('nginx.conf.txt'), [
+            '__BS_GZIP__'   => $gzip,
+            '__BS_ASSETS__' => $assets,
+        ]);
+    }
 
-index index.html;
-$gzip
-location / {
-    try_files \$uri \$uri/ \$uri/index.html =404;
-}
-
-# Assets: immutable for a year.
-location ~* \.($assets)\$ {
-    add_header Cache-Control "public, max-age=31536000, immutable";
-}
-
-# HTML: always revalidate.
-location ~* \.html\$ {
-    add_header Cache-Control "public, max-age=0, must-revalidate";
-}
-NGINX;
+    /**
+     * A config template from `templates/` (plain text with `__BS_*__`
+     * placeholders — kept out of PHP heredocs so it stays readable and lintable).
+     *
+     * @param string $name Template basename.
+     */
+    private static function template(string $name): string {
+        return (string) file_get_contents(__DIR__ . '/templates/' . $name);
     }
 }

@@ -25,7 +25,7 @@ final class ConnectionController {
     /**
      * REST namespace.
      */
-    private const NS = 'bs/v1';
+    private const NS = 'bricks-static/v1';
 
     /**
      * Register routes.
@@ -78,7 +78,7 @@ final class ConnectionController {
         $saved = Settings::save($input);
 
         // Credentials/host may have changed — invalidate the cached test result.
-        delete_option('bs_connection_state');
+        delete_option('bricks_static_connection_state');
 
         return new WP_REST_Response([
             'settings'     => $saved,
@@ -112,7 +112,7 @@ final class ConnectionController {
             $transport->disconnect();
         }
 
-        update_option('bs_connection_state', [
+        update_option('bricks_static_connection_state', [
             'ok'      => $ok,
             'time'    => time(),
             'message' => $message,

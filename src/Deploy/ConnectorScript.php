@@ -68,6 +68,7 @@ final class ConnectorScript {
             '__BS_ID__'          => $connector_id,
             '__BS_SECRET_HASH__' => hash('sha256', $secret),
             '__BS_VERSION__'     => (string) self::VERSION,
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export -- renders a PHP array literal for the receiver, not debug output.
             '__BS_GZIP__'        => var_export(array_values(array_map('strval', Compressor::extensions())), true),
             '__BS_GZMIN__'       => (string) Compressor::min_bytes(),
         ]);

@@ -250,13 +250,13 @@ final class SyncCommand {
                 try {
                     $transport->connect();
                 } catch (\Throwable $e) {
-                    update_option('bs_conn_' . $dest_id, ['ok' => false, 'time' => time(), 'message' => $e->getMessage()], false);
+                    update_option('bricks_static_conn_' . $dest_id, ['ok' => false, 'time' => time(), 'message' => $e->getMessage()], false);
                     \WP_CLI::error($e->getMessage());
                 }
                 if (!$transport instanceof CloudflareTransport) {
                     \WP_CLI::error('Not a Cloudflare transport.');
                 }
-                update_option('bs_conn_' . $dest_id, ['ok' => true, 'time' => time(), 'message' => $transport->describe()], false);
+                update_option('bricks_static_conn_' . $dest_id, ['ok' => true, 'time' => time(), 'message' => $transport->describe()], false);
                 \WP_CLI::success('Cloudflare token accepted — ' . $transport->describe() . '.');
                 if (trim((string) $dest->get('destinationUrl')) === '' && $transport->workers_dev_url() !== '') {
                     \WP_CLI::log('Tip: set the Destination URL with `cloudflare set ' . $dest_id . ' --dest-url=' . $transport->workers_dev_url() . '`.');
@@ -369,7 +369,7 @@ final class SyncCommand {
                     \WP_CLI::error('Not a connector transport.');
                 }
                 if ($action === 'test') {
-                    update_option('bs_conn_' . $dest_id, ['ok' => true, 'time' => time(), 'message' => $transport->describe()], false);
+                    update_option('bricks_static_conn_' . $dest_id, ['ok' => true, 'time' => time(), 'message' => $transport->describe()], false);
                     \WP_CLI::success('Connector reached — ' . $transport->describe());
                     return;
                 }

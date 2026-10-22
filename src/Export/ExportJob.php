@@ -24,7 +24,7 @@ final class ExportJob {
     /**
      * Option storing the active export job.
      */
-    public const OPTION = 'bs_export_job';
+    public const OPTION = 'bricks_static_export_job';
 
     /**
      * Phases that mean "not currently running".

@@ -2,7 +2,7 @@
  * Internationalization helper for the Svelte/JS admin UI.
  *
  * Strings are owned by PHP: `Support\I18n` + `Admin\Menu` localise the
- * dictionary onto `window.bsData.i18n`, already translated server-side by the
+ * dictionary onto `window.bricksStaticData.i18n`, already translated server-side by the
  * loaded `.mo` for the active locale, so the JS just looks the key up — no
  * `wp.i18n`, no `wp_set_script_translations()` (which is brittle with Vite's
  * hashed bundles).
@@ -14,7 +14,7 @@
 type Dict = Record<string, string>;
 
 type WindowWithI18n = {
-  bsData?: { i18n?: Dict };
+  bricksStaticData?: { i18n?: Dict };
   // Some panels can mount into a detached window; fall back to the opener.
   opener?: WindowWithI18n | null;
 };
@@ -25,7 +25,7 @@ type WindowWithI18n = {
 let cache: Dict | null = null;
 
 /**
- * Reads `win.bsData?.i18n`, swallowing the SecurityError a browser throws when
+ * Reads `win.bricksStaticData?.i18n`, swallowing the SecurityError a browser throws when
  * `win` (e.g. `window.opener`) is a cross-origin window — merely reading a
  * named property off a foreign Window object throws, optional chaining included.
  */
@@ -34,7 +34,7 @@ function readI18n(win: WindowWithI18n | null | undefined): Dict | undefined {
     return undefined;
   }
   try {
-    return win.bsData?.i18n;
+    return win.bricksStaticData?.i18n;
   } catch {
     return undefined;
   }

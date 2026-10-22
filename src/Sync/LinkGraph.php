@@ -25,7 +25,7 @@ final class LinkGraph {
     /**
      * Option name.
      */
-    public const OPTION = 'bs_link_graph';
+    public const OPTION = 'bricks_static_link_graph';
 
     /**
      * Load the graph.

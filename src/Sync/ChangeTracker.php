@@ -28,13 +28,13 @@ final class ChangeTracker {
     /**
      * Option: set when public content has changed since the last full render.
      */
-    public const DIRTY_OPTION = 'bs_content_dirty';
+    public const DIRTY_OPTION = 'bricks_static_content_dirty';
 
     /**
      * Option: the discovery mode in force at the last full render. A mode change
      * also makes the render (and the included/excluded split) stale.
      */
-    public const MODE_OPTION = 'bs_render_mode';
+    public const MODE_OPTION = 'bricks_static_render_mode';
 
     /**
      * Register hooks.

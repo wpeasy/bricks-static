@@ -17,6 +17,8 @@ use WPEasy\BricksStatic\Deploy\ConnectorVersionException;
 
 defined('ABSPATH') || exit;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception messages are plain text for JSON responses (rendered as text by the dashboard) and WP-CLI, never echoed into HTML; esc_html() here would show entities to the user.
+
 /**
  * Deploys through a user-installed receiver script on the destination (see
  * `Deploy\ConnectorScript`) instead of an FTP/SFTP account. Implements the
@@ -193,7 +195,7 @@ final class ConnectorTransport implements TransportInterface, PackageCapableTran
             });
 
             $report('Extracting on the destination…');
-            $r = $this->client->extract($upload, $deletes, max(10, (int) apply_filters('bs_package_timeout', 120)));
+            $r = $this->client->extract($upload, $deletes, max(10, (int) apply_filters('bricks_static_package_timeout', 120)));
         } catch (ConnectorAuthException | ConnectorVersionException | ConnectorHostException $e) {
             // Nothing transient about a bad pairing / missing receiver — but the
             // per-file fallback would fail the same way, so keep package enabled

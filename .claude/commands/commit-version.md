@@ -2,7 +2,7 @@
 description: Version bump + changelog + zip build, then commit & sync (Bricks Static)
 ---
 
-Bricks Static ships as a single free plugin (`bricks-static.php`, `BS_VERSION`), wp.org. Changelog: `CHANGELOG.md`.
+Bricks Static ships as a single free plugin (`bricks-static.php`, `BRICKS_STATIC_VERSION`), wp.org. Changelog: `CHANGELOG.md`.
 
 Do the following:
 
@@ -14,7 +14,7 @@ Build output (`assets/dist/**`), `node_modules/`, `dist/`, `vendor/`, and `.md` 
 If nothing in the shipped surfaces (`bricks-static.php`, `src/**`, `src-svelte/**`, `uninstall.php`, `README.md`) changed, say so and skip the bump.
 
 ### 2. Bump the version by 0.0.1 (preserve any `-beta`/pre-release suffix)
-Increment `Version:` in the `bricks-static.php` header AND the `BS_VERSION` define to match. If `package.json` exists, set its `version` to match (drop the `-beta` suffix if package.json uses bare semver).
+Increment `Version:` in the `bricks-static.php` header AND the `BRICKS_STATIC_VERSION` define to match. If `package.json` exists, set its `version` to match (drop the `-beta` suffix if package.json uses bare semver).
 
 ### 3. Update the changelog
 - Add the new version to `CHANGELOG.md` with notes on what changed.

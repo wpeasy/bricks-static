@@ -27,14 +27,14 @@ use WPEasy\BricksStatic\Sync\Runner;
 defined('ABSPATH') || exit;
 
 /**
- * Reads/writes the `_bs_manual_include` post meta for `manual` discovery mode.
+ * Reads/writes the `_bricks_static_manual_include` post meta for `manual` discovery mode.
  */
 final class EditorController {
 
     /**
      * REST namespace.
      */
-    private const NS = 'bs/v1';
+    private const NS = 'bricks-static/v1';
 
     /**
      * Register routes.

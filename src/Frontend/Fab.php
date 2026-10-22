@@ -26,7 +26,7 @@ final class Fab {
     /**
      * Script handle for the frontend bundle (loaded as an ES module).
      */
-    private const SCRIPT_HANDLE = 'bs-frontend';
+    private const SCRIPT_HANDLE = 'bricks-static-frontend';
 
     /**
      * Manifest entry key (Vite input name).
@@ -59,7 +59,7 @@ final class Fab {
 
         // Admin toggle (Bricks Static dashboard app bar), on by default. Stored as
         // '1'/'0' so an explicit "off" isn't swallowed by get_option's default.
-        if (get_option('bs_fab_enabled', '1') === '0') {
+        if (get_option('bricks_static_fab_enabled', '1') === '0') {
             return false;
         }
 
@@ -100,7 +100,7 @@ final class Fab {
         // visitor-facing page content.
         Assets::enqueue_ab_ui_css();
         Assets::enqueue_css(self::ENTRY);
-        wp_enqueue_script(self::SCRIPT_HANDLE, BS_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BS_VERSION, true);
+        wp_enqueue_script(self::SCRIPT_HANDLE, BRICKS_STATIC_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BRICKS_STATIC_VERSION, true);
 
         // In `manual` discovery mode the modal also shows a per-post "Include"
         // switch, so the page can be opted in/out from the Bricks editor / front
@@ -113,8 +113,8 @@ final class Fab {
         // draft (no permalink rewrite), and the draft looks publishable.
         $post_id = self::resolve_post_id();
 
-        wp_localize_script(self::SCRIPT_HANDLE, 'bsFabData', [
-            'restUrl'       => esc_url_raw(rest_url('bs/v1')),
+        wp_localize_script(self::SCRIPT_HANDLE, 'bricksStaticFabData', [
+            'restUrl'       => esc_url_raw(rest_url('bricks-static/v1')),
             'nonce'         => wp_create_nonce('wp_rest'),
             'pageUrl'       => self::current_url(),
             'inEditor'      => self::in_editor(),

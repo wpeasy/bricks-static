@@ -14,6 +14,8 @@ use phpseclib3\Net\SFTP;
 
 defined('ABSPATH') || exit;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception messages are plain text for JSON responses (rendered as text by the dashboard) and WP-CLI, never echoed into HTML; esc_html() here would show entities to the user.
+
 /**
  * SFTP destination using the bundled phpseclib library (no ext-ssh2 required).
  */
@@ -27,7 +29,7 @@ final class SftpTransport implements TransportInterface {
     /**
      * Option holding trusted server host keys, keyed by "host:port".
      */
-    private const KNOWN_HOSTS_OPTION = 'bs_sftp_known_hosts';
+    private const KNOWN_HOSTS_OPTION = 'bricks_static_sftp_known_hosts';
 
     /**
      * Connection config: host, port, username, password, remotePath.
@@ -98,7 +100,7 @@ final class SftpTransport implements TransportInterface {
      */
     private static function verify_host_key(SFTP $sftp, string $host, int $port): void {
         /** Filters whether SFTP host-key verification is enforced. */
-        if (!apply_filters('bs_sftp_verify_host_key', true, $host, $port)) {
+        if (!apply_filters('bricks_static_sftp_verify_host_key', true, $host, $port)) {
             return;
         }
 

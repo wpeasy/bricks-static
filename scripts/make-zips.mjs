@@ -32,6 +32,9 @@ const PLUGIN = {
     'templates',
     'languages',
     'vendor',
+    // wordpress.org Plugin Check expects the manifest next to a shipped vendor/.
+    'composer.json',
+    'composer.lock',
   ],
 };
 
@@ -219,7 +222,7 @@ mkdirSync(DIST, { recursive: true });
 
 // 2. Stage + zip.
 console.log('• Staging…');
-const version = pluginVersion(join(ROOT, 'bricks-static.php'), 'BS_VERSION');
+const version = pluginVersion(join(ROOT, 'bricks-static.php'), 'BRICKS_STATIC_VERSION');
 const stageDir = join(DIST, '_stage');
 stage(ROOT, PLUGIN.allow, join(stageDir, PLUGIN.zip));
 zip(stageDir, PLUGIN.zip, `${PLUGIN.zip}-${version}`);

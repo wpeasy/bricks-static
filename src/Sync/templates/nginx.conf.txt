@@ -1,0 +1,21 @@
+# Bricks Static — optional nginx tuning. Stock nginx already serves the static
+# site (index.html + directory resolution are defaults); this adds the cache
+# policy and pre-compressed serving. Paste inside your server { } block, then
+# reload nginx. (nginx has no per-directory config, so this can't be applied
+# over FTP/SFTP — use "Check server" in the dashboard to verify it took effect.)
+
+index index.html;
+__BS_GZIP__
+location / {
+    try_files $uri $uri/ $uri/index.html =404;
+}
+
+# Assets: immutable for a year.
+location ~* \.(__BS_ASSETS__)$ {
+    add_header Cache-Control "public, max-age=31536000, immutable";
+}
+
+# HTML: always revalidate.
+location ~* \.html$ {
+    add_header Cache-Control "public, max-age=0, must-revalidate";
+}

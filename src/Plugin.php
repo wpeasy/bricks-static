@@ -48,7 +48,7 @@ final class Plugin {
      * clone of a site that already has the option set.
      */
     public static function activate(): void {
-        delete_option('bs_wizard_seen');
+        delete_option('bricks_static_wizard_seen');
     }
 
     /**
@@ -106,7 +106,7 @@ final class Plugin {
         Pipeline::register_replacer(new VideoDeployReplacer());
 
         Pipeline::register_extra_files(static function (array $page_urls): array {
-            if (!apply_filters('bs_generate_sitemaps', true)) {
+            if (!apply_filters('bricks_static_generate_sitemaps', true)) {
                 return [];
             }
 
@@ -139,7 +139,7 @@ final class Plugin {
          *
          * @param bool $bypass Whether to bypass.
          */
-        return apply_filters('bs_bypass_maintenance', true) ? false : (bool) $apply;
+        return apply_filters('bricks_static_bypass_maintenance', true) ? false : (bool) $apply;
     }
 
     /**
@@ -148,11 +148,11 @@ final class Plugin {
      * `wp-emoji-release.min.js` is referenced only from inline JS (so it can't be
      * mirrored and 404s on the static host), and modern browsers render emoji
      * natively without it. Applies to our render requests only — never the live
-     * front end. Disable with the `bs_strip_emoji` filter.
+     * front end. Disable with the `bricks_static_strip_emoji` filter.
      */
     public static function prepare_render_output(): void {
         /** Filters whether the WordPress emoji loader is stripped from the static output. */
-        if (!apply_filters('bs_strip_emoji', true)) {
+        if (!apply_filters('bricks_static_strip_emoji', true)) {
             return;
         }
 

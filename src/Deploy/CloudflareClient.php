@@ -12,6 +12,8 @@ namespace WPEasy\BricksStatic\Deploy;
 
 defined('ABSPATH') || exit;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception messages are plain text for JSON responses (rendered as text by the dashboard) and WP-CLI, never echoed into HTML; esc_html() here would show entities to the user.
+
 /**
  * Speaks the Cloudflare v4 API for a Workers static-assets deploy — see
  * `docs/CLOUDFLARE_PLAN.md` §4 for the flow:

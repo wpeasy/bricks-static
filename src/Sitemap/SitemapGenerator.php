@@ -40,7 +40,7 @@ final class SitemapGenerator {
          *
          * @param array<string,string> $sections Map of child-sitemap label to post type.
          */
-        return (array) apply_filters('bs_sitemap_sections', ['pages' => 'page', 'posts' => 'post']);
+        return (array) apply_filters('bricks_static_sitemap_sections', ['pages' => 'page', 'posts' => 'post']);
     }
 
     /**
@@ -114,7 +114,7 @@ final class SitemapGenerator {
          *
          * @param array<int,string> $lines robots.txt lines (no trailing newlines).
          */
-        $lines = (array) apply_filters('bs_robots_lines', $lines);
+        $lines = (array) apply_filters('bricks_static_robots_lines', $lines);
 
         return implode("\n", $lines) . "\n";
     }

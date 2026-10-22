@@ -57,7 +57,7 @@ final class HeadCleaner {
      */
     public static function clean(string $html): string {
         /** Filters whether redundant WordPress head links are stripped from the static output. */
-        if (!apply_filters('bs_clean_head', true)) {
+        if (!apply_filters('bricks_static_clean_head', true)) {
             return $html;
         }
 
@@ -71,7 +71,7 @@ final class HeadCleaner {
         // matches here.)
         $html = (string) preg_replace('#[ \t]*<meta\b[^>]*\bname=([\'"])generator\1[^>]*>[ \t]*\R?#i', '', $html);
 
-        $tag = '<meta name="generator" content="' . esc_attr('Bricks Sync ' . BS_VERSION . ' by BRXProd') . '" />';
+        $tag = '<meta name="generator" content="' . esc_attr('Bricks Static ' . BRICKS_STATIC_VERSION . ' by BRXProd') . '" />';
         if (stripos($html, '</head>') !== false) {
             return (string) preg_replace('#</head>#i', $tag . "\n</head>", $html, 1);
         }

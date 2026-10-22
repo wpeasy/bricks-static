@@ -1,12 +1,18 @@
 # Bricks Static
 
-Generate and serve static HTML versions of [Bricks](https://bricksbuilder.io/)-built pages for performance, then deploy them to any host over SFTP/FTPS/FTP.
+Publish a WordPress site as static HTML to any host over SFTP/FTPS/FTP, the HTTPS Connector, or Cloudflare. [Bricks](https://bricksbuilder.io/)-aware, and works with all standard WordPress content.
 
 > By [BRXProd](https://brxprod.com).
 
 ## Overview
 
-**Bricks Static** renders your Bricks pages to static HTML (via authenticated loopback requests), rewrites their URLs to be portable, and pushes the result to one or more destinations — turning a dynamic WordPress + Bricks site into a fast, static front end while you keep editing in WordPress.
+**Bricks Static** renders your WordPress pages to static HTML (via authenticated loopback requests), rewrites their URLs to be portable, and pushes the result to one or more destinations — turning a dynamic WordPress site into a fast, static front end while you keep editing in WordPress.
+
+### Why "Bricks" Static?
+
+It's Bricks-aware. Bricks gives elements a new random ID (`brxe-…`, form field IDs, several `data-*` attributes) on every render, so to a generic exporter every Bricks page looks changed every time. `Render\StableHash` normalises those IDs when comparing renders (the deployed HTML keeps its real IDs), so only genuinely changed pages upload and "in sync" is accurate. It also renders through Bricks' maintenance / coming-soon mode (`bricks/maintenance/should_apply`) and keeps its single-page Sync button out of the builder's preview iframe.
+
+Bricks isn't required. The renderer is builder-agnostic (authenticated loopback requests capture whatever the site outputs), so block editor, Classic Editor, archives and any theme export the same way. Other builders can add their own per-render noise patterns via `bricks_static_stable_hash_patterns`.
 
 A single free plugin: unlimited pages and destinations, link/"all"/manual page discovery, text/media/link/video replacements, gzip pre-compression, remote pruning, sitemap generation, per-file or packaged deploy, `.htaccess` output, single-page sync, and an optional AI/MCP integration.
 
@@ -102,13 +108,13 @@ Both toggles default **off** — the AI can look but not touch until you opt in.
 
 The configurable timeouts are **render / fetch ceilings during caching, not upload limits**:
 
-- `bs_render_timeout` (60s) bounds each **page** loopback render; `bs_asset_timeout` (60s) bounds fetching a **dynamically-served** asset. Static files (uploads, theme CSS/JS) are read from disk, never fetched — so most assets aren’t subject to either.
-- The **upload** itself is bundled: in package mode every changed file goes into **one zip** + a single server-side extract (`bs_package_timeout`, 120s); the per-file fallback is paced by transport (SFTP/FTP) timeouts. There is no per-asset upload ceiling.
+- `bricks_static_render_timeout` (60s) bounds each **page** loopback render; `bricks_static_asset_timeout` (60s) bounds fetching a **dynamically-served** asset. Static files (uploads, theme CSS/JS) are read from disk, never fetched — so most assets aren’t subject to either.
+- The **upload** itself is bundled: in package mode every changed file goes into **one zip** + a single server-side extract (`bricks_static_package_timeout`, 120s); the per-file fallback is paced by transport (SFTP/FTP) timeouts. There is no per-asset upload ceiling.
 - A `cURL error 28` therefore only comes from an HTTP call (page render, dynamic-asset fetch, or the package-extract POST) — never from an SFTP/FTP upload.
 
-All of these are **filterable** for slow hosts (see Hooks). The sync **watchdog** that discards stalled jobs (`bs_stale_seconds`) is filterable too, so raising a request timeout above the default window doesn’t cause a still-working job to be reaped.
+All of these are **filterable** for slow hosts (see Hooks). The sync **watchdog** that discards stalled jobs (`bricks_static_stale_seconds`) is filterable too, so raising a request timeout above the default window doesn’t cause a still-working job to be reaped.
 
-## REST API (`bs/v1`)
+## REST API (`bricks-static/v1`)
 
 All routes require `manage_options`.
 
@@ -131,21 +137,21 @@ All routes require `manage_options`.
 
 ## Hooks
 
-Selected filters/actions (prefix `bs_`):
+Selected filters/actions (prefix `bricks_static_`):
 
 **Extension seams**
-- `bs_transport` — supply a custom transport implementation.
+- `bricks_static_transport` — supply a custom transport implementation.
 
 **Discovery / render**
-- `bs_seed_urls`, `bs_excluded_post_types` — tune what’s discovered.
-- `bs_render_request_args`, `bs_render_sslverify`, `bs_strip_emoji`, `bs_clean_head`, `bs_include_favicon` — tune rendering / head cleaning.
-- `bs_render_timeout`, `bs_asset_timeout` — per-page / per-asset loopback timeouts (seconds).
-- `bs_stale_seconds` — no-progress window before a stalled sync job is discarded.
+- `bricks_static_seed_urls`, `bricks_static_excluded_post_types` — tune what’s discovered.
+- `bricks_static_render_request_args`, `bricks_static_render_sslverify`, `bricks_static_strip_emoji`, `bricks_static_clean_head`, `bricks_static_include_favicon` — tune rendering / head cleaning.
+- `bricks_static_render_timeout`, `bricks_static_asset_timeout` — per-page / per-asset loopback timeouts (seconds).
+- `bricks_static_stale_seconds` — no-progress window before a stalled sync job is discarded.
 
 **Deploy / transport**
-- `bs_package_timeout`, `bs_package_sslverify` — remote unzip request.
-- `bs_sftp_verify_host_key` — SFTP host-key trust policy.
-- `bs_gzip_min_bytes`, `bs_cache_dir`, `bs_can_spawn_cli`, `bs_is_local`.
+- `bricks_static_package_timeout`, `bricks_static_package_sslverify` — remote unzip request.
+- `bricks_static_sftp_verify_host_key` — SFTP host-key trust policy.
+- `bricks_static_gzip_min_bytes`, `bricks_static_cache_dir`, `bricks_static_can_spawn_cli`, `bricks_static_is_local`.
 
 ## WP-CLI
 
@@ -164,11 +170,11 @@ Running WP-CLI against a Local by Flywheel site on Windows: see [`WP_CLI_LOCAL.m
 | Property | Value |
 |----------|-------|
 | PHP namespace | `WPEasy\BricksStatic` |
-| Constants prefix | `BS_` |
+| Constants prefix | `BRICKS_STATIC_` |
 | Textdomain | `bricks-static` |
-| REST namespace | `bs/v1` |
-| Options / table prefix | `bs_` |
-| JS global | `window.BS` (data: `bsData`) |
+| REST namespace | `bricks-static/v1` |
+| Options / hooks prefix | `bricks_static_` (no custom tables) |
+| JS globals | `bricksStaticData` (+ `…EditorData`, `…FabData`, `…ListData`) |
 | CSS prefix | `.bs-` |
 | Static cache | `wp-content/cache/bricks-static/site/` |
 

@@ -40,143 +40,18 @@ final class UnzipScript {
      * @param int                $min_bytes    Don't gzip files smaller than this (matches Compressor).
      */
     public static function generate(string $token, string $zip_name, int $expires, array $compressible = [], int $min_bytes = 0): string {
-        $token_php = var_export($token, true);
-        $zip_php   = var_export($zip_name, true);
-        $exp_php   = var_export($expires, true);
-        $gz_php    = var_export(array_values(array_map('strval', $compressible)), true);
-        $gzmin_php = var_export($min_bytes, true);
+        // A lintable template with placeholders, not a heredoc (same pattern as
+        // ConnectorScript). var_export() renders each value as a PHP literal.
+        $template = (string) file_get_contents(__DIR__ . '/templates/unzip.php.txt');
 
-        return <<<PHP
-<?php
-// Bricks Static — one-shot deploy helper. Safe to delete.
-declare(strict_types=1);
-
-\$TOKEN   = {$token_php};
-\$ZIPNAME = {$zip_php};
-\$EXPIRES = {$exp_php};
-\$GZIP    = {$gz_php};
-\$GZMIN   = {$gzmin_php};
-
-\$base = __DIR__;
-\$zip_path = \$base . '/' . \$ZIPNAME;
-
-header('Content-Type: application/json');
-
-\$cleanup = static function () use (\$zip_path) {
-    @unlink(\$zip_path);
-    @unlink(__FILE__);
-};
-
-\$provided = isset(\$_POST['token']) ? \$_POST['token'] : (isset(\$_GET['token']) ? \$_GET['token'] : '');
-if (!is_string(\$provided) || !hash_equals(\$TOKEN, \$provided)) {
-    // Do NOT self-delete on a bad token — the plugin cleans up over FTP.
-    http_response_code(403);
-    echo json_encode(array('ok' => false, 'error' => 'forbidden'));
-    exit;
-}
-
-if (time() > \$EXPIRES) {
-    \$cleanup();
-    http_response_code(410);
-    echo json_encode(array('ok' => false, 'error' => 'expired'));
-    exit;
-}
-
-\$safe = static function (\$rel) {
-    \$rel = str_replace('\\\\', '/', (string) \$rel);
-    if (\$rel === '' || \$rel[0] === '/' || strpos(\$rel, '../') !== false || strpos(\$rel, ':') !== false) {
-        return null;
-    }
-    return ltrim(\$rel, '/');
-};
-
-\$out = array('ok' => true, 'extracted' => 0, 'deleted' => 0, 'errors' => array());
-
-if (!class_exists('ZipArchive')) {
-    \$cleanup();
-    http_response_code(500);
-    echo json_encode(array('ok' => false, 'error' => 'ZipArchive unavailable'));
-    exit;
-}
-
-\$zip = new ZipArchive();
-if (\$zip->open(\$zip_path) !== true) {
-    \$cleanup();
-    http_response_code(500);
-    echo json_encode(array('ok' => false, 'error' => 'cannot open package'));
-    exit;
-}
-
-for (\$i = 0; \$i < \$zip->numFiles; \$i++) {
-    \$name = \$zip->getNameIndex(\$i);
-    if (\$name === false || substr(\$name, -1) === '/') {
-        continue;
-    }
-    \$rel = \$safe(\$name);
-    if (\$rel === null) {
-        \$out['errors'][] = 'unsafe:' . \$name;
-        continue;
-    }
-    \$dest = \$base . '/' . \$rel;
-    \$dir  = dirname(\$dest);
-    if (!is_dir(\$dir)) {
-        @mkdir(\$dir, 0755, true);
-    }
-    \$src = \$zip->getStream(\$name);
-    if (\$src === false) {
-        \$out['errors'][] = 'read:' . \$rel;
-        continue;
-    }
-    \$dst = @fopen(\$dest, 'wb');
-    if (\$dst === false) {
-        fclose(\$src);
-        \$out['errors'][] = 'write:' . \$rel;
-        continue;
-    }
-    stream_copy_to_stream(\$src, \$dst);
-    fclose(\$dst);
-    fclose(\$src);
-    \$out['extracted']++;
-
-    // Regenerate the gzip sibling locally (cheaper than transferring it).
-    \$ext = strtolower(pathinfo(\$rel, PATHINFO_EXTENSION));
-    if (in_array(\$ext, \$GZIP, true) && function_exists('gzencode')) {
-        \$data = @file_get_contents(\$dest);
-        // Skip tiny files (gzip overhead can exceed the saving) and any case
-        // where the .gz isn't actually smaller; drop a stale sibling if present.
-        if (\$data !== false && strlen(\$data) >= \$GZMIN) {
-            \$gz = @gzencode(\$data, 9);
-            if (\$gz !== false && strlen(\$gz) < strlen(\$data)) {
-                @file_put_contents(\$dest . '.gz', \$gz);
-            } elseif (is_file(\$dest . '.gz')) {
-                @unlink(\$dest . '.gz');
-            }
-        } elseif (is_file(\$dest . '.gz')) {
-            @unlink(\$dest . '.gz');
-        }
-    }
-}
-\$zip->close();
-
-\$deletes = isset(\$_POST['deletes']) ? json_decode((string) \$_POST['deletes'], true) : array();
-if (is_array(\$deletes)) {
-    foreach (\$deletes as \$del) {
-        \$rel = \$safe(\$del);
-        if (\$rel === null) {
-            continue;
-        }
-        \$path = \$base . '/' . \$rel;
-        if (is_file(\$path) && @unlink(\$path)) {
-            \$out['deleted']++;
-        }
-        if (is_file(\$path . '.gz')) {
-            @unlink(\$path . '.gz');
-        }
-    }
-}
-
-\$cleanup();
-echo json_encode(\$out);
-PHP;
+        // phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_var_export -- generates PHP literals for the helper script, not debug output.
+        return strtr($template, [
+            '__BS_TOKEN__'   => var_export($token, true),
+            '__BS_ZIPNAME__' => var_export($zip_name, true),
+            '__BS_EXPIRES__' => var_export($expires, true),
+            '__BS_GZIP__'    => var_export(array_values(array_map('strval', $compressible)), true),
+            '__BS_GZMIN__'   => var_export($min_bytes, true),
+        ]);
+        // phpcs:enable WordPress.PHP.DevelopmentFunctions.error_log_var_export
     }
 }

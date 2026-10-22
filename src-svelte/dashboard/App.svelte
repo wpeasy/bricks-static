@@ -20,7 +20,7 @@
   import { uiPrefs, themeAttr, accentAttr } from '../shared/uiPrefs.svelte';
   import { Alert, Badge, Button, ConfirmButton, Tabs, Tooltip, fadeUp, autoContrast } from '@wpeasy/ab-ui';
 
-  const freeVersion = (window as unknown as { bsData?: { version?: string } }).bsData?.version ?? '';
+  const freeVersion = (window as unknown as { bricksStaticData?: { version?: string } }).bricksStaticData?.version ?? '';
 
   let dests = $state<DestinationsResponse | null>(null);
   let status = $state<Status | null>(null);
@@ -360,8 +360,8 @@
       // immediately (not on Finish) so closing early or reloading mid-wizard
       // never re-triggers it. wp_localize_script booleans arrive as '1'/'' —
       // truthy check, never `=== true`.
-      const bsData = (window as unknown as { bsData?: { isFirstRun?: unknown } }).bsData;
-      if (bsData?.isFirstRun) {
+      const bricksStaticData = (window as unknown as { bricksStaticData?: { isFirstRun?: unknown } }).bricksStaticData;
+      if (bricksStaticData?.isFirstRun) {
         wizardOpen = true;
         try {
           await api.setWizardSeen();

@@ -1,7 +1,8 @@
 <script lang="ts">
-  const version = (window as unknown as { bsData?: { version?: string } }).bsData?.version ?? '';
+  const version = (window as unknown as { bricksStaticData?: { version?: string } }).bricksStaticData?.version ?? '';
 
   const sections = [
+    { id: 'why', label: 'Why “Bricks” Static?' },
     { id: 'features', label: 'Features' },
     { id: 'how', label: 'How it works' },
     { id: 'connector', label: 'Connector' },
@@ -74,6 +75,25 @@
     </nav>
 
     <div class="bs-docs__content bs-stack bs-stack--lg">
+      <!-- Why the name -->
+      <section id="why" class="bs-docs__section bs-stack bs-stack--sm">
+        <h2>Why “Bricks” Static?</h2>
+        <p>
+          Because it understands Bricks. Bricks gives elements a new random ID (<code>brxe-…</code>, form field IDs and
+          several <code>data-*</code> attributes) every time a page renders. To a generic static exporter every Bricks page
+          then looks changed on every run, so the whole site re-uploads and “in sync” never means anything. Bricks Static
+          ignores those IDs when comparing renders (the published HTML keeps its real IDs), so only pages whose content
+          actually changed are uploaded. It also renders through Bricks’ maintenance / coming-soon mode, and its
+          “Sync this page” button works alongside the Bricks editor.
+        </p>
+        <p>
+          <strong>Bricks isn’t required.</strong> Rendering captures whatever your site outputs, so block editor
+          (Gutenberg) and Classic Editor content, archives and any theme export the same way. On pages not built with
+          Bricks, the Bricks-specific handling simply has nothing to do. Developers using another builder can add its
+          per-render noise patterns with the <code>bricks_static_stable_hash_patterns</code> filter.
+        </p>
+      </section>
+
       <!-- Features -->
       <section id="features" class="bs-docs__section">
         <h2>Features</h2>
@@ -300,7 +320,7 @@ wp bricks-static cloudflare test ID                                # check the t
         <ul class="bs-docs__list">
           <li><strong>Cache:</strong> the staging copy lives under <code>wp-content/cache/bricks-static</code> (or uploads if that isn’t writable).</li>
           <li><strong>Server config:</strong> the managed <code>.htaccess</code> is uploaded automatically (Apache/LiteSpeed). nginx has no per-directory config, so it serves the static site with its defaults; the <em>Server config</em> tab has an optional tuning snippet to paste, plus <strong>Check server</strong>, which probes the destination and reports the web server and whether the cache rules are in effect.</li>
-          <li><strong>Filters:</strong> behaviour is adjustable via <code>bs_*</code> hooks (e.g. <code>bs_generate_sitemaps</code>, <code>bs_include_favicon</code>, <code>bs_seed_from_sitemap</code>, <code>bs_excluded_post_types</code>; for Cloudflare, <code>bs_cloudflare_headers</code> and <code>bs_cloudflare_redirects</code>).</li>
+          <li><strong>Filters:</strong> behaviour is adjustable via <code>bs_*</code> hooks (e.g. <code>bricks_static_generate_sitemaps</code>, <code>bricks_static_include_favicon</code>, <code>bricks_static_seed_from_sitemap</code>, <code>bricks_static_excluded_post_types</code>; for Cloudflare, <code>bricks_static_cloudflare_headers</code> and <code>bricks_static_cloudflare_redirects</code>).</li>
         </ul>
       </section>
     </div>

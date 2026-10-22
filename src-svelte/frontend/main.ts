@@ -15,7 +15,7 @@ interface FabData {
   includedCount?: number | string;
 }
 
-const data = (window as unknown as { bsFabData?: FabData }).bsFabData;
+const data = (window as unknown as { bricksStaticFabData?: FabData }).bricksStaticFabData;
 
 if (data && data.restUrl) {
   const host = document.createElement('div');

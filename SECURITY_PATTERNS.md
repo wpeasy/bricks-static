@@ -12,8 +12,8 @@
 > rule below and keep this file accurate (it's the reference a future audit
 > grades the code against — a wrong example is worse than none).
 
-Namespace `WPEasy\BricksStatic`, REST namespace `bs/v1`, option/constant prefix
-`bs_`/`BS_`.
+Namespace `WPEasy\BricksStatic`, REST namespace `bricks-static/v1`, option/hook/constant prefix
+`bricks_static_`/`BRICKS_STATIC_`.
 
 ---
 
@@ -24,7 +24,7 @@ Every REST route in `src/REST/*` registers `permission_callback => [self::class,
 **Rules for new surfaces:**
 - A new REST route is `manage_options` by default. If you need anything lower-privileged, that is a design change — justify it, and then the IDOR/ownership rules below apply.
 - This plugin operates on **site-level** state (options, the rendered site, destinations) — there is no per-post/per-user object model, so there is currently no IDOR surface. If you ever read/write a request-supplied `post_id`/`user_id`/attachment id, you MUST check `current_user_can('edit_post', $id)` (ownership) **inside the handler**, not just the route capability. A `(?P<id>\d+)` path token is resolved before `permission_callback`; body params are not — re-assert in the handler.
-- REST relies on the `wp_rest` nonce (`Admin\Menu` localizes it as `bsData.nonce`, the client sends `X-WP-Nonce`). Don't add a parallel auth path that skips it.
+- REST relies on the `wp_rest` nonce (`Admin\Menu` localizes it as `bricksStaticData.nonce`, the client sends `X-WP-Nonce`). Don't add a parallel auth path that skips it.
 
 ---
 
@@ -60,12 +60,12 @@ if (is_wp_error($response)) { /* blocked, redirected, or transport error */ }
 ```php
 // PackageDeployer::sslverify() and PageRenderer::should_verify_ssl()
 $local = UrlSafety::is_dev_host($host);   // localhost, *.local, *.test, or a loopback IP
-return apply_filters('bs_package_sslverify', !$local, $url);
+return apply_filters('bricks_static_package_sslverify', !$local, $url);
 ```
 
 - `UrlSafety::is_dev_host()` uses **exact** matching. Do NOT reintroduce `strpos($host, '127.0.0.1') === 0` — that prefix test also matched `127.0.0.1.attacker.com` (a real public host an attacker can register), silently disabling TLS for it. This was a real audit finding.
 - `.local` / `.test` are reserved special-use TLDs — never publicly resolvable or certifiable — so relaxing TLS for them is safe. Anything else verifies.
-- The `bs_*_sslverify` filters exist for genuinely broken dev certs; do not use them to paper over a real cert problem on a public destination.
+- The `bricks_static_*_sslverify` filters exist for genuinely broken dev certs; do not use them to paper over a real cert problem on a public destination.
 
 ---
 
@@ -138,7 +138,7 @@ FTP/SFTP passwords are encrypted at rest with **AES-256-GCM** (random 12-byte IV
 
 ## 5. Transport integrity (MITM)
 
-- **SFTP host key is verified (trust-on-first-use).** `SftpTransport::verify_host_key()` reads `getServerPublicHostKey()` **before** `login()` (so credentials are never sent to an unverified host), records it per `host:port` on first connect, and refuses on a later mismatch (`hash_equals`) — an active MITM presenting a different key is rejected instead of capturing the password. Filter `bs_sftp_verify_host_key` can disable it; don't. Escape hatch for a legitimate key change (server rebuild/migration): the stored key is cleared on connection-target change (`Destinations::update`) and by "Reset sync state" (`SftpTransport::forget_host_key()`). Keep the read-before-login ordering if you refactor `connect()`.
+- **SFTP host key is verified (trust-on-first-use).** `SftpTransport::verify_host_key()` reads `getServerPublicHostKey()` **before** `login()` (so credentials are never sent to an unverified host), records it per `host:port` on first connect, and refuses on a later mismatch (`hash_equals`) — an active MITM presenting a different key is rejected instead of capturing the password. Filter `bricks_static_sftp_verify_host_key` can disable it; don't. Escape hatch for a legitimate key change (server rebuild/migration): the stored key is cleared on connection-target change (`Destinations::update`) and by "Reset sync state" (`SftpTransport::forget_host_key()`). Keep the read-before-login ordering if you refactor `connect()`.
 - **Plain FTP** sends credentials and content in cleartext — this is an explicit user transport choice (FTPS/SFTP are preferred in the UI). Don't silently "upgrade" or hide the choice.
 - Remote paths passed to `put`/`delete` derive from the site's own URLs/manifest, not direct request input. If a future feature lets a user supply a remote path, normalise `..` before `absolute()` (the per-file transports don't, unlike the package helper which does).
 
@@ -151,7 +151,7 @@ The only DOM-HTML sink is `{@html row.replace}` in `dashboard/TextReplacements.s
 - **Safety rests on the server:** `Settings\Destination::sanitize_replacements()` runs **`wp_kses_post()`** on every `rich` replacement on write (and `sanitize_text_field()` on plain). Keep that sanitisation **unconditional** — the client does not re-escape at render time.
 - Authorship is `manage_options`-only, so this is not a low-privilege stored-XSS vector today; it would become one if replacement editing were ever opened to a lower capability. Re-evaluate this sink if that happens.
 - No other `innerHTML`/`{@html}`/`document.write` exists. There are **no** `postMessage` listeners and **no** `BroadcastChannel` — if you add either, validate `event.origin` AND `event.source` for postMessage, and authenticate BroadcastChannel messages with a per-session nonce (a same-origin channel is not a security boundary). Never `postMessage(payload, '*')`.
-- The `wp_rest` nonce lives only in `bsData.nonce` (sent as `X-WP-Nonce`); never render it to the DOM and never put secrets in localStorage.
+- The `wp_rest` nonce lives only in `bricksStaticData.nonce` (sent as `X-WP-Nonce`); never render it to the DOM and never put secrets in localStorage.
 
 ---
 
@@ -180,10 +180,10 @@ Every ability registers a `permission_callback` that:
         return false;                       // same bar as every REST route
     }
     if ($permission === 'changes' && !self::changes_enabled()) {
-        return false;                       // opt-in: bs_ai_allow_changes
+        return false;                       // opt-in: bricks_static_ai_allow_changes
     }
     if ($permission === 'sync' && !self::sync_enabled()) {
-        return false;                       // opt-in: bs_ai_allow_sync
+        return false;                       // opt-in: bricks_static_ai_allow_sync
     }
     return true;
 },
@@ -191,8 +191,8 @@ Every ability registers a `permission_callback` that:
 
 **Three tiers, two opt-ins (both default OFF):**
 - **Read-only** (always registered): status, method, list pages, page status, link integrity, list destinations, progress. `manage_options` only; no state change.
-- **Changes** (`bs_ai_allow_changes`): set discovery mode, include/exclude page(s).
-- **Sync** (`bs_ai_allow_sync`): scan, sync, single-page sync, cancel, reset.
+- **Changes** (`bricks_static_ai_allow_changes`): set discovery mode, include/exclude page(s).
+- **Sync** (`bricks_static_ai_allow_sync`): scan, sync, single-page sync, cancel, reset.
 
 **Rules for new abilities:**
 - Gate on `manage_options` via the shared `register()` helper — never write a bare `'permission_callback' => '__return_true'` or a lower capability. An ability is not "more trusted" than REST.

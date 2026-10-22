@@ -50,7 +50,7 @@ final class StableHash {
          *
          * @param array<string,string> $map Pattern => replacement.
          */
-        return (array) apply_filters('bs_stable_hash_patterns', $map);
+        return (array) apply_filters('bricks_static_stable_hash_patterns', $map);
     }
 
     /**

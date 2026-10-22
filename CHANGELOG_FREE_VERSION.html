@@ -1,12 +1,14 @@
 <h1>Changelog</h1>
-<h2>v2.1.1 (2026-10-22)</h2>
+<h2>v2.1.2 (2026-10-23)</h2>
 <h3>New</h3>
-<p>You can now publish your static site straight to <strong>Cloudflare</strong>, with no web host, PHP or FTP account at all. Each destination's <em>Deploy via</em> choice has a third option, <strong>Cloudflare</strong>: enter your Cloudflare account ID, an API token and a name for the site, press Test, and sync as usual. Cloudflare serves the site from its global network on a free <code>workers.dev</code> address, or on your own domain once you attach it in Cloudflare. Each sync uploads only the files Cloudflare doesn't already have, then switches the whole site over in one step, so visitors never see a half-updated site and pages you remove simply disappear. Caching rules are set up for you and Cloudflare compresses files itself. Files over Cloudflare's 25 MiB limit (usually videos) are left out and listed so you can host them elsewhere. The Documentation page has a full set-up guide.</p>
-<h3>New</h3>
-<p>Cloudflare destinations can also be set up and tested from the command line: <code>wp bricks-static cloudflare set</code>, <code>test</code> and <code>status</code>.</p>
+<p>Deleting the plugin now cleans up after itself. It removes its settings, your destinations (including any saved passwords and API tokens) and its cache folder. Files already published to your destinations are left exactly as they are.</p>
+<h3>Fixed</h3>
+<p>WordPress can now offer updates for Bricks Static. A setting in the plugin file was stopping update checks.</p>
 <h3>Improved</h3>
-<p>The Connector is more secure. Its checks on <code>.htaccess</code> files now apply in every folder and only allow caching, rewrite, redirect and index-page rules (anything already in your server's own <code>.htaccess</code> is kept). Strangers can no longer block your syncs by sending it junk requests, and your site will no longer send the connector its secret if the Destination URL is changed to <code>http://</code>. <strong>After updating, press Re-pair on each Connector destination and upload the new connector file</strong> — the old file reports that it is outdated until it is replaced.</p>
+<p>The documentation now explains the name. Bricks Static is Bricks-aware: Bricks gives page elements new random IDs every time a page is built, and the plugin ignores them, so only pages that really changed are uploaded. It works just as well with any standard WordPress content, including block editor and Classic Editor pages, archives and other themes.</p>
 <h3>Improved</h3>
-<p><em>Check server</em> now recognises Cloudflare destinations and confirms their caching rules are in effect.</p>
+<p>The French, German, Italian, Spanish and Dutch translations now cover the Cloudflare deploy method.</p>
 <h3>Improved</h3>
-<p>A bundled security library used for SFTP has been updated to its latest version.</p>
+<p>Exported pages now identify themselves as Bricks Static in their generator tag.</p>
+<h3>Improved</h3>
+<p>For developers: every setting, filter and constant now starts with <code>bricks_static_</code> / <code>BRICKS_STATIC_</code> instead of <code>bs_</code> / <code>BS_</code>, and the REST API lives at <code>bricks-static/v1</code>. If you set connection details in <code>wp-config.php</code>, rename them (for example <code>BS_HOST</code> becomes <code>BRICKS_STATIC_HOST</code>), and rename any custom filters you added.</p>

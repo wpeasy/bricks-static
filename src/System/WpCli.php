@@ -29,7 +29,7 @@ defined('ABSPATH') || exit;
  */
 final class WpCli {
 
-    public const TRANSIENT_KEY = 'bs_wpcli_status';
+    public const TRANSIENT_KEY = 'bricks_static_wpcli_status';
     public const CACHE_TTL     = HOUR_IN_SECONDS;
 
     /** Cache schema version — bump when the cached array shape changes. */
@@ -282,17 +282,20 @@ final class WpCli {
     private static function try_command(string $cmd): array {
         $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
 
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open -- runs the resolved wp binary to detect/drive WP-CLI; the command is built from a resolved path, not request input.
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open, Generic.PHP.ForbiddenFunctions.Found -- runs the resolved wp binary to detect/drive WP-CLI; the command is built from a resolved path, not request input.
         $process = @proc_open($cmd, $descriptors, $pipes);
         if (!is_resource($process)) {
             return ['ok' => false, 'stdout' => '', 'stderr' => 'spawn failed', 'exit' => -1];
         }
 
+        // Process pipes, not files — WP_Filesystem doesn't apply.
+        // phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fclose
         fclose($pipes[0]);
         $stdout = (string) stream_get_contents($pipes[1]);
         $stderr = (string) stream_get_contents($pipes[2]);
         fclose($pipes[1]);
         fclose($pipes[2]);
+        // phpcs:enable WordPress.WP.AlternativeFunctions.file_system_operations_fclose
         $exit = proc_close($process);
 
         return ['ok' => $exit === 0, 'stdout' => $stdout, 'stderr' => $stderr, 'exit' => $exit];

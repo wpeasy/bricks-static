@@ -15,9 +15,9 @@
  *  - State-changing abilities are registered ONLY when their opt-in toggle is on
  *    (default off), AND re-check the toggle in the permission callback
  *    (defence in depth — registration and execution are both gated):
- *      • `bs_ai_allow_changes` → local config/meta edits (discovery mode, the
+ *      • `bricks_static_ai_allow_changes` → local config/meta edits (discovery mode, the
  *        per-post Include switch, the include cascade).
- *      • `bs_ai_allow_sync`    → anything that runs the engine or touches a
+ *      • `bricks_static_ai_allow_sync`    → anything that runs the engine or touches a
  *        remote (scan, full/single-page sync, reset, cancel).
  *  - No ability returns secrets/credentials/PII (destinations are reported by
  *    name + state only).
@@ -59,12 +59,12 @@ final class AbilityRegistry {
     /**
      * Option enabling the local-change abilities (discovery mode, include).
      */
-    public const OPT_CHANGES = 'bs_ai_allow_changes';
+    public const OPT_CHANGES = 'bricks_static_ai_allow_changes';
 
     /**
      * Option enabling the engine/remote abilities (scan, sync, reset, cancel).
      */
-    public const OPT_SYNC = 'bs_ai_allow_sync';
+    public const OPT_SYNC = 'bricks_static_ai_allow_sync';
 
     /**
      * Hook registration. No-op when the Abilities API isn't present, so the
@@ -96,6 +96,9 @@ final class AbilityRegistry {
      * Register the single category these abilities live under.
      */
     public static function register_category(): void {
+        if (!function_exists('wp_register_ability_category')) {
+            return; // Abilities API (WordPress 6.9+) not present.
+        }
         wp_register_ability_category(self::NS, [
             'label'       => __('Bricks Static', 'bricks-static'),
             'description' => __('Inspect and drive the Bricks Static export/sync engine.', 'bricks-static'),
@@ -153,7 +156,7 @@ final class AbilityRegistry {
             'readonly'        => true,
         ]);
 
-        // ---- Local changes (opt-in: bs_ai_allow_changes) -------------------
+        // ---- Local changes (opt-in: bricks_static_ai_allow_changes) -------------------
         if (self::changes_enabled()) {
             self::register('set-discovery-mode', [
                 'label'           => __('Set discovery mode', 'bricks-static'),
@@ -208,7 +211,7 @@ final class AbilityRegistry {
             ]);
         }
 
-        // ---- Engine / remote (opt-in: bs_ai_allow_sync) --------------------
+        // ---- Engine / remote (opt-in: bricks_static_ai_allow_sync) --------------------
         if (self::sync_enabled()) {
             self::register('scan', [
                 'label'           => __('Scan (dry run)', 'bricks-static'),
@@ -335,7 +338,7 @@ final class AbilityRegistry {
      * @return array<string,mixed>
      */
     public static function get_status(): array {
-        $state   = get_option('bs_connection_state', []);
+        $state   = get_option('bricks_static_connection_state', []);
         $primary = Destinations::primary();
         $pushed  = Manifest::load(Destinations::pushed_option($primary->id()));
 
@@ -421,7 +424,7 @@ final class AbilityRegistry {
         $post_id = (int) (is_array($input) ? ($input['postId'] ?? 0) : 0);
         $post    = $post_id > 0 ? get_post($post_id) : null;
         if ($post === null) {
-            return new WP_Error('bs_invalid_post', __('A valid post ID is required.', 'bricks-static'));
+            return new WP_Error('bricks_static_invalid_post', __('A valid post ID is required.', 'bricks-static'));
         }
 
         $rel     = Url::to_relative_path((string) get_permalink($post_id));
@@ -456,7 +459,7 @@ final class AbilityRegistry {
     public static function check_page_links($input) {
         $post_id = (int) (is_array($input) ? ($input['postId'] ?? 0) : 0);
         if ($post_id <= 0 || get_post($post_id) === null) {
-            return new WP_Error('bs_invalid_post', __('A valid post ID is required.', 'bricks-static'));
+            return new WP_Error('bricks_static_invalid_post', __('A valid post ID is required.', 'bricks-static'));
         }
 
         // Outbound: links from this page to pages not in the export.
@@ -540,7 +543,7 @@ final class AbilityRegistry {
     }
 
     // ====================================================================
-    // Local-change execute callbacks (bs_ai_allow_changes)
+    // Local-change execute callbacks (bricks_static_ai_allow_changes)
     // ====================================================================
 
     /**
@@ -563,10 +566,10 @@ final class AbilityRegistry {
         $include = is_array($input) ? !empty($input['include']) : false;
 
         if ($post_id <= 0 || get_post($post_id) === null) {
-            return new WP_Error('bs_invalid_post', __('A valid post ID is required.', 'bricks-static'));
+            return new WP_Error('bricks_static_invalid_post', __('A valid post ID is required.', 'bricks-static'));
         }
         if (!current_user_can('edit_post', $post_id)) {
-            return new WP_Error('bs_forbidden', __('You cannot edit this post.', 'bricks-static'));
+            return new WP_Error('bricks_static_forbidden', __('You cannot edit this post.', 'bricks-static'));
         }
 
         update_post_meta($post_id, UrlCollector::INCLUDE_META, $include ? '1' : '0');
@@ -598,7 +601,7 @@ final class AbilityRegistry {
     }
 
     // ====================================================================
-    // Engine / remote execute callbacks (bs_ai_allow_sync)
+    // Engine / remote execute callbacks (bricks_static_ai_allow_sync)
     // ====================================================================
 
     /**
@@ -628,10 +631,10 @@ final class AbilityRegistry {
     public static function sync_page($input) {
         $url = is_array($input) ? esc_url_raw((string) ($input['url'] ?? '')) : '';
         if ($url === '' || !Url::is_internal($url)) {
-            return new WP_Error('bs_invalid_url', __('A valid internal page URL is required.', 'bricks-static'));
+            return new WP_Error('bricks_static_invalid_url', __('A valid internal page URL is required.', 'bricks-static'));
         }
         if (empty(Destinations::single_page_ids())) {
-            return new WP_Error('bs_no_targets', __('No destinations are enabled for single-page sync.', 'bricks-static'));
+            return new WP_Error('bricks_static_no_targets', __('No destinations are enabled for single-page sync.', 'bricks-static'));
         }
 
         return self::start_run('sync', ['only' => $url]);
@@ -654,7 +657,7 @@ final class AbilityRegistry {
         foreach (Destinations::all() as $dest) {
             $id = (string) ($dest['id'] ?? '');
             delete_option(Destinations::pushed_option($id));
-            delete_option('bs_pkg_off_' . $id);
+            delete_option('bricks_static_pkg_off_' . $id);
             delete_option(Runner::SYNC_SIG . $id);
         }
         delete_option(Manifest::RENDER_OPTION);

@@ -33,7 +33,7 @@ final class Editor {
     /**
      * Script handle for the editor bundle (ES module).
      */
-    private const SCRIPT_HANDLE = 'bs-editor';
+    private const SCRIPT_HANDLE = 'bricks-static-editor';
 
     /**
      * Manifest entry key (Vite input name).
@@ -86,7 +86,7 @@ final class Editor {
         }
         foreach (UrlCollector::public_post_types() as $type) {
             add_meta_box(
-                'bs-static',
+                'bricks-static',
                 __('Bricks Static', 'bricks-static'),
                 [self::class, 'render'],
                 $type,
@@ -97,7 +97,7 @@ final class Editor {
 
     /**
      * Metabox body — just the Svelte mount target (the app reads its context from
-     * window.bsEditorData).
+     * window.bricksStaticEditorData).
      */
     public static function render(): void {
         echo '<div class="bs"><div id="bs-editor-root"></div></div>';
@@ -123,7 +123,7 @@ final class Editor {
      * @return array<string,string>
      */
     public static function add_column(array $columns): array {
-        $columns['bs_static'] = __('Static', 'bricks-static');
+        $columns['bricks_static_static'] = __('Static', 'bricks-static');
 
         return $columns;
     }
@@ -136,7 +136,7 @@ final class Editor {
      * @param int    $post_id Post id.
      */
     public static function render_column(string $column, int $post_id): void {
-        if ($column !== 'bs_static') {
+        if ($column !== 'bricks_static_static') {
             return;
         }
 
@@ -169,7 +169,7 @@ final class Editor {
             esc_attr($st['state']),
             $st['synced'] ? '1' : '0',
             esc_attr($labels[$st['state']] ?? ''),
-            $inner // our own static markup
+            $inner // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup from the match() above; no variable data.
         );
     }
 
@@ -303,13 +303,13 @@ final class Editor {
         }
 
         Assets::enqueue_css(self::ENTRY);
-        wp_enqueue_script(self::SCRIPT_HANDLE, BS_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BS_VERSION, true);
+        wp_enqueue_script(self::SCRIPT_HANDLE, BRICKS_STATIC_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BRICKS_STATIC_VERSION, true);
 
         $post_id   = (int) get_the_ID();
         $published = get_post_status($post_id) === 'publish';
 
-        wp_localize_script(self::SCRIPT_HANDLE, 'bsEditorData', [
-            'restUrl'       => esc_url_raw(rest_url('bs/v1')),
+        wp_localize_script(self::SCRIPT_HANDLE, 'bricksStaticEditorData', [
+            'restUrl'       => esc_url_raw(rest_url('bricks-static/v1')),
             'nonce'         => wp_create_nonce('wp_rest'),
             'postId'        => $post_id,
             'pageUrl'       => $published ? (string) get_permalink($post_id) : '',
@@ -339,17 +339,17 @@ final class Editor {
             return;
         }
         Assets::enqueue_css(self::ENTRY);
-        wp_enqueue_script(self::SCRIPT_HANDLE, BS_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BS_VERSION, true);
+        wp_enqueue_script(self::SCRIPT_HANDLE, BRICKS_STATIC_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BRICKS_STATIC_VERSION, true);
 
         $manual = UrlCollector::mode() === 'manual';
 
-        wp_localize_script(self::SCRIPT_HANDLE, 'bsListData', [
-            'restUrl'       => esc_url_raw(rest_url('bs/v1')),
+        wp_localize_script(self::SCRIPT_HANDLE, 'bricksStaticListData', [
+            'restUrl'       => esc_url_raw(rest_url('bricks-static/v1')),
             'nonce'         => wp_create_nonce('wp_rest'),
             'manualMode'    => $manual,
             // The sync action in the modal mirrors the FAB — gated by the same
             // "Enable sync single button" toggle.
-            'fabEnabled'    => get_option('bs_fab_enabled', '1') !== '0',
+            'fabEnabled'    => get_option('bricks_static_fab_enabled', '1') !== '0',
             'includedCount' => $manual ? UrlCollector::effective_count() : 0,
             'savedCount'    => $manual ? UrlCollector::included_count() : 0,
         ]);

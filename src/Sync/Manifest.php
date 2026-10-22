@@ -25,18 +25,18 @@ final class Manifest {
     /**
      * Option holding the manifest of the most recent local render (base).
      */
-    public const RENDER_OPTION = 'bs_render_manifest';
+    public const RENDER_OPTION = 'bricks_static_render_manifest';
 
     /**
      * Option holding the manifest for the destination currently being deployed
      * (base render with that destination's text replacements applied to HTML).
      */
-    public const DEPLOY_OPTION = 'bs_deploy_manifest';
+    public const DEPLOY_OPTION = 'bricks_static_deploy_manifest';
 
     /**
      * Option holding the manifest of the last successful push.
      */
-    public const PUSHED_OPTION = 'bs_pushed_manifest';
+    public const PUSHED_OPTION = 'bricks_static_pushed_manifest';
 
     /**
      * Build a manifest by walking a directory.

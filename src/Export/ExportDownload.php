@@ -18,7 +18,7 @@ defined('ABSPATH') || exit;
 /**
  * Streams a finished export zip and exits — the one deliberate departure from
  * "every REST controller returns JSON" in this codebase (see
- * SECURITY_PATTERNS.md §0). Stays a normal `bs/v1` REST route rather than a
+ * SECURITY_PATTERNS.md §0). Stays a normal `bricks-static/v1` REST route rather than a
  * new `admin_post_*`/`wp_ajax_*` handler, so that invariant stays accurate:
  * auth is the same `manage_options` + `wp_rest` nonce every other route uses
  * (WP core's REST cookie auth accepts `?_wpnonce=` as a query-param fallback
@@ -35,7 +35,7 @@ final class ExportDownload {
     /**
      * REST namespace.
      */
-    private const NS = 'bs/v1';
+    private const NS = 'bricks-static/v1';
 
     /**
      * Register the download route.
@@ -67,14 +67,14 @@ final class ExportDownload {
             return new WP_REST_Response(['message' => __('Missing download token.', 'bricks-static')], 400);
         }
 
-        $record = get_transient('bs_export_dl_' . $token);
+        $record = get_transient('bricks_static_export_dl_' . $token);
         if (!is_array($record) || empty($record['path']) || !is_file((string) $record['path'])) {
             return new WP_REST_Response(['message' => __('This export is no longer available — please export again.', 'bricks-static')], 404);
         }
 
         // Single-use: gone whether the download succeeds or the browser
         // aborts partway through.
-        delete_transient('bs_export_dl_' . $token);
+        delete_transient('bricks_static_export_dl_' . $token);
 
         $path     = (string) $record['path'];
         $filename = (string) ($record['filename'] ?? basename($path));
@@ -83,6 +83,7 @@ final class ExportDownload {
         header('Content-Type: application/zip');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Content-Length: ' . (string) filesize($path));
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- streams the zip to the browser without loading it into memory.
         readfile($path);
         exit;
     }

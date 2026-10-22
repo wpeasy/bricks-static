@@ -36,7 +36,7 @@ final class StatusController {
     /**
      * REST namespace.
      */
-    private const NS = 'bs/v1';
+    private const NS = 'bricks-static/v1';
 
     /**
      * Register routes.
@@ -72,7 +72,7 @@ final class StatusController {
      * GET /status — dashboard status snapshot.
      */
     public static function get(): WP_REST_Response {
-        $state  = get_option('bs_connection_state', []);
+        $state  = get_option('bricks_static_connection_state', []);
         $pushed = Manifest::load(Destinations::pushed_option(Destinations::primary()->id()));
 
         $render       = Manifest::load(Manifest::RENDER_OPTION);
@@ -115,7 +115,7 @@ final class StatusController {
             'excludedPublished' => $has_rendered
                 ? UrlCollector::published_excluded_count(array_keys($render))
                 : 0,
-            'fabEnabled'    => get_option('bs_fab_enabled', '1') !== '0',
+            'fabEnabled'    => get_option('bricks_static_fab_enabled', '1') !== '0',
             // Max destinations deployed at once during a multi-destination sync.
             'concurrentSyncs' => DeployPool::concurrency(),
             // AI/MCP opt-ins. `aiAvailable` reflects whether the host WordPress
@@ -277,7 +277,7 @@ final class StatusController {
             // Store as '1'/'0' (not a PHP bool): get_option() can't tell a stored
             // `false` from "unset", so a boolean false would always read back as
             // the `true` default and the toggle could never be turned off.
-            update_option('bs_fab_enabled', empty($params['fabEnabled']) ? '0' : '1', false);
+            update_option('bricks_static_fab_enabled', empty($params['fabEnabled']) ? '0' : '1', false);
         }
 
         if (array_key_exists('aiAllowChanges', $params)) {
@@ -296,16 +296,16 @@ final class StatusController {
             // Same '1'/'0' string convention as fabEnabled above — flipped once
             // the setup wizard has been shown (or manually re-run), so it never
             // auto-opens again.
-            update_option('bs_wizard_seen', empty($params['wizardSeen']) ? '0' : '1', false);
+            update_option('bricks_static_wizard_seen', empty($params['wizardSeen']) ? '0' : '1', false);
         }
 
         return new WP_REST_Response([
             'discoveryMode'   => UrlCollector::mode(),
-            'fabEnabled'      => get_option('bs_fab_enabled', '1') !== '0',
+            'fabEnabled'      => get_option('bricks_static_fab_enabled', '1') !== '0',
             'aiAllowChanges'  => AbilityRegistry::changes_enabled(),
             'aiAllowSync'     => AbilityRegistry::sync_enabled(),
             'concurrentSyncs' => DeployPool::concurrency(),
-            'wizardSeen'      => get_option('bs_wizard_seen', '0') !== '0',
+            'wizardSeen'      => get_option('bricks_static_wizard_seen', '0') !== '0',
         ]);
     }
 }

@@ -14,19 +14,19 @@ defined('ABSPATH') || exit;
 
 /**
  * Manages the destinations list (stored in one option) and migrates the legacy
- * single `bs_settings` destination into `destinations[0]` on first run.
+ * single `bricks_static_settings` destination into `destinations[0]` on first run.
  */
 final class Destinations {
 
     /**
      * Option holding the destinations list.
      */
-    public const OPTION = 'bs_destinations';
+    public const OPTION = 'bricks_static_destinations';
 
     /**
      * Legacy single-destination option (migrated then left in place).
      */
-    private const LEGACY_OPTION = 'bs_settings';
+    private const LEGACY_OPTION = 'bricks_static_settings';
 
     /**
      * All destination arrays (raw, password encrypted).
@@ -165,8 +165,8 @@ final class Destinations {
                 // re-probe whether package deploy works on the new host.
                 if (self::target_signature($after) !== $before) {
                     delete_option(self::pushed_option($id));
-                    delete_option('bs_pkg_off_' . $id);
-                    delete_option('bs_sync_sig_' . $id);
+                    delete_option('bricks_static_pkg_off_' . $id);
+                    delete_option('bricks_static_sync_sig_' . $id);
                     \WPEasy\BricksStatic\Sync\ServerProbe::forget($id);
 
                     // Re-pointed at a different server — forget the old target's
@@ -177,7 +177,7 @@ final class Destinations {
                     // Destination URL changed on its own (host unchanged) — the
                     // package-deploy probe result for the OLD guessed/explicit URL
                     // no longer applies, so give the new URL a fresh chance.
-                    delete_option('bs_pkg_off_' . $id);
+                    delete_option('bricks_static_pkg_off_' . $id);
                     \WPEasy\BricksStatic\Sync\ServerProbe::forget($id);
                 }
 
@@ -240,7 +240,7 @@ final class Destinations {
             $list[$i]     = $dest->set_connector($connector_id, $secret, \WPEasy\BricksStatic\Deploy\ConnectorScript::VERSION);
             update_option(self::OPTION, $list, false);
             // The old file (if any) is dead; a stale "connected" state would mislead.
-            delete_option('bs_conn_' . $id);
+            delete_option('bricks_static_conn_' . $id);
 
             return ['id' => $connector_id, 'secret' => $secret];
         }
@@ -263,7 +263,7 @@ final class Destinations {
             $dest     = new Destination($data, $i === 0);
             $list[$i] = $dest->set_connector('', '', 0);
             update_option(self::OPTION, $list, false);
-            delete_option('bs_conn_' . $id);
+            delete_option('bricks_static_conn_' . $id);
 
             return true;
         }
@@ -301,7 +301,7 @@ final class Destinations {
      * @param string $id Destination id.
      */
     public static function pushed_option(string $id): string {
-        return 'bs_pushed_' . $id;
+        return 'bricks_static_pushed_' . $id;
     }
 
     /**
@@ -328,7 +328,7 @@ final class Destinations {
         update_option(self::OPTION, [$dest], false);
 
         // Carry over the single pushed manifest to the migrated destination.
-        $pushed = get_option('bs_pushed_manifest', null);
+        $pushed = get_option('bricks_static_pushed_manifest', null);
         if (is_array($pushed)) {
             update_option(self::pushed_option($id), $pushed, false);
         }

@@ -35,7 +35,7 @@ final class SyncController {
     /**
      * REST namespace.
      */
-    private const NS = 'bs/v1';
+    private const NS = 'bricks-static/v1';
 
     /**
      * Register routes.
@@ -355,7 +355,7 @@ final class SyncController {
         foreach (Destinations::all() as $dest) {
             $id = (string) ($dest['id'] ?? '');
             delete_option(Destinations::pushed_option($id));
-            delete_option('bs_pkg_off_' . $id);
+            delete_option('bricks_static_pkg_off_' . $id);
             delete_option(Runner::SYNC_SIG . $id);
         }
 
