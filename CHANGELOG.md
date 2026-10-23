@@ -5,6 +5,12 @@ All notable changes to **ShipStatic** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.5] - 2026-10-23
+
+### Changed
+- **New ship mark.** The ShipStatic logo is now an old sailing ship in line art: the wordpress.org icon shows it sailing to the HTML5 logo (`.wordpress-org/icon.svg` → `icon-256x256.png` / `icon-128x128.png`); the admin menu uses a two-sail version in place of the generic `dashicons-media-code` (`Admin\Menu::MENU_ICON_SVG` — the strokes are drawn in a mask and painted through one filled rect, because WordPress's svg-painter recolours menu icons by rewriting `fill` only); and the dashboard header shows it before the title in the accent colour (`src-svelte/lib/icons/IconShip.svelte`, the start of the centralised icon module).
+- readme: a Credits section for the HTML5 logo (W3C, CC BY 3.0); `screenshot-1.png` retaken at 2.1.4.
+
 ## [2.1.4] - 2026-10-23
 
 ### Changed

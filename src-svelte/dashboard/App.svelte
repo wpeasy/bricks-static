@@ -4,6 +4,7 @@
   import { __, __f } from '../shared/i18n';
   import type { CheckPreview, DestinationsResponse, DiscoveryMode, ExportSnapshot, Status, SyncSnapshot } from '../shared/types';
   import NoticePanel from './NoticePanel.svelte';
+  import { IconShip } from '../lib/icons';
   import DiscoveryToggle from './DiscoveryToggle.svelte';
   import MethodPanel from './MethodPanel.svelte';
   import DestinationTabs from './DestinationTabs.svelte';
@@ -388,6 +389,7 @@
   <div class="bs-dash__top">
     <header class="bs-stack bs-stack--xs">
       <h1>
+        <IconShip class="bs-dash__mark" size={30} />
         ShipStatic
         <Badge class="bs-verbadge" variant="soft">v{freeVersion}</Badge>
         <span class="bs-dash__by">{__('byPrefix')} <a href="https://brxprod.com" target="_blank" rel="noopener noreferrer">BRXProd</a></span>
@@ -597,6 +599,14 @@
   :global(.ab-ui .ab-badge.bs-verbadge) {
     margin-left: var(--ab-space-2);
     vertical-align: middle;
+  }
+
+  /* The ship mark in the accent colour; nudged to sit on the text baseline. */
+  .bs-dash__top :global(svg.bs-dash__mark) {
+    display: inline-block; /* beats ab-ui's `.ab-ui svg { display: block }` */
+    color: var(--ab-color-primary);
+    vertical-align: -0.2em;
+    margin-right: var(--ab-space-1);
   }
 
   .bs-dash__by {

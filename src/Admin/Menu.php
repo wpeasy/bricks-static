@@ -67,6 +67,26 @@ final class Menu {
     }
 
     /**
+     * The admin menu icon: the ShipStatic sailing ship in line art. WordPress
+     * recolours menu SVGs by rewriting `fill` attributes only (svg-painter.js),
+     * so the strokes live in a mask and are painted through one filled rect —
+     * the rect's fill is what WordPress swaps for the admin colour scheme.
+     * The mask paths deliberately carry no `fill` attribute (`fill-opacity`
+     * instead), or the rewrite would fill the shapes solid. Same geometry as
+     * `src-svelte/lib/icons/IconShip.svelte`.
+     */
+    private const MENU_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="18 48 128 128"><defs><mask id="shipstatic-ship" maskUnits="userSpaceOnUse" x="18" y="48" width="128" height="128"><g stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill-opacity="0"><path d="M26 140 H128 L114 166 Q78 174 40 166 Z"/><path d="M62 140 V126 M62 72 V56 M104 140 V126 M104 86 V76"/><path d="M40 72 H84 Q96 99 84 126 H40 Q50 99 40 72 Z"/><path d="M90 86 H118 Q127 106 118 126 H90 Q97 106 90 86 Z"/></g></mask></defs><rect x="18" y="48" width="128" height="128" fill="black" mask="url(#shipstatic-ship)"/></svg>';
+
+    /**
+     * The menu icon as the base64 data URI add_menu_page() expects (WordPress
+     * only recolours base64-encoded SVG icons).
+     */
+    private static function menu_icon(): string {
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- encodes our own static SVG into the data URI format add_menu_page() requires.
+        return 'data:image/svg+xml;base64,' . base64_encode(self::MENU_ICON_SVG);
+    }
+
+    /**
      * Register the top-level admin menu page.
      */
     public static function register_menu(): void {
@@ -76,7 +96,7 @@ final class Menu {
             self::CAPABILITY,
             self::MENU_SLUG,
             [self::class, 'render_page'],
-            'dashicons-media-code',
+            self::menu_icon(),
             58
         );
 

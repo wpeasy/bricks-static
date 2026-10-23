@@ -111,7 +111,7 @@ if (style) { ... }
 
 ### Icons — Use a Centralized Icon System
 
-Never inline raw SVGs. Keep all icons in one module (`src-svelte/lib/icons/`) — Svelte components import named `Icon*` components, TS files import `ICON_*` HTML strings for `innerHTML`. Add new icons there, don't paste SVG markup into components.
+Never inline raw SVGs. Keep all icons in one module (`src-svelte/lib/icons/`, re-exported from `lib/icons/index.ts`; the brand mark is `IconShip`, whose geometry is mirrored by `Admin\Menu::MENU_ICON_SVG` — the admin menu icon, masked so WordPress's svg-painter, which only rewrites `fill`, can recolour line art) — Svelte components import named `Icon*` components, TS files import `ICON_*` HTML strings for `innerHTML`. Add new icons there, don't paste SVG markup into components.
 
 ### wordpress.org Plugin Check — keep it at 0 errors
 

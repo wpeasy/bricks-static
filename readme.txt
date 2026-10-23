@@ -4,7 +4,7 @@ Tags: static site, bricks, performance, static html, deployment
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 2.1.4
+Stable tag: 2.1.5
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,6 +41,10 @@ Bricks isn't required. Rendering is builder-agnostic: ShipStatic captures whatev
 * Favicon and asset handling
 * "Sync this page" floating button for single-page pushes
 * WP-CLI command for reliable syncs on any host
+
+= Credits =
+
+The plugin icon includes the [HTML5 logo](https://www.w3.org/html/logo/) by the W3C, licensed under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/).
 
 == Installation ==
 
@@ -101,6 +105,9 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 
 == Changelog ==
 
+= 2.1.5 =
+* Changed: a new logo — an old sailing ship — in the WordPress admin menu, the dashboard header and the plugin icon.
+
 = 2.1.4 =
 * Changed: the sub-path links are built for is now taken from the Destination URL (e.g. `/my-site/` for `https://owner.github.io/my-site/`), so it no longer has to be entered twice. The "Served from sub-path" field is only used when a destination has no Destination URL.
 * Fixed: with a sub-path, the Images and Videos replacement panels showed every image as "not in library" with a broken thumbnail.
@@ -147,6 +154,9 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 * Text replacements, `.htaccess` + nginx config, favicon, single-page sync, and WP-CLI sync.
 
 == Upgrade Notice ==
+
+= 2.1.5 =
+A new look: the ShipStatic sailing-ship logo in the admin menu and dashboard.
 
 = 2.1.4 =
 The sub-path is now taken from the Destination URL, and image replacements work again on sites served from a sub-path.

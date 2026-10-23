@@ -1,9 +1,6 @@
 # Changelog
 
-## v2.1.4 (2026-10-23)
+## v2.1.5 (2026-10-23)
 
 ### Improved
-You no longer type the sub-path twice. When a destination has a Destination URL, the folder your site is served from (for example /my-site/ on a GitHub project site) is taken from it automatically, and the settings show it for reference. The separate sub-path field is only used for destinations without a URL.
-
-### Fixed
-On sites served from a sub-path, the Images and Videos replacement panels showed every image as "not in library" with a broken thumbnail. They now find your media library images again.
+ShipStatic has a new logo: an old sailing ship. You'll see it in the WordPress admin menu (it follows your admin colour scheme like the other menu icons), next to the plugin's name on the dashboard, and as the plugin's icon.

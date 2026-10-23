@@ -1,26 +1,48 @@
-<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ShipStatic — from CMS to fast static site">
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ShipStatic — your site, shipped as HTML">
   <defs>
-    <linearGradient id="bs-bg" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ss-bg" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#4f46e5"/>
       <stop offset="1" stop-color="#7c3aed"/>
     </linearGradient>
   </defs>
 
   <!-- Rounded app tile -->
-  <rect width="256" height="256" rx="52" fill="url(#bs-bg)"/>
+  <rect width="256" height="256" rx="52" fill="url(#ss-bg)"/>
 
-  <!-- LEFT: the CMS / database you're leaving behind (slightly faded) -->
-  <g opacity="0.8">
-    <path d="M44 100 V156 A26 8 0 0 0 96 156 V100 A26 8 0 0 1 44 100 Z" fill="#ffffff"/>
-    <ellipse cx="70" cy="100" rx="26" ry="8" fill="#ffffff"/>
-    <path d="M44 120 A26 8 0 0 0 96 120" fill="none" stroke="#4f46e5" stroke-opacity="0.4" stroke-width="3"/>
-    <path d="M44 138 A26 8 0 0 0 96 138" fill="none" stroke="#4f46e5" stroke-opacity="0.4" stroke-width="3"/>
+  <!-- LEFT: an old three-masted sailing ship in line art, heading right -->
+  <g fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- hull, raised stern on the left -->
+    <path d="M24 142 H44 V152 H126 L114 172 Q78 180 40 172 Z"/>
+    <!-- masts: only where they show, below and above each sail -->
+    <path d="M48 152 V136 M48 96 V86"/>
+    <path d="M78 152 V126 M78 74 V62"/>
+    <path d="M106 152 V136 M106 100 V92"/>
+    <!-- sails, bellied forward -->
+    <path d="M36 96 H60 Q68 116 60 136 H36 Q42 116 36 96 Z"/>
+    <path d="M64 74 H92 Q101 100 92 126 H64 Q71 100 64 74 Z"/>
+    <path d="M95 100 H117 Q124 118 117 136 H95 Q100 118 95 100 Z"/>
+    <!-- bowsprit + jib -->
+    <path d="M122 152 L140 132"/>
+    <path d="M109 92 L137 134 H122"/>
+    <!-- pennant -->
+    <path d="M78 62 L93 67 L78 72"/>
+  </g>
+  <!-- water -->
+  <path d="M20 192 q11 -8 22 0 t22 0 t22 0 t22 0 t22 0" fill="none" stroke="#ffffff" stroke-opacity="0.7" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Arrow, also line art -->
+  <g fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M148 128 H168"/>
+    <path d="M160 119 L169 128 L160 137"/>
   </g>
 
-  <!-- Migration arrow -->
-  <polygon points="106,123 134,123 134,116 148,128 134,140 134,133 106,133" fill="#ffffff"/>
-
-  <!-- RIGHT: the static page (fast = green bolt) -->
-  <rect x="162" y="96" width="56" height="66" rx="9" fill="#ffffff"/>
-  <polygon points="198,104 180,132 190,132 184,156 202,126 192,126" fill="#22c55e"/>
+  <!-- RIGHT: the HTML5 logo (W3C, CC BY 3.0), scaled into a ~66px box -->
+  <g transform="translate(178 94) scale(0.13)">
+    <polygon fill="#E44D26" points="71,460 30,0 481,0 440,460 255,512"/>
+    <polygon fill="#F16529" points="256,472 405,431 440,37 256,37"/>
+    <polygon fill="#EBEBEB" points="256,208 181,208 176,150 256,150 256,94 255,94 114,94 115,109 129,265 256,265"/>
+    <polygon fill="#EBEBEB" points="256,355 255,355 192,338 188,293 158,293 132,293 139,382 255,414 256,414"/>
+    <polygon fill="#FFFFFF" points="255,208 255,265 325,265 318,338 255,355 255,414 371,382 372,372 385,223 387,208 371,208"/>
+    <polygon fill="#FFFFFF" points="255,94 255,129 255,150 255,150 392,150 392,150 392,150 393,138 396,109 397,94"/>
+  </g>
 </svg>
