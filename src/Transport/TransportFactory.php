@@ -85,6 +85,18 @@ final class TransportFactory {
     }
 
     /**
+     * Whether a destination's upload root IS the path it serves the site from
+     * — a GitHub project site's repository root is https://owner.github.io/repo/
+     * — so its files are not moved into a sub-path folder at deploy. Every
+     * other transport uploads to a web root that the sub-path sits under.
+     *
+     * @param string $transport Transport id.
+     */
+    public static function root_is_served_path(string $transport): bool {
+        return $transport === 'github';
+    }
+
+    /**
      * Whether a transport id publishes whole snapshots (a
      * {@see SnapshotCapableTransport}) instead of uploading a delta to a
      * remote filesystem. Decided from the id alone so callers don't have to

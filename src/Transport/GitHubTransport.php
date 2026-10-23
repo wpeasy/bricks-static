@@ -15,7 +15,6 @@ use WPEasy\ShipStatic\Deploy\GitHubClient;
 use WPEasy\ShipStatic\Deploy\GitHubConflictException;
 use WPEasy\ShipStatic\Deploy\GitHubRateLimitException;
 use WPEasy\ShipStatic\Deploy\GitHubValidationException;
-use WPEasy\ShipStatic\Support\Url;
 
 defined('ABSPATH') || exit;
 
@@ -37,10 +36,10 @@ defined('ABSPATH') || exit;
  * (`CNAME`, README/LICENSE files, `.github/` — filter
  * `shipstatic_github_keep_paths`). We always add `.nojekyll`.
  *
- * The export puts pages under the "Served from sub-path" folder (right for a
- * web root that is the domain). A project site's repository root IS that
- * sub-path (`<owner>.github.io/<repo>/`), so the sub-path prefix is stripped
- * when mapping export paths to repository paths.
+ * A project site's repository root IS its sub-path
+ * (`<owner>.github.io/<repo>/`), so the deploy manifest it receives is at the
+ * repository root already — links carry the sub-path, files are not moved
+ * into a sub-path folder (Sync\Runner::file_prefix()).
  */
 final class GitHubTransport implements TransportInterface, ResumableSnapshotTransport {
 
@@ -356,8 +355,6 @@ final class GitHubTransport implements TransportInterface, ResumableSnapshotTran
         $remote    = $base_tree !== null ? $this->client->tree_files($base_tree) : [];
 
         $folder = $this->folder === '/docs' ? 'docs/' : '';
-        $strip  = ltrim(Url::base_path(), '/');
-        $strip  = $strip !== '' ? $strip . '/' : '';
         $max    = (int) min(100 * 1024 * 1024, max(1, (int) apply_filters('shipstatic_github_max_file_bytes', self::MAX_FILE_BYTES)));
 
         $state = [
@@ -377,7 +374,10 @@ final class GitHubTransport implements TransportInterface, ResumableSnapshotTran
         ];
 
         foreach ($files as $relative => $src) {
-            $path = $folder . ($strip !== '' && str_starts_with($relative, $strip) ? substr($relative, strlen($strip)) : $relative);
+            // The deploy manifest is already at the repository root: a GitHub
+            // destination's files are never moved into its sub-path folder
+            // (TransportFactory::root_is_served_path()).
+            $path = $folder . $relative;
             $size = is_file($src) ? (int) filesize($src) : -1;
             if ($size < 0) {
                 $state['skipped'][] = $relative;

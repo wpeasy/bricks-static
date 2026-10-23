@@ -5,6 +5,21 @@ All notable changes to **ShipStatic** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.6] - 2026-10-23
+
+### Added
+- **Per-destination sub-paths — one source, any number of addresses.** The site is rendered once in a destination-neutral layout (render format 2): files at their plain paths, and every internal link carrying a placeholder (`Support\Url::BASE_TOKEN`, inserted by `Render\UrlRewriter` exactly where the source origin / home sub-path was). `Sync\Runner::build_deploy_manifest()` then gives each destination its own copy: its served path (from its Destination URL) filled into every page and stylesheet (`Url::rebase()`, after the replacers), sitemap/robots built for its address (`UrlRewriter::to_absolute(…, $served)`), and its files moved into its sub-path folder when it uploads to a web root (`file_prefix()` / `relocate()` — not for GitHub, whose repository root IS the served path, `TransportFactory::root_is_served_path()`; `robots.txt` and `favicon.ico` stay at the domain root). Two GitHub project sites, or a project site and a custom domain, now publish correctly from the same render — verified live with `wpeasy/shipstatic-pages-test` and `wpeasy/shipstatic-demo-2` (every internal link and asset under each site's own path, all 200), plus a text replacement on one destination only. Before, links followed the first destination's sub-path, so any other destination with a different one published pages without styles or images.
+- `Runner::deploy_key($rel, $dest)` — a render path's key at a destination (used by the single-page status).
+
+### Changed
+- An existing render (format 1) is no longer current: press **Process** once after updating. The first sync per destination re-keys its push record (GitHub compares contents, so nothing re-uploads unchanged).
+- Links panel + link replacements use plain paths (`/about/`), independent of any sub-path; a root-relative replacement target gets each destination's sub-path at deploy.
+- The Test warning about a sub-path mismatch is removed — there is no longer anything to mismatch.
+- `robots.txt`'s `Sitemap:` line now points where the sitemap really is for a sub-path site (it pointed at the domain root).
+
+### Fixed
+- Removing a destination now deletes everything kept for it (deploy manifest, sync signature, connection state, package-deploy flag, pool state, deploy copies) — before, these were left behind.
+
 ## [2.1.5] - 2026-10-23
 
 ### Changed

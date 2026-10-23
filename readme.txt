@@ -4,7 +4,7 @@ Tags: static site, bricks, performance, static html, deployment
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 2.1.5
+Stable tag: 2.1.6
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -105,6 +105,11 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 
 == Changelog ==
 
+= 2.1.6 =
+* Added: each destination now gets links for its own address. Publish the same site to two GitHub project sites, or a project site and your own domain, and both work — previously only the first destination's sub-path was used. Press Process once after updating.
+* Changed: link replacements are stored as plain paths (e.g. `/about/`) and follow each destination's sub-path.
+* Fixed: removing a destination now removes everything the plugin kept for it.
+
 = 2.1.5 =
 * Changed: a new logo — an old sailing ship — in the WordPress admin menu, the dashboard header and the plugin icon.
 
@@ -154,6 +159,9 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 * Text replacements, `.htaccess` + nginx config, favicon, single-page sync, and WP-CLI sync.
 
 == Upgrade Notice ==
+
+= 2.1.6 =
+Every destination now gets links for its own address. Press Process once after updating.
 
 = 2.1.5 =
 A new look: the ShipStatic sailing-ship logo in the admin menu and dashboard.

@@ -295,8 +295,26 @@ final class Destinations {
         }
 
         update_option(self::OPTION, $kept, false);
+
+        // Everything else kept per destination, so a destination added again
+        // (or a new one reusing nothing) starts clean.
         delete_option(self::pushed_option($id));
+        delete_option(\WPEasy\ShipStatic\Sync\Manifest::DEPLOY_OPTION . '_' . $id);
+        delete_option(\WPEasy\ShipStatic\Sync\Runner::SYNC_SIG . $id);
+        delete_option(\WPEasy\ShipStatic\REST\DestinationsController::conn_state_option($id));
+        delete_option(\WPEasy\ShipStatic\Deploy\PackageDeployer::OFF_PREFIX . $id);
+        delete_option(\WPEasy\ShipStatic\Sync\DeployPool::target_option($id));
         \WPEasy\ShipStatic\Sync\ServerProbe::forget($id);
+        // Its per-destination deploy copies in the cache (ids are generated
+        // hex, so they can't escape the deploy folder).
+        if (preg_match('/^[a-z0-9]+$/i', $id)) {
+            require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-base.php';
+            require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-direct.php';
+            $dir = \WPEasy\ShipStatic\Support\Paths::cache_dir() . '/deploy/' . $id;
+            if (is_dir($dir)) {
+                (new \WP_Filesystem_Direct(null))->rmdir($dir, true);
+            }
+        }
 
         return true;
     }

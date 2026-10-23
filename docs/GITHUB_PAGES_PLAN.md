@@ -337,4 +337,4 @@ These go into the mocked-API tests of phase 2.
   recovered, state surviving a JSON round-trip between steps. A following
   normal sync deleted the 6 injected files in one commit.
 - **Sitemap double prefix** found and fixed in the first real sync (see §13).
-- Secondary destinations still use the primary's sub-path (§8.4); Test warns.
+- §8.4 resolved in 2.1.6: per-destination sub-paths (render once with a placeholder, filled per destination at deploy). The Test warning was removed.

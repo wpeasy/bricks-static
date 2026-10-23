@@ -14,10 +14,8 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WPEasy\ShipStatic\Deploy\ConnectorScript;
 use WPEasy\ShipStatic\Deploy\PackageDeployer;
-use WPEasy\ShipStatic\Settings\Destination;
 use WPEasy\ShipStatic\Settings\Destinations;
 use WPEasy\ShipStatic\Settings\Schema;
-use WPEasy\ShipStatic\Support\Url;
 use WPEasy\ShipStatic\Support\UrlSafety;
 use WPEasy\ShipStatic\Sync\Manifest;
 use WPEasy\ShipStatic\Sync\Runner;
@@ -394,11 +392,6 @@ final class DestinationsController {
         if (!empty($input['ghToken']) && !$dest->is_from_constant('ghToken')) {
             $config['ghToken'] = trim((string) $input['ghToken']);
         }
-        // The URL as typed (maybe unsaved) — used only for the sub-path check;
-        // transports keep using the saved one (a Connector is paired to it).
-        $typed_url = array_key_exists('destinationUrl', $input) && !$dest->is_from_constant('destinationUrl')
-            ? esc_url_raw(trim((string) $input['destinationUrl']))
-            : (string) ($config['url'] ?? '');
 
         if (TransportFactory::needs_host((string) ($config['transport'] ?? '')) && $config['host'] === '') {
             return new WP_REST_Response(['ok' => false, 'message' => 'Enter a host first.'], 200);
@@ -443,45 +436,11 @@ final class DestinationsController {
             // The dashboard fills an empty Destination URL with this.
             $out['suggestedUrl'] = $suggested;
         }
-        $mismatch = self::subpath_warning($typed_url !== '' ? $typed_url : $suggested, $dest);
-        if ($mismatch !== '') {
-            $warnings[] = $mismatch;
-        }
         if ($ok && $warnings !== []) {
             $out['warnings'] = array_values($warnings);
         }
 
         return new WP_REST_Response($out, 200);
-    }
-
-    /**
-     * Warn when a destination serves the site from a different sub-path than
-     * links are built for (every transport — e.g. a GitHub project site at
-     * /repo/ while "Served from sub-path" is /). Links are rendered for ONE
-     * base path, the primary destination's, so a secondary destination can
-     * only be told, not fixed.
-     *
-     * @param string      $url  The destination's public URL.
-     * @param Destination $dest Destination.
-     */
-    private static function subpath_warning(string $url, Destination $dest): string {
-        $host = (string) wp_parse_url($url, PHP_URL_HOST);
-        if ($host === '') {
-            return '';
-        }
-        $served = '/' . trim((string) wp_parse_url($url, PHP_URL_PATH), '/');
-        $served = $served === '/' ? '' : $served;
-        $links  = Url::base_path();
-        if ($served === $links) {
-            return '';
-        }
-
-        /* translators: 1: sub-path links are built for, 2: sub-path the destination serves from */
-        $text = sprintf(__('Links are built for %1$s, but this destination serves the site from %2$s — pages would load without their styles and images.', 'shipstatic'), $links === '' ? '/' : $links . '/', $served === '' ? '/' : $served . '/');
-
-        return $dest->is_primary()
-            ? $text . ' ' . __('Save this Destination URL (the sub-path is taken from it), then press Process.', 'shipstatic')
-            : $text . ' ' . __('Links follow the first destination’s “Served from sub-path”, so use a destination with the same sub-path, or a custom domain.', 'shipstatic');
     }
 
     /**

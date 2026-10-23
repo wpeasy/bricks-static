@@ -33,11 +33,13 @@ final class UrlRewriter {
      * @return string Rewritten content.
      */
     public static function rewrite(string $content): string {
-        // WordPress at the domain root has no home sub-path to remap, so a
-        // "served from" base must be ADDED — it goes where the origin was:
-        // "https://host/about" → "/blog/about". (With a home sub-path,
-        // apply_base_path() swaps that sub-path for the base instead.)
-        $prefix  = Url::home_base() === '' ? Url::base_path() : '';
+        // The render serves every destination, so links get a placeholder
+        // for "this destination's sub-path" (Url::BASE_TOKEN), swapped per
+        // destination at deploy (Url::rebase()). With WordPress at the domain
+        // root it goes where the origin was: "https://host/about" →
+        // "/__shipstatic_base__/about"; with a home sub-path, apply_base_path()
+        // puts it in place of that sub-path instead.
+        $prefix  = Url::home_base() === '' ? Url::BASE_TOKEN : '';
         $escaped = str_replace('/', '\/', $prefix);
 
         $search  = [];
@@ -53,18 +55,19 @@ final class UrlRewriter {
             array_push($replace, $escaped, $escaped, $escaped);
         }
 
-        // Replacing the origin with '' (or the base) leaves the following path
-        // (escaped or not): "https://host/about" → "/about", "https:\/\/host\/x" → "\/x".
+        // Replacing the origin with '' (or the placeholder) leaves the following
+        // path (escaped or not): "https://host/about" → "/about", "https:\/\/host\/x" → "\/x".
         $content = str_replace($search, $replace, $content);
 
-        // Now remap the source home sub-path to the configured "served from" base
-        // path, so e.g. "/test-for-vid/about/" becomes "/about/" (default base "/").
+        // Now swap the source home sub-path for the placeholder, so e.g.
+        // "/test-for-vid/about/" becomes "/__shipstatic_base__/about/".
         return self::apply_base_path($content);
     }
 
     /**
-     * Remap the source home sub-path (home_url()'s path, e.g. "/test-for-vid") to
-     * the configured base path in already-root-relative document URLs.
+     * Swap the source home sub-path (home_url()'s path, e.g. "/test-for-vid")
+     * for the destination-base placeholder (Url::BASE_TOKEN) in
+     * already-root-relative document URLs.
      *
      * Each occurrence must be preceded by a URL-context delimiter (quote, paren,
      * "=", comma or whitespace), so only path-initial matches are touched — an
@@ -80,7 +83,7 @@ final class UrlRewriter {
             return $content; // Site installed at domain root — nothing to strip.
         }
 
-        $base = Url::base_path();
+        $base = Url::BASE_TOKEN;
         // A path-initial URL is either at the very start of the string (\A — this
         // method also runs on standalone URLs like wp_get_attachment_url(), not just
         // documents) or preceded by a URL-context delimiter. ";" covers HTML-entity
@@ -128,9 +131,10 @@ final class UrlRewriter {
      *
      * @param string $content   Document text (XML or plain text).
      * @param string $dest_base Destination base URL (e.g. "https://example.com").
+     * @param string $base      Path the destination serves the site from ("" or "/sub").
      * @return string Rewritten content (unchanged if $dest_base has no host).
      */
-    public static function to_absolute(string $content, string $dest_base): string {
+    public static function to_absolute(string $content, string $dest_base, string $base = ''): string {
         $parts = wp_parse_url($dest_base);
         if (empty($parts['host'])) {
             return $content;
@@ -139,39 +143,40 @@ final class UrlRewriter {
         $scheme    = $parts['scheme'] ?? 'https';
         $authority = $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
         $origin    = $scheme . '://' . $authority;
+        $base      = Url::normalize_base($base);
 
-        // Unlike rewrite(), no base prefix is added here for a root install:
-        // sitemap/robots entries are built from the already-remapped paths,
-        // so they carry the base themselves.
+        // Sitemap/robots entries are SOURCE URLs (home_url + render path), so
+        // this destination's sub-path goes after its origin — directly for a
+        // root install, in place of the home sub-path otherwise (below).
+        $prefix  = Url::home_base() === '' ? $base : '';
         $search  = [];
         $replace = [];
         foreach (self::source_hosts() as $host) {
             // Same ordering as rewrite(): scheme-qualified before bare "//host".
             $search[] = 'https://' . $host;
-            $replace[] = $origin;
+            $replace[] = $origin . $prefix;
             $search[] = 'http://' . $host;
-            $replace[] = $origin;
+            $replace[] = $origin . $prefix;
             $search[] = '//' . $host;
-            $replace[] = '//' . $authority;
+            $replace[] = '//' . $authority . $prefix;
             $search[] = 'https:\/\/' . $host;
-            $replace[] = str_replace('/', '\/', $origin);
+            $replace[] = str_replace('/', '\/', $origin . $prefix);
             $search[] = 'http:\/\/' . $host;
-            $replace[] = str_replace('/', '\/', $origin);
+            $replace[] = str_replace('/', '\/', $origin . $prefix);
             $search[] = '\/\/' . $host;
-            $replace[] = '\/\/' . $authority;
+            $replace[] = str_replace('/', '\/', '//' . $authority . $prefix);
         }
 
         $content = str_replace($search, $replace, $content);
 
-        // Strip the source home sub-path so absolute destination URLs point at the
-        // configured base ("/test-for-vid/about/" → "/about/"). Anchored to the
+        // Swap the source home sub-path for this destination's sub-path
+        // ("/test-for-vid/about/" → "/about/" or "/repo/about/"). Anchored to the
         // destination origin, so nothing else is affected.
         $home = Url::home_base();
         if ($home === '') {
             return $content;
         }
 
-        $base = Url::base_path();
         foreach ([$origin, '//' . $authority] as $anchor) {
             $content = str_replace($anchor . $home . '/', $anchor . $base . '/', $content);
             $content = (string) preg_replace(

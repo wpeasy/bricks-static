@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: shipstatic\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/shipstatic\n"
-"POT-Creation-Date: 2026-10-23T04:21:39+00:00\n"
+"POT-Creation-Date: 2026-10-23T05:29:58+00:00\n"
 "PO-Revision-Date: 2026-06-22 00:00+0000\n"
 "Last-Translator: Claude Code (machine translation)\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,8 +18,8 @@ msgstr ""
 
 #. Plugin Name of the plugin
 #: shipstatic.php src/Abilities/AbilityRegistry.php:103
-#: src/Admin/Editor.php:90 src/Admin/Menu.php:74 src/Admin/Menu.php:75
-#: src/Admin/Menu.php:87
+#: src/Admin/Editor.php:90 src/Admin/Menu.php:94 src/Admin/Menu.php:95
+#: src/Admin/Menu.php:107
 msgid "ShipStatic"
 msgstr "ShipStatic"
 
@@ -299,15 +299,15 @@ msgid "Run a check or sync to see status"
 msgstr ""
 "Führen Sie eine Prüfung oder Synchronisierung aus, um den Status zu sehen"
 
-#: src/Admin/Menu.php:88
+#: src/Admin/Menu.php:108
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: src/Admin/Menu.php:96 src/Admin/Menu.php:97
+#: src/Admin/Menu.php:116 src/Admin/Menu.php:117
 msgid "Documentation"
 msgstr "Dokumentation"
 
-#: src/Admin/Menu.php:140
+#: src/Admin/Menu.php:160
 msgid ""
 "ShipStatic: the admin assets are not built. Run \"npm run build\" in the "
 "plugin directory."
@@ -415,7 +415,7 @@ msgstr "Das Export-Archiv konnte nicht gespeichert werden."
 msgid "Export ready — %1$d files, %2$s."
 msgstr "Export bereit — %1$d Dateien, %2$s."
 
-#: src/REST/DestinationsController.php:134
+#: src/REST/DestinationsController.php:132
 msgid ""
 "Enter and save the Destination URL first — the connector is called at that "
 "address."
@@ -423,7 +423,7 @@ msgstr ""
 "Gib zuerst die Ziel-URL ein und speichere sie — der Connector wird unter "
 "dieser Adresse aufgerufen."
 
-#: src/REST/DestinationsController.php:137
+#: src/REST/DestinationsController.php:135
 msgid ""
 "The connector needs an HTTPS Destination URL (the pairing secret travels in "
 "each request)."
@@ -431,7 +431,7 @@ msgstr ""
 "Der Connector benötigt eine HTTPS-Ziel-URL (das Kopplungsgeheimnis wird mit "
 "jeder Anfrage übertragen)."
 
-#: src/REST/DestinationsController.php:140
+#: src/REST/DestinationsController.php:138
 msgid ""
 "That Destination URL resolves to a private or reserved network address and "
 "cannot be used."
@@ -439,7 +439,7 @@ msgstr ""
 "Diese Ziel-URL verweist auf eine private oder reservierte Netzwerkadresse "
 "und kann nicht verwendet werden."
 
-#: src/REST/DestinationsController.php:156
+#: src/REST/DestinationsController.php:154
 msgid ""
 "Paired. Download the connector file and upload it to the folder served at "
 "the Destination URL."
@@ -447,16 +447,16 @@ msgstr ""
 "Gekoppelt. Lade die Connector-Datei herunter und lade sie in den Ordner "
 "hoch, der unter der Ziel-URL ausgeliefert wird."
 
-#: src/REST/DestinationsController.php:169
+#: src/REST/DestinationsController.php:167
 msgid ""
 "Connector revoked. Delete the file from the destination when convenient."
 msgstr "Connector widerrufen. Lösche die Datei bei Gelegenheit vom Ziel."
 
-#: src/REST/DestinationsController.php:186
+#: src/REST/DestinationsController.php:184
 msgid "Only a Connector destination can report its files."
 msgstr "Nur ein Connector-Ziel kann seine Dateien melden."
 
-#: src/REST/DestinationsController.php:189
+#: src/REST/DestinationsController.php:187
 msgid ""
 "Process the pages first — the push record is rebuilt against the current "
 "render."
@@ -465,7 +465,7 @@ msgstr ""
 "aktuellen Renderings neu aufgebaut."
 
 #. translators: %d: number of files found on the destination
-#: src/REST/DestinationsController.php:207
+#: src/REST/DestinationsController.php:205
 #, php-format
 msgid ""
 "Push record rebuilt — all %d files are already on the destination and match."
@@ -475,7 +475,7 @@ msgstr ""
 "und stimmen überein. Synchron."
 
 #. translators: 1: matching files, 2: differing/missing files
-#: src/REST/DestinationsController.php:209
+#: src/REST/DestinationsController.php:207
 #, php-format
 msgid ""
 "Push record rebuilt — %1$d files match, %2$d will upload on the next Sync."
@@ -485,23 +485,23 @@ msgstr ""
 
 #. translators: %d: number of files on the destination the plugin doesn't
 #. manage
-#: src/REST/DestinationsController.php:212
+#: src/REST/DestinationsController.php:210
 #, php-format
 msgid "(%d other files there are left alone.)"
 msgstr "(%d weitere Dateien dort bleiben unangetastet.)"
 
-#: src/REST/DestinationsController.php:229
+#: src/REST/DestinationsController.php:227
 msgid ""
 "This download link has expired — pair again to get a new connector file."
 msgstr ""
 "Dieser Download-Link ist abgelaufen — kopple erneut, um eine neue Connector-"
 "Datei zu erhalten."
 
-#: src/REST/DestinationsController.php:236
+#: src/REST/DestinationsController.php:234
 msgid "This pairing is no longer current — pair again."
 msgstr "Diese Kopplung ist nicht mehr aktuell — kopple erneut."
 
-#: src/REST/DestinationsController.php:262
+#: src/REST/DestinationsController.php:260
 msgid ""
 "This destination publishes whole snapshots — package deploy does not apply."
 msgstr ""
@@ -509,43 +509,16 @@ msgstr ""
 "nicht anwendbar."
 
 #. translators: %s: receiver summary (PHP version, zip support, free space)
-#: src/REST/DestinationsController.php:423
+#: src/REST/DestinationsController.php:416
 #, php-format
 msgid "Connector reached — %s."
 msgstr "Connector erreicht — %s."
 
 #. translators: %s: Worker summary (name + workers.dev address)
-#: src/REST/DestinationsController.php:426
+#: src/REST/DestinationsController.php:419
 #, php-format
 msgid "Cloudflare token accepted — %s."
 msgstr "Cloudflare-Token akzeptiert — %s."
-
-#. translators: 1: sub-path links are built for, 2: sub-path the destination
-#. serves from
-#: src/REST/DestinationsController.php:480
-#, php-format
-msgid ""
-"Links are built for %1$s, but this destination serves the site from %2$s — "
-"pages would load without their styles and images."
-msgstr ""
-"Links werden für %1$s erzeugt, aber dieses Ziel liefert die Website unter "
-"%2$s aus — die Seiten würden ohne Styles und Bilder laden."
-
-#: src/REST/DestinationsController.php:483
-msgid ""
-"Save this Destination URL (the sub-path is taken from it), then press "
-"Process."
-msgstr ""
-"Speichere diese Ziel-URL (der Unterpfad wird daraus übernommen) und klicke "
-"dann auf Verarbeiten."
-
-#: src/REST/DestinationsController.php:484
-msgid ""
-"Links follow the first destination’s “Served from sub-path”, so use a "
-"destination with the same sub-path, or a custom domain."
-msgstr ""
-"Links folgen dem „Wird von Unterpfad ausgeliefert“ des ersten Ziels — "
-"verwende ein Ziel mit demselben Unterpfad oder eine eigene Domain."
 
 #: src/REST/StatusController.php:161
 msgid "(no title)"
@@ -2615,26 +2588,26 @@ msgstr ""
 "Die Ziel-URL hat eine Weiterleitung zurückgegeben, die aus "
 "Sicherheitsgründen nicht verfolgt wird."
 
-#: src/Sync/Runner.php:82
+#: src/Sync/Runner.php:96
 msgid ""
 "An Export ZIP is currently running — wait for it to finish, then try again."
 msgstr ""
 "Ein ZIP-Export läuft gerade — warte, bis er abgeschlossen ist, und versuche "
 "es dann erneut."
 
-#: src/Sync/Runner.php:569
+#: src/Sync/Runner.php:583
 msgid "site is in maintenance mode, or temporarily unavailable"
 msgstr "Website ist im Wartungsmodus oder vorübergehend nicht erreichbar"
 
-#: src/Sync/Runner.php:570
+#: src/Sync/Runner.php:584
 msgid "blocked — maintenance mode, a security plugin, or a firewall"
 msgstr "blockiert — Wartungsmodus, ein Sicherheits-Plugin oder eine Firewall"
 
-#: src/Sync/Runner.php:571
+#: src/Sync/Runner.php:585
 msgid "password protected, or behind HTTP authentication"
 msgstr "passwortgeschützt oder hinter einer HTTP-Authentifizierung"
 
-#: src/Sync/Runner.php:1154
+#: src/Sync/Runner.php:1170
 msgid ""
 "The page list has changed since the last render. Click Process to refresh "
 "it, then Check again."
@@ -2642,14 +2615,14 @@ msgstr ""
 "Die Seitenliste hat sich seit dem letzten Render geändert. Klicken Sie auf "
 "Verarbeiten, um sie zu aktualisieren, und prüfen Sie dann erneut."
 
-#: src/Sync/Runner.php:1155
+#: src/Sync/Runner.php:1171
 msgid "Nothing has been rendered yet. Click Process first, then Check."
 msgstr ""
 "Es wurde noch nichts gerendert. Klicken Sie zuerst auf Verarbeiten, dann auf"
 " Prüfen."
 
 #. translators: %d: number of published pages not in the static export.
-#: src/Sync/Runner.php:1229
+#: src/Sync/Runner.php:1245
 #, php-format
 msgid "%d published page isn’t in the export — see View list."
 msgid_plural "%d published pages aren’t in the export — see View list."

@@ -73,7 +73,7 @@ A **content-change tracker** watches post saves, status changes, Bricks meta wri
 
 ### Destinations
 
-Add any number of destinations. Each has its own deploy method — **SFTP / FTPS / FTP** credentials + remote path, the **Connector** (see below), **Cloudflare** or **GitHub Pages** — plus a destination URL. Links are built for the destination URL's path (e.g. `/repo/` for `https://owner.github.io/repo/`); only a destination without a URL uses the separate "Served from sub-path" field. **Test** validates the connection; the deploy badge shows whether the host supports **packaged deploy** (one zip + server-side unzip — fast) or falls back to **per-file** upload.
+Add any number of destinations. Each has its own deploy method — **SFTP / FTPS / FTP** credentials + remote path, the **Connector** (see below), **Cloudflare** or **GitHub Pages** — plus a destination URL. The site is rendered once; each destination then gets links (and, for a web-root upload, a folder) for its own URL's path — e.g. `/repo/` for `https://owner.github.io/repo/` — so one source publishes correctly to several addresses. Only a destination without a URL uses the separate "Served from sub-path" field. **Test** validates the connection; the deploy badge shows whether the host supports **packaged deploy** (one zip + server-side unzip — fast) or falls back to **per-file** upload.
 
 ### Replacements (accordion)
 

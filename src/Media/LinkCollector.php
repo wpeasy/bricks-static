@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace WPEasy\ShipStatic\Media;
 
+use WPEasy\ShipStatic\Support\Url;
 use WPEasy\ShipStatic\Sync\Manifest;
 
 defined('ABSPATH') || exit;
@@ -40,7 +41,9 @@ final class LinkCollector {
             $page = self::page_path($relative);
 
             foreach (self::links_in($html) as $item) {
-                $url = $item['url'];
+                // Plain form ("/about/"): readable, and the same whatever
+                // sub-path a destination serves from (LinkReplacer matches it).
+                $url = Url::strip_base_token($item['url']);
                 if (!isset($index[$url])) {
                     $index[$url] = ['text' => $item['text'], 'pages' => []];
                 }

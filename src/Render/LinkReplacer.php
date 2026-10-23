@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace WPEasy\ShipStatic\Render;
 
+use WPEasy\ShipStatic\Support\Url;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -37,12 +39,22 @@ final class LinkReplacer {
                 $tag = $m[0];
                 // Decode entities (hrefs can carry &amp; in query strings) so they
                 // match the stored, decoded swap key.
-                $href = html_entity_decode(self::attr($tag, 'href'), ENT_QUOTES | ENT_HTML5);
+                // Keys are plain paths (LinkCollector strips the destination-base
+                // placeholder), so compare in the same form.
+                $href = Url::strip_base_token(html_entity_decode(self::attr($tag, 'href'), ENT_QUOTES | ENT_HTML5));
                 if ($href === '' || !isset($swaps[$href])) {
                     return $tag;
                 }
 
-                return self::set_attr($tag, 'href', $swaps[$href]);
+                // A site path ("/contact/") gets the placeholder back, so each
+                // destination's sub-path is filled in at deploy like every
+                // other link; external and protocol-relative URLs stay as typed.
+                $to = (string) $swaps[$href];
+                if (str_starts_with($to, '/') && !str_starts_with($to, '//')) {
+                    $to = Url::BASE_TOKEN . $to;
+                }
+
+                return self::set_attr($tag, 'href', $to);
             },
             $html
         );

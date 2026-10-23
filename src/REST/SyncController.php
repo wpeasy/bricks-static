@@ -240,13 +240,16 @@ final class SyncController {
                 continue;
             }
             $pushed  = Manifest::load(Destinations::pushed_option($dest->id()));
-            $is_push = $rel !== null && isset($pushed[$rel]);
+            // The page's path at THIS destination (inside its sub-path folder
+            // where it uploads to a web root).
+            $key     = $rel !== null ? Runner::deploy_key($rel, $dest) : null;
+            $is_push = $key !== null && isset($pushed[$key]);
             // In sync = pushed AND the pushed copy's hash matches what THIS
             // destination would deploy — i.e. the render with its OWN replacers
             // applied (a plain render-hash comparison is wrong for a destination
             // that transforms the page: it would look out of sync forever).
             $deploy_hash = $rendered && $rel !== null ? Runner::page_deploy_hash($rel, $dest->id()) : '';
-            $in_sync     = $is_push && $deploy_hash !== '' && (string) ($pushed[$rel]['hash'] ?? '') === $deploy_hash;
+            $in_sync     = $is_push && $deploy_hash !== '' && (string) ($pushed[$key]['hash'] ?? '') === $deploy_hash;
             if (!$in_sync) {
                 $all_in_sync = false;
             }

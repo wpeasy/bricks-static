@@ -13,6 +13,7 @@ namespace WPEasy\ShipStatic\Sync;
 use WPEasy\ShipStatic\CLI\Background;
 use WPEasy\ShipStatic\Deploy\PackageDeployer;
 use WPEasy\ShipStatic\Discovery\UrlCollector;
+use WPEasy\ShipStatic\Settings\Destination;
 use WPEasy\ShipStatic\Settings\Destinations;
 use WPEasy\ShipStatic\Render\AssetExtractor;
 use WPEasy\ShipStatic\Render\CompatibilityScanner;
@@ -59,6 +60,19 @@ final class Runner {
      * The destination home page, deferred and swapped in last during a push.
      */
     private const HOME_FILE = 'index.html';
+
+    /**
+     * Version of the render's layout. 2 = destination-neutral: files at their
+     * plain paths and links carrying Url::BASE_TOKEN, both given each
+     * destination's sub-path at deploy. A render in an older layout is not
+     * current, so the dashboard asks for Process (render_is_current()).
+     */
+    private const RENDER_FORMAT = 2;
+
+    /**
+     * Option holding the RENDER_FORMAT the current render was built with.
+     */
+    private const RENDER_FORMAT_OPTION = 'shipstatic_render_format';
 
     /**
      * Where a destination's pre-existing .htaccess is preserved, once.
@@ -769,6 +783,7 @@ final class Runner {
         // (Single-page runs are partial, so they don't reset this.)
         if (empty($job->data['singlePage'])) {
             ChangeTracker::mark_rendered(UrlCollector::mode());
+            update_option(self::RENDER_FORMAT_OPTION, self::RENDER_FORMAT, false);
         }
 
         // Persist the link graph (source post id => linked rels). Full run
@@ -1129,6 +1144,7 @@ final class Runner {
      */
     public static function render_is_current(): bool {
         return !empty(Manifest::load(Manifest::RENDER_OPTION))
+            && (int) get_option(self::RENDER_FORMAT_OPTION, 1) === self::RENDER_FORMAT
             && !ChangeTracker::is_dirty()
             && ChangeTracker::rendered_mode() === UrlCollector::mode();
     }
@@ -1454,10 +1470,13 @@ final class Runner {
 
     /**
      * Build the deploy manifest for a destination: the base render with every
-     * registered {@see DeployReplacer} applied to each HTML page (written to a
-     * per-destination deploy dir), plus any extra files those replacers need
-     * uploaded (e.g. swapped-in media variants). Pages without changes — and the
-     * whole manifest when no replacer is active — reference the base render.
+     * registered {@see DeployReplacer} applied to each HTML page and the
+     * destination's sub-path filled into every page and stylesheet
+     * (Url::rebase(); written to a per-destination deploy dir), plus any extra
+     * files those replacers need uploaded (e.g. swapped-in media variants).
+     * Keys are relocated into the destination's sub-path folder where it
+     * uploads to a web root (file_prefix()). Files that come out unchanged
+     * reference the base render.
      *
      * @param array<string,array{size:int,hash:string,src:string}> $base    Base render manifest.
      * @param string                                                $dest_id Target destination id.
@@ -1469,7 +1488,9 @@ final class Runner {
             return $base; // Unknown destination — deploy the base render verbatim.
         }
 
-        $dest_base = PackageDeployer::base_url($dest);
+        $dest_base   = PackageDeployer::base_url($dest);
+        $served      = Url::normalize_base($dest->served_base_path());
+        $file_prefix = self::file_prefix($dest);
 
         // Prepare each registered replacer once for this destination. An inactive
         // replacer (null ctx) is skipped; active ones contribute a transform
@@ -1487,64 +1508,103 @@ final class Runner {
             }
         }
 
-        // Sitemaps/robots carry absolute SOURCE URLs in the base render; rewrite
-        // them to THIS destination's origin. Needed even with no active
-        // replacers, so it can't share their early-out.
-        $has_abs = false;
-        foreach ($base as $relative => $meta) {
-            if (self::is_origin_absolute_file($relative)) {
-                $has_abs = true;
-                break;
-            }
-        }
-        $rewrite_abs = $dest_base !== '' && $has_abs;
-
-        if (empty($active) && !$rewrite_abs) {
-            return $base; // Nothing to transform — deploy the base render verbatim.
-        }
-
         $deploy_dir = Paths::cache_dir() . '/deploy/' . $dest->id();
         self::reset_dir($deploy_dir);
 
+        // Every page and stylesheet carries the destination-base placeholder,
+        // so each destination gets its own copy with its sub-path filled in
+        // (and its replacements applied). Other files deploy from the render.
         $out = [];
         foreach ($base as $relative => $meta) {
-            // Sitemap/robots: rewrite source origin → this destination's origin.
+            $key = self::relocate($relative, $file_prefix);
+
+            // Sitemap/robots: source URLs → this destination's origin + sub-path.
             if (self::is_origin_absolute_file($relative)) {
-                if ($rewrite_abs && is_file($meta['src'])) {
-                    $content = UrlRewriter::to_absolute((string) file_get_contents($meta['src']), $dest_base);
-                    $out[$relative] = self::write_deploy_file($deploy_dir, $relative, $content) ?? $meta;
+                if ($dest_base !== '' && is_file($meta['src'])) {
+                    $content   = UrlRewriter::to_absolute((string) file_get_contents($meta['src']), $dest_base, $served);
+                    $out[$key] = self::write_deploy_file($deploy_dir, $key, $content) ?? $meta;
                 } else {
-                    $out[$relative] = $meta;
+                    $out[$key] = $meta;
                 }
                 continue;
             }
 
-            if (substr(strtolower($relative), -5) !== '.html' || !is_file($meta['src'])) {
-                $out[$relative] = $meta;
+            $ext = strtolower((string) pathinfo($relative, PATHINFO_EXTENSION));
+            if (!in_array($ext, ['html', 'css'], true) || !is_file($meta['src'])) {
+                $out[$key] = $meta;
                 continue;
             }
 
             $original    = (string) file_get_contents($meta['src']);
             $transformed = $original;
-            foreach ($active as $a) {
-                $transformed = $a['replacer']->apply($transformed, $a['ctx'], $relative);
+            if ($ext === 'html') {
+                foreach ($active as $a) {
+                    $transformed = $a['replacer']->apply($transformed, $a['ctx'], $relative);
+                }
             }
+            // Last, after the replacers (their keys match the render as-is).
+            $transformed = Url::rebase($transformed, $served);
 
-            // Only write a per-destination copy when the page actually changed;
+            // Only write a per-destination copy when the file actually changed;
             // otherwise reference the base render (no extra file, no churn).
-            $out[$relative] = $transformed === $original
+            $out[$key] = $transformed === $original
                 ? $meta
-                : (self::write_deploy_file($deploy_dir, $relative, $transformed) ?? $meta);
+                : (self::write_deploy_file($deploy_dir, $key, $transformed) ?? $meta);
         }
 
         // Add the replacement files (if not already in the render).
-        foreach ($extra as $key => $src) {
+        foreach ($extra as $rel => $src) {
+            $key = self::relocate($rel, $file_prefix);
             if (!isset($out[$key]) && is_file($src)) {
                 $out[$key] = ['size' => (int) filesize($src), 'hash' => StableHash::of_file($src), 'src' => wp_normalize_path($src)];
             }
         }
 
         return $out;
+    }
+
+    /**
+     * Folder a destination's files go in, relative to where it uploads: its
+     * served sub-path ("blog/" for a site at example.com/blog/), or "" when it
+     * is served from the domain root — or publishes with the sub-path as its
+     * root (a GitHub project site's repository root IS /repo/).
+     *
+     * @param Destination $dest Destination.
+     */
+    private static function file_prefix(Destination $dest): string {
+        $served = Url::normalize_base($dest->served_base_path());
+        if ($served === '' || TransportFactory::root_is_served_path((string) $dest->get('transport'))) {
+            return '';
+        }
+
+        return ltrim($served, '/') . '/';
+    }
+
+    /**
+     * A render path's path at the destination. robots.txt and favicon.ico
+     * stay at the upload root: they are only ever requested from a domain's
+     * root, so a site in a sub-folder still needs them there.
+     *
+     * @param string $relative Render-relative path.
+     * @param string $prefix   From file_prefix().
+     */
+    private static function relocate(string $relative, string $prefix): string {
+        if ($prefix === '' || in_array(strtolower($relative), ['robots.txt', 'favicon.ico'], true)) {
+            return $relative;
+        }
+
+        return $prefix . $relative;
+    }
+
+    /**
+     * Where a render-relative path lives at a destination (its key in that
+     * destination's deploy and pushed manifests).
+     *
+     * @param string      $relative Render-relative path.
+     * @param Destination $dest     Destination.
+     */
+    public static function deploy_key(string $relative, Destination $dest): string {
+        return self::relocate($relative, self::file_prefix($dest));
     }
 
     /**
@@ -1623,8 +1683,8 @@ final class Runner {
         }
 
         $base = (string) ($meta['hash'] ?? '');
-        // Only HTML pages are transformed by replacers; anything else keeps its
-        // render hash.
+        // Only HTML pages are transformed (replacers + the destination's
+        // sub-path); anything else keeps its render hash.
         if (substr(strtolower($rel), -5) !== '.html') {
             return $base;
         }
@@ -1635,23 +1695,17 @@ final class Runner {
         }
 
         $dest_base = PackageDeployer::base_url($dest);
-        $active    = [];
+        $original    = (string) file_get_contents((string) $meta['src']);
+        $transformed = $original;
         foreach (Pipeline::replacers() as $replacer) {
             $prepared = $replacer->prepare($dest, $dest_base);
             if (($prepared['ctx'] ?? null) !== null) {
-                $active[] = ['replacer' => $replacer, 'ctx' => $prepared['ctx']];
+                $transformed = $replacer->apply($transformed, $prepared['ctx'], $rel);
             }
         }
-        if (empty($active)) {
-            return $base; // No transform → deploy page == render page.
-        }
+        $transformed = Url::rebase($transformed, Url::normalize_base($dest->served_base_path()));
 
-        $original    = (string) file_get_contents((string) $meta['src']);
-        $transformed = $original;
-        foreach ($active as $a) {
-            $transformed = $a['replacer']->apply($transformed, $a['ctx'], $rel);
-        }
-
+        // Same hash build_deploy_manifest() records for this page.
         return $transformed === $original ? $base : StableHash::of_html($transformed);
     }
 
@@ -2301,7 +2355,9 @@ final class Runner {
             $transport = TransportFactory::make();
             $transport->connect();
             try {
-                self::upload_home($transport, Manifest::load(Manifest::RENDER_OPTION));
+                // The destination's own copy (the raw render still carries the
+                // sub-path placeholder).
+                self::upload_home($transport, self::build_deploy_manifest(Manifest::load(Manifest::RENDER_OPTION), Destinations::primary()->id()));
             } finally {
                 $transport->disconnect();
             }

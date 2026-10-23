@@ -10,7 +10,6 @@ declare(strict_types=1);
 
 namespace WPEasy\ShipStatic\Support;
 
-use WPEasy\ShipStatic\Settings\Destinations;
 
 defined('ABSPATH') || exit;
 
@@ -36,46 +35,87 @@ final class Url {
     }
 
     /**
-     * Where the primary destination serves the static site from — its
-     * Destination URL's path, or "Served from sub-path" when it has no URL
-     * (see Destination::served_base_path()) — normalised to "" (domain root)
-     * or "/sub" (leading slash, no trailing slash). Links are rendered for it.
+     * Placeholder the render puts where a link's site address was. The render
+     * is built ONCE for every destination, so it can't contain any one
+     * destination's sub-path; each destination swaps this for its own at
+     * deploy (see rebase()): "/__shipstatic_base__/about/" becomes "/about/" on
+     * a site served from the domain root and "/repo/about/" on one served from
+     * /repo/. Only ever inserted by Render\UrlRewriter, exactly where the
+     * source origin (or home sub-path) was — so the swap never touches
+     * anything else.
      */
-    public static function base_path(): string {
-        $base = '/' . trim(Destinations::primary()->served_base_path(), '/');
+    public const BASE_TOKEN = '/__shipstatic_base__';
 
-        return $base === '/' ? '' : $base;
+    /**
+     * Normalise a served-from path to "" (domain root) or "/sub" (leading
+     * slash, no trailing slash) — the form rebase() and file relocation use.
+     *
+     * @param string $path e.g. "/", "/repo/", "repo".
+     */
+    public static function normalize_base(string $path): string {
+        $path = trim($path, '/');
+
+        return $path === '' ? '' : '/' . $path;
     }
 
     /**
-     * The reverse of remap_site_path() for a WordPress-root install: map a path
-     * as it appears in the rendered HTML ("/blog/wp-content/x.jpg" with a base
-     * of "/blog") back to where it lives on the source site ("/wp-content/x.jpg"),
-     * so code reading the cached render can find attachments and load
-     * thumbnails. Unchanged when there's no base, the path isn't under it, or
-     * WordPress itself has a home sub-path (render-time remapping already
-     * covers that case).
+     * Put a destination's sub-path into rendered content: every BASE_TOKEN
+     * (plain or JSON-escaped) becomes $base.
      *
-     * @param string $path A leading-slash URL path (no scheme/host).
+     * @param string $content HTML, CSS, XML…
+     * @param string $base    Normalised base ("" or "/sub").
      */
-    public static function to_source_path(string $path): string {
-        $base = self::base_path();
-        if ($base === '' || self::home_base() !== '' || !($path === $base || strpos($path, $base . '/') === 0)) {
-            return $path;
+    public static function rebase(string $content, string $base): string {
+        if (strpos($content, '__shipstatic_base__') === false) {
+            return $content;
         }
 
-        $rest = substr($path, strlen($base));
+        return str_replace(
+            [self::BASE_TOKEN, str_replace('/', '\\/', self::BASE_TOKEN)],
+            [$base, str_replace('/', '\\/', $base)],
+            $content
+        );
+    }
+
+    /**
+     * A rendered link path without the placeholder, as a person would read it
+     * ("/__shipstatic_base__/about/" → "/about/"). Used for display and for
+     * keys that must not depend on any destination's sub-path (link swaps).
+     *
+     * @param string $path A leading-slash URL path.
+     */
+    public static function strip_base_token(string $path): string {
+        if ($path !== self::BASE_TOKEN && strpos($path, self::BASE_TOKEN . '/') !== 0) {
+            return $path;
+        }
+        $rest = substr($path, strlen(self::BASE_TOKEN));
 
         return $rest === '' ? '/' : $rest;
     }
 
     /**
-     * Remap a site path from the source home sub-path to the configured base path,
-     * so static output is rooted where the destination actually serves it. With the
-     * default base ("/") this simply strips the dev home prefix:
-     * "/test-for-vid/about/" → "/about/". With a base of "/blog" it becomes
-     * "/blog/about/". A path outside the home sub-path is returned unchanged (bar
-     * the base prefix).
+     * Map a rendered link path back to where it lives on the source site, so
+     * code reading the cached render can find attachments and load thumbnails
+     * ("/__shipstatic_base__/wp-content/x.jpg" → "/wp-content/x.jpg", or
+     * "/home-sub/wp-content/x.jpg" when WordPress itself has a home sub-path).
+     *
+     * @param string $path A leading-slash URL path (no scheme/host).
+     */
+    public static function to_source_path(string $path): string {
+        if ($path !== self::BASE_TOKEN && strpos($path, self::BASE_TOKEN . '/') !== 0) {
+            return $path;
+        }
+        $rest = self::strip_base_token($path);
+
+        return self::home_base() === '' ? $rest : self::home_base() . ($rest === '/' ? '/' : $rest);
+    }
+
+    /**
+     * Map a source site path to its path in the render: strip the home
+     * sub-path ("/test-for-vid/about/" → "/about/"). The render is the same
+     * for every destination, so no destination sub-path is added here —
+     * Sync\Runner relocates files into each destination's sub-path at deploy.
+     * A path outside the home sub-path is returned unchanged.
      *
      * @param string $path A leading-slash URL path (no scheme/host).
      */
@@ -85,10 +125,7 @@ final class Url {
             $path = substr($path, strlen($home));
         }
 
-        $path = '/' . ltrim($path, '/');
-        $base = self::base_path();
-
-        return $base === '' ? $path : $base . ($path === '/' ? '/' : $path);
+        return '/' . ltrim($path, '/');
     }
 
     /**
