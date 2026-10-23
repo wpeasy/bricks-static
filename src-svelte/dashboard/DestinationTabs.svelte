@@ -106,10 +106,15 @@
     color: var(--ab-color-text);
   }
 
+  /* The selected destination must be unmistakable: everything below the
+     strip (connection, replacements, sync) belongs to it. Accent text, bold,
+     and an accent bar along the top (inset shadow, so the height doesn't move). */
   .bs-tab--active {
     background: var(--ab-color-surface);
     border-color: var(--ab-color-border);
-    color: var(--ab-color-text);
+    color: var(--ab-color-primary);
+    font-weight: var(--ab-weight-semibold);
+    box-shadow: inset 0 3px 0 var(--ab-color-primary);
   }
 
   .bs-tab--edit {

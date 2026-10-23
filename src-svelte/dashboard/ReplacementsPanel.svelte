@@ -39,6 +39,10 @@
     { value: 'links', title: titleLinks, content: bodyLinks },
     { value: 'videos', title: titleVideos, content: bodyVideos },
   ]);
+
+  // "Replacements for %s" around the destination name (kept out of the
+  // translatable string so it can be styled).
+  const forParts = __('replacementsFor').split('%s');
 </script>
 
 {#snippet titleInner(e: ReplacementEntry)}
@@ -63,7 +67,11 @@
 {#snippet bodyVideos()}<VideoReplacer {destination} {onSaved} />{/snippet}
 
 <section class="bs-card bs-stack bs-stack--sm">
-  <h2 class="bs-rp__title">{__('replacements')} <small>{__('replacementsSub')}</small></h2>
+  <!-- Named, so it's clear which destination these edits will save to. -->
+  <h2 class="bs-rp__title">
+    {forParts[0]}<strong class="bs-rp__dest">{destination.name || __('destinationDefault')}</strong>{forParts[1] ?? ''}
+    <small>{__('replacementsSub')}</small>
+  </h2>
   <Accordion bind:value={open} {items} />
 </section>
 
@@ -84,6 +92,10 @@
     margin: 0;
     font-size: var(--ab-text-md);
     font-weight: var(--ab-weight-semibold);
+  }
+
+  .bs-rp__dest {
+    color: var(--ab-color-primary);
   }
 
   .bs-rp__title small {

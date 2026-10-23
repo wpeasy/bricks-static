@@ -924,6 +924,9 @@
     "msgid": "Replacements"
   },
   {
+    "msgid": "Replacements for %s"
+  },
+  {
     "msgid": "(applied to this destination only · saved automatically)"
   },
   {
@@ -1117,6 +1120,12 @@
   },
   {
     "msgid": "Progress"
+  },
+  {
+    "msgid": "Last sync"
+  },
+  {
+    "msgid": "Last Process"
   },
   {
     "msgid": "Collecting URLs"

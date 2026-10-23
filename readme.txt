@@ -4,7 +4,7 @@ Tags: static site, bricks, performance, static html, deployment
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 2.1.6
+Stable tag: 2.1.7
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -105,6 +105,9 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 
 == Changelog ==
 
+= 2.1.7 =
+* Changed: it's now clearer which destination you're editing — the Replacements panel names it, the selected destination tab stands out, and the progress panel says "Last sync" once a run has finished.
+
 = 2.1.6 =
 * Added: each destination now gets links for its own address. Publish the same site to two GitHub project sites, or a project site and your own domain, and both work — previously only the first destination's sub-path was used. Press Process once after updating.
 * Changed: link replacements are stored as plain paths (e.g. `/about/`) and follow each destination's sub-path.
@@ -159,6 +162,9 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 * Text replacements, `.htaccess` + nginx config, favicon, single-page sync, and WP-CLI sync.
 
 == Upgrade Notice ==
+
+= 2.1.7 =
+Clearer labelling of which destination you're editing.
 
 = 2.1.6 =
 Every destination now gets links for its own address. Press Process once after updating.

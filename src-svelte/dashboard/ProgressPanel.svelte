@@ -127,12 +127,17 @@
     const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
     return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
   }
+
+  let heading = $derived(!finished ? __('progress') : snapshot?.type === 'sync' ? __('lastSync') : __('lastProcess'));
 </script>
 
 {#if visible && snapshot}
   <section class="bs-card bs-stack bs-stack--sm bs-progress--{tone}" in:fadeUp>
     <div class="bs-row bs-row--between">
-      <h2>{__('progress')}{#if destLabel}<span class="bs-progress__dest"> · {destLabel}</span>{/if}</h2>
+      <!-- While a run is going it's "Progress"; afterwards it's a record of
+           the LAST run, which may be for a different destination than the
+           tab you're on — so say so. -->
+      <h2>{heading}{#if destLabel}<span class="bs-progress__dest">{' · '}{destLabel}</span>{/if}</h2>
       <div class="bs-progress__head-right">
         {#if hasErrorDetail}
           <Tooltip content={__('btnViewErrorDetails')} placement="bottom">

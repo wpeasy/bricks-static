@@ -421,6 +421,8 @@ final class I18n {
     private static function replacements(): array {
         return [
             'replacements'    => __('Replacements', 'shipstatic'),
+            /* translators: %s: destination name */
+            'replacementsFor' => __('Replacements for %s', 'shipstatic'),
             'replacementsSub' => __('(applied to this destination only · saved automatically)', 'shipstatic'),
         ];
     }
@@ -560,6 +562,8 @@ final class I18n {
     private static function progress(): array {
         return [
             'progress'      => __('Progress', 'shipstatic'),
+            'lastSync'      => __('Last sync', 'shipstatic'),
+            'lastProcess'   => __('Last Process', 'shipstatic'),
             'phCollect'     => __('Collecting URLs', 'shipstatic'),
             'phRender'      => __('Rendering pages', 'shipstatic'),
             'phAssets'      => __('Processing assets', 'shipstatic'),

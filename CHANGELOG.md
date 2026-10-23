@@ -5,6 +5,14 @@ All notable changes to **ShipStatic** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.7] - 2026-10-23
+
+### Changed
+- **Clearer which destination you're editing.** With several destinations, edits meant for one were easy to make on another. The Replacements panel heading now names the destination ("Replacements for *Destination 2*", accent colour; `replacementsFor`); the selected destination tab is unmistakable (accent text, bold, accent bar — `.bs-tab--active` in `DestinationTabs.svelte`); and once a run has finished, the progress panel reads "Last sync · …" / "Last Process · …" instead of "Progress · …", since it can describe a different destination than the open tab (`ProgressPanel.svelte`).
+
+### Fixed
+- The progress heading lost the space before its "· destination" part ("Progress· …").
+
 ## [2.1.6] - 2026-10-23
 
 ### Added
