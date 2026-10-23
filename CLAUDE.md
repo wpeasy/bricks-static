@@ -131,6 +131,9 @@ The plugin is headed for wordpress.org, whose reviewers run **Plugin Check** (`w
 | `npm run check` | TypeScript/Svelte type check (run often!) |
 | `npm run build` | Production build |
 | `npm run dev`   | Development build with watch |
+| `npm run zip`   | Build + write the release zip `dist/shipstatic-<ver>.zip` |
+| `npm run assets` | Render `.wordpress-org/` icon + banners from their SVG sources |
+| `npm run svn`   | Stage a wordpress.org SVN release (`trunk/`, `tags/<ver>/`, `assets/`) from the zip — `dist/svn/` preview, or `npm run svn -- <checkout>` to sync into a real checkout (never commits; prints the svn commands) |
 
 ### `shared.js` — IIFE Wrapper & No ES Imports
 

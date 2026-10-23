@@ -10,7 +10,8 @@
     "lint:php": "phpcs",
     "lint:php:fix": "phpcbf",
     "zip": "node scripts/make-zips.mjs",
-    "assets": "node scripts/render-assets.mjs"
+    "assets": "node scripts/render-assets.mjs",
+    "svn": "node scripts/svn-stage.mjs"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
