@@ -1,7 +1,7 @@
 # CLAUDE.md 
 
 ## Project Properties
-- **Plugin Name:** ShipStatic (slug `shipstatic`; formerly "Bricks Static", renamed in 2.1.2 because another plugin took that name — never reintroduce `bricks-static`/`bricks_static_`/`BRICKS_STATIC_`). The local dev folder and GitHub repo are still named `bricks-static`; the release zip's folder is `shipstatic/`.
+- **Plugin Name:** ShipStatic (slug `shipstatic`; formerly "Bricks Static", renamed in 2.1.3 because another plugin took that name — never reintroduce `bricks-static`/`bricks_static_`/`BRICKS_STATIC_`). The GitHub repository is `wpeasy/shipstatic` (renamed from `bricks-static`, which redirects); the local dev folder is still named `bricks-static`; the release zip's folder is `shipstatic/`.
 - **Description:** Generate and serve static HTML versions of Bricks-built pages for performance.
 - **Minimum WordPress:** 6.5 (required for `wp_enqueue_script_module()` ESM support)
 - **Minimum PHP:** 8.0

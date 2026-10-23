@@ -79,7 +79,7 @@ Only to start its own WP-CLI commands (`wp shipstatic …`) as background proces
 
 = Where is the source code? =
 
-The admin interface is written in Svelte and shipped as compiled, minified JavaScript in `assets/dist/`. The full, human-readable source is on GitHub: https://github.com/wpeasy/bricks-static (the `src-svelte/` folder). To build it yourself: `npm install`, then `npm run build`.
+The admin interface is written in Svelte and shipped as compiled, minified JavaScript in `assets/dist/`. The full, human-readable source is on GitHub: https://github.com/wpeasy/shipstatic (the `src-svelte/` folder). To build it yourself: `npm install`, then `npm run build`.
 
 == External services ==
 
