@@ -10,7 +10,6 @@ This file defines the standard WordPress plugin header structure. All project-sp
  * Description:       {from CLAUDE.md: Description}
  * Version:           0.0.1-beta
  * Requires at least: {from CLAUDE.md: Minimum WordPress}
- * Tested up to:      {IMPORTANT: Use WebSearch to find the current latest WordPress version - do NOT guess}
  * Requires PHP:      {from CLAUDE.md: Minimum PHP}
  * Author:            BRXProd
  * Author URI:        https://brxprod.com
@@ -29,7 +28,7 @@ This file defines the standard WordPress plugin header structure. All project-sp
 | Description | CLAUDE.md: Description | Short description |
 | Version | Start at `0.0.1-beta` | Current version (SemVer) |
 | Requires at least | CLAUDE.md: Minimum WordPress | Minimum WordPress version |
-| Tested up to | **Use WebSearch to find current version** | Latest tested WordPress version |
+| ~~Tested up to~~ | **Never in the PHP header** — `readme.txt` only | wordpress.org's upload scanner rejects it in the header (`plugin_header_tested_up_to_not_allowed`) |
 | Requires PHP | CLAUDE.md: Minimum PHP | Minimum PHP version |
 | Author | `BRXProd` (no email — support is via the wordpress.org forum) | Fixed |
 | Author URI | `https://brxprod.com` | Fixed |

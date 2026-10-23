@@ -4,7 +4,6 @@
  * Description:       Publish your WordPress site as static HTML over SFTP/FTP, HTTPS, Cloudflare or GitHub Pages. Bricks-aware; works with any WordPress content.
  * Version:           2.1.5
  * Requires at least: 6.5
- * Tested up to:      7.1
  * Requires PHP:      8.0
  * Author:            BRXProd
  * Author URI:        https://brxprod.com

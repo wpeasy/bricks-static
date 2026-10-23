@@ -123,6 +123,7 @@ The plugin is headed for wordpress.org, whose reviewers run **Plugin Check** (`w
 - `ExceptionNotEscaped` is disabled per file (with the reason): exception messages are plain text for JSON/WP-CLI, rendered as text by Svelte — `esc_html()` at the `throw` would show `&#039;` to users. Never echo a `getMessage()` into HTML.
 - No `<script>` literals in PHP — use `wp_get_script_tag()`. No HTML inside translatable strings — wrap outside: `'<em>' . esc_html__('…') . '</em>'`.
 - Remaining **warning**: `load_plugin_textdomain()` (kept for the bundled `languages/`).
+- **wordpress.org's upload scanner is stricter than the released Plugin Check** (2.1.0 passed both of these locally). Rules learned from rejected uploads: **`Tested up to` only in `readme.txt`, never in the PHP header** (`plugin_header_tested_up_to_not_allowed`); **no scripts/executables anywhere in the zip** (e.g. a vendor `build-phar.sh`) — `scripts/make-zips.mjs` strips vendor dev files and refuses forbidden types.
 
 ### Build Commands
 

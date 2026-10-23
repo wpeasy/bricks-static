@@ -16,8 +16,8 @@ If nothing in the shipped surfaces (`shipstatic.php`, `src/**`, `src-svelte/**`,
 ### 2. Bump the version by 0.0.1 (preserve any `-beta`/pre-release suffix)
 Increment `Version:` in the `shipstatic.php` header AND the `SHIPSTATIC_VERSION` define to match. If `package.json` exists, set its `version` to match (drop the `-beta` suffix if package.json uses bare semver), and the two root `version` fields in `package-lock.json`. Set `Stable tag:` in `readme.txt` to the new version (wordpress.org serves the plugin from `tags/<Stable tag>/`).
 
-### 2b. "Tested up to" = the latest WordPress — every release
-Look up the latest WordPress release (`curl -s https://api.wordpress.org/core/version-check/1.7/` → `offers[0].current`, e.g. `7.1.3`) and set `Tested up to:` to its **major.minor** (`7.1`) in BOTH the `readme.txt` header and the `shipstatic.php` header. Use major.minor, not the patch: wordpress.org compares only major.minor, so `7.1` covers 7.1.x. If the lookup fails, say so in the report rather than guessing.
+### 2b. "Tested up to" = the latest WordPress — every release, `readme.txt` ONLY
+Look up the latest WordPress release (`curl -s https://api.wordpress.org/core/version-check/1.7/` → `offers[0].current`, e.g. `7.1.3`) and set `Tested up to:` to its **major.minor** (`7.1`) in the `readme.txt` header. **Never add it to the `shipstatic.php` header** — wordpress.org's upload scanner rejects that (`plugin_header_tested_up_to_not_allowed`). Major.minor, not the patch: wordpress.org compares only major.minor. If the lookup fails, say so in the report rather than guessing.
 
 ### 3. Update the changelog
 - Add the new version to `CHANGELOG.md` with notes on what changed.
