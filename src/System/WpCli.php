@@ -2,15 +2,15 @@
 /**
  * WP-CLI detection + command building across environments.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\System;
+namespace WPEasy\ShipStatic\System;
 
-use WPEasy\BricksStatic\Support\Environment;
+use WPEasy\ShipStatic\Support\Environment;
 
 defined('ABSPATH') || exit;
 
@@ -29,7 +29,7 @@ defined('ABSPATH') || exit;
  */
 final class WpCli {
 
-    public const TRANSIENT_KEY = 'bricks_static_wpcli_status';
+    public const TRANSIENT_KEY = 'shipstatic_wpcli_status';
     public const CACHE_TTL     = HOUR_IN_SECONDS;
 
     /** Cache schema version — bump when the cached array shape changes. */

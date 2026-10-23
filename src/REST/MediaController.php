@@ -2,17 +2,17 @@
 /**
  * Media REST controller — the per-page media replacer UI.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\REST;
+namespace WPEasy\ShipStatic\REST;
 
 use WP_REST_Request;
 use WP_REST_Response;
-use WPEasy\BricksStatic\Media\MediaCollector;
+use WPEasy\ShipStatic\Media\MediaCollector;
 
 defined('ABSPATH') || exit;
 
@@ -25,7 +25,7 @@ final class MediaController {
     /**
      * REST namespace.
      */
-    private const NS = 'bricks-static/v1';
+    private const NS = 'shipstatic/v1';
 
     /**
      * Register routes.

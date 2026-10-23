@@ -1,12 +1,13 @@
 <script lang="ts">
-  const version = (window as unknown as { bricksStaticData?: { version?: string } }).bricksStaticData?.version ?? '';
+  const version = (window as unknown as { shipStaticData?: { version?: string } }).shipStaticData?.version ?? '';
 
   const sections = [
-    { id: 'why', label: 'Why “Bricks” Static?' },
+    { id: 'why', label: 'Built for Bricks' },
     { id: 'features', label: 'Features' },
     { id: 'how', label: 'How it works' },
     { id: 'connector', label: 'Connector' },
     { id: 'cloudflare', label: 'Cloudflare' },
+    { id: 'github', label: 'GitHub Pages' },
     { id: 'issues', label: 'Common issues' },
     { id: 'troubleshooting', label: 'Troubleshooting' },
     { id: 'cli', label: 'CLI & reference' },
@@ -23,7 +24,7 @@
     },
     {
       title: 'Multiple destinations',
-      body: 'Push to any number of destinations, each enabled independently and each deploying via FTP / FTPS / SFTP, the Connector or Cloudflare. SFTP verifies the server host key (trust-on-first-use). Credentials and pairing secrets are encrypted at rest (AES-256-GCM).',
+      body: 'Push to any number of destinations, each enabled independently and each deploying via FTP / FTPS / SFTP, the Connector, GitHub Pages or Cloudflare. SFTP verifies the server host key (trust-on-first-use). Credentials and pairing secrets are encrypted at rest (AES-256-GCM).',
     },
     {
       title: 'Connector (HTTPS) — no FTP account',
@@ -32,6 +33,10 @@
     {
       title: 'Cloudflare — no web host at all',
       body: 'Publish straight to Cloudflare’s global network as a static Worker, with just an account ID and an API token. Each sync sends Cloudflare the full file list, uploads only what it doesn’t already have, then switches the whole site over in one step — removed pages disappear automatically. Cache headers are published for you; Cloudflare handles compression.',
+    },
+    {
+      title: 'GitHub Pages — publish as git commits',
+      body: 'Publish to a branch of your GitHub repository and let GitHub Pages serve it. Each sync is one commit containing only the files that changed — removed pages are deleted, an unchanged site makes no commit, and every deploy is in your repository’s history to inspect or revert.',
     },
     {
       title: 'Fast package deploy',
@@ -63,7 +68,7 @@
 <div class="ab-ui bs-docs bs-stack bs-stack--lg">
   <header class="bs-stack bs-stack--xs">
     <h1>Documentation{#if version}<span class="bs-docs__ver">v{version}</span>{/if}</h1>
-    <p class="bs-docs__lead">How Bricks Static works, plus fixes for the issues you’re most likely to hit.</p>
+    <p class="bs-docs__lead">How ShipStatic works, plus fixes for the issues you’re most likely to hit.</p>
   </header>
 
   <div class="bs-docs__layout">
@@ -77,11 +82,11 @@
     <div class="bs-docs__content bs-stack bs-stack--lg">
       <!-- Why the name -->
       <section id="why" class="bs-docs__section bs-stack bs-stack--sm">
-        <h2>Why “Bricks” Static?</h2>
+        <h2>Built for Bricks</h2>
         <p>
-          Because it understands Bricks. Bricks gives elements a new random ID (<code>brxe-…</code>, form field IDs and
+          ShipStatic understands Bricks. Bricks gives elements a new random ID (<code>brxe-…</code>, form field IDs and
           several <code>data-*</code> attributes) every time a page renders. To a generic static exporter every Bricks page
-          then looks changed on every run, so the whole site re-uploads and “in sync” never means anything. Bricks Static
+          then looks changed on every run, so the whole site re-uploads and “in sync” never means anything. ShipStatic
           ignores those IDs when comparing renders (the published HTML keeps its real IDs), so only pages whose content
           actually changed are uploaded. It also renders through Bricks’ maintenance / coming-soon mode, and its
           “Sync this page” button works alongside the Bricks editor.
@@ -90,7 +95,7 @@
           <strong>Bricks isn’t required.</strong> Rendering captures whatever your site outputs, so block editor
           (Gutenberg) and Classic Editor content, archives and any theme export the same way. On pages not built with
           Bricks, the Bricks-specific handling simply has nothing to do. Developers using another builder can add its
-          per-render noise patterns with the <code>bricks_static_stable_hash_patterns</code> filter.
+          per-render noise patterns with the <code>shipstatic_stable_hash_patterns</code> filter.
         </p>
       </section>
 
@@ -149,7 +154,7 @@
         <ul class="bs-docs__list">
           <li><strong>Re-pair (new file)</strong> — generates a fresh pairing and a new file. The file currently on the destination stops working immediately, so upload the new one before the next sync. Use it if you lose the download, suspect the secret leaked, or moved the site to a new server.</li>
           <li><strong>Revoke</strong> — forgets the pairing on this site. The connector file on the destination then refuses every request; delete it when convenient.</li>
-          <li><strong>Rebuild push record</strong> — after <em>Reset sync state</em> or a re-pair, the plugin no longer knows what’s on the destination and would re-upload everything. This asks the connector for an inventory and marks every file that’s already there and identical as done, so the next Sync sends only what really changed. Files it finds that Bricks Static never uploaded are left alone. Needs a current render (Process first).</li>
+          <li><strong>Rebuild push record</strong> — after <em>Reset sync state</em> or a re-pair, the plugin no longer knows what’s on the destination and would re-upload everything. This asks the connector for an inventory and marks every file that’s already there and identical as done, so the next Sync sends only what really changed. Files it finds that ShipStatic never uploaded are left alone. Needs a current render (Process first).</li>
           <li><strong>Check server</strong> (Destination Server Configuration tab) reads the destination’s exact web server through the connector, even behind a CDN.</li>
         </ul>
 
@@ -200,6 +205,52 @@
         <h3>Security</h3>
         <p class="bs-docs__muted">
           The API token is encrypted at rest like FTP passwords and is never shown again or sent to the browser. Requests go only to <code>api.cloudflare.com</code> over verified HTTPS. Give the token only the <em>Workers Scripts → Edit</em> permission on one account — then a leaked token could change Workers on that account, but nothing else (DNS, billing, other accounts). Roll the token in Cloudflare at any time and paste the new one into the destination.
+        </p>
+      </section>
+
+      <!-- GitHub Pages -->
+      <section id="github" class="bs-docs__section bs-stack bs-stack--sm">
+        <h2>Deploying to GitHub Pages</h2>
+        <p class="bs-docs__muted">
+          The GitHub Pages deploy method commits your static site to a branch of a GitHub repository, and GitHub Pages serves it — no web host, no PHP and no FTP account. Choose <strong>GitHub Pages</strong> under <em>Deploy via</em>.
+        </p>
+
+        <h3>Set-up</h3>
+        <ol class="bs-docs__steps">
+          <li>Create a repository on GitHub with at least one commit (tick <strong>Add a README</strong>). Make it public: GitHub Pages on a private repository needs a paid GitHub plan.</li>
+          <li>Create a fine-grained token: <strong>Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token</strong>. Under <em>Repository access</em> choose <strong>Only select repositories</strong> and pick this repository; under <em>Permissions</em> set <strong>Contents</strong> to <strong>Read and write</strong>. Optionally add <strong>Pages: Read-only</strong> so Test can show the Pages status. Copy the token — GitHub shows it only once.</li>
+          <li>On the destination, choose <strong>GitHub Pages</strong> and enter the owner (your account or organisation), the repository name and the token. Keep the branch <code>gh-pages</code> and the folder <em>Whole branch</em> unless you have a reason not to.</li>
+          <li>Press <strong>Test</strong>. If the Destination URL is empty it is filled with the Pages address. Press <strong>Save</strong>.</li>
+          <li><strong>Check</strong> and <strong>Sync</strong> as usual. With the <code>gh-pages</code> branch, GitHub turns Pages on by itself at the first sync. With another branch or the <code>/docs</code> folder, turn it on afterwards in the repository’s <strong>Settings → Pages → Deploy from a branch</strong>.</li>
+        </ol>
+
+        <h3>Project sites and the sub-path</h3>
+        <p class="bs-docs__muted">
+          A repository called <code>my-site</code> is served at <code>https://owner.github.io/my-site/</code> — a sub-path. Set <strong>Served from sub-path</strong> to <code>/my-site</code> (Test tells you if it doesn’t match), save, then press <strong>Process</strong>, so links, images and CSS point inside the site. A repository named <code>owner.github.io</code>, or a custom domain, is served from the root and needs no sub-path. Links are built for the <em>first</em> destination’s sub-path, so a GitHub project site works best as the first destination, or on a custom domain.
+        </p>
+
+        <h3>How a GitHub Pages sync works</h3>
+        <ul class="bs-docs__list">
+          <li><strong>One commit per sync.</strong> The plugin compares your export with the branch and sends only what changed. Removed pages are deleted in the same commit; when nothing changed, no commit is made.</li>
+          <li><strong>The branch folder is the site.</strong> Everything in the chosen folder (the whole branch, or <code>docs/</code>) is replaced by the export — except <code>CNAME</code>, README, LICENSE and <code>.github/</code>. Don’t publish to a branch’s root if it holds your source code: use <code>gh-pages</code>, or <code>/docs</code>.</li>
+          <li><strong>Never force-pushed.</strong> If someone pushes to the branch during a sync, the plugin rebuilds on top of their commit once, and otherwise stops with a message — it never overwrites history.</li>
+          <li><strong>History.</strong> Every sync is a normal commit, so you can see what changed and revert a deploy with git.</li>
+          <li><strong>No <code>.htaccess</code> or <code>.gz</code> files.</strong> GitHub compresses files itself and sets its own cache headers (about 10 minutes for everything); custom cache rules can’t be applied. A <code>.nojekyll</code> file is added so GitHub publishes the files as they are.</li>
+          <li><strong>Custom domain.</strong> Set it in the repository’s <strong>Settings → Pages</strong>, or enter it as the Destination URL; the plugin keeps the <code>CNAME</code> file GitHub uses.</li>
+        </ul>
+
+        <h3>Limits</h3>
+        <ul class="bs-docs__list">
+          <li><strong>25 MiB per file</strong> (larger files are left out and listed in the result) and <strong>1 GB</strong> per site.</li>
+          <li><strong>About 500 uploads an hour.</strong> Text files cost almost nothing, but each image or other binary file is one upload, so a first sync of an image-heavy site may pause (“continues at …”) and carry on by itself. Keep the dashboard open, or let the WP-CLI runner carry on. Later syncs send only what changed.</li>
+          <li>GitHub rebuilds a Pages site at most <strong>about 10 times an hour</strong> — many single-page syncs in a row can hit that.</li>
+          <li>On a project site, <code>robots.txt</code> has no effect (search engines only read it at the domain root).</li>
+          <li><strong>Nothing runs server-side</strong> — forms that post back to WordPress, search and comments don’t work on the static copy.</li>
+        </ul>
+
+        <h3>Security</h3>
+        <p class="bs-docs__muted">
+          The token is encrypted at rest like FTP passwords and is never shown again or sent to the browser. Requests go only to <code>api.github.com</code> over verified HTTPS. A fine-grained token limited to one repository with <em>Contents: Read and write</em> can change that repository’s files — nothing else in your account. Regenerate it on GitHub at any time and paste the new one into the destination.
         </p>
       </section>
 
@@ -302,25 +353,29 @@
       <section id="cli" class="bs-docs__section bs-stack bs-stack--sm">
         <h2>CLI &amp; reference</h2>
         <p class="bs-docs__muted">Drive a sync from a terminal (useful on low-worker hosts, or for cron):</p>
-        <pre class="bs-docs__code">wp bricks-static sync            # render + push to the primary destination
-wp bricks-static sync --all      # push to every enabled destination
-wp bricks-static sync --dest=ID  # push to one destination
-wp bricks-static sync --check    # dry run (render + catalogue, no upload)
-wp bricks-static sync --prune    # also remove remote files no longer present
+        <pre class="bs-docs__code">wp shipstatic sync            # render + push to the primary destination
+wp shipstatic sync --all      # push to every enabled destination
+wp shipstatic sync --dest=ID  # push to one destination
+wp shipstatic sync --check    # dry run (render + catalogue, no upload)
+wp shipstatic sync --prune    # also remove remote files no longer present
 
-wp bricks-static connector status                                  # pairing state per destination
-wp bricks-static connector pair ID --dest-url=https://… --to=DIR   # pair + write the connector file
-wp bricks-static connector test ID                                 # ping the connector
-wp bricks-static connector rebuild ID                              # rebuild the push record from it
-wp bricks-static connector revoke ID                               # disconnect
+wp shipstatic connector status                                  # pairing state per destination
+wp shipstatic connector pair ID --dest-url=https://… --to=DIR   # pair + write the connector file
+wp shipstatic connector test ID                                 # ping the connector
+wp shipstatic connector rebuild ID                              # rebuild the push record from it
+wp shipstatic connector revoke ID                               # disconnect
 
-wp bricks-static cloudflare status                                 # Cloudflare destinations
-CLOUDFLARE_API_TOKEN=… wp bricks-static cloudflare set ID --account=… --worker=my-site --token-from-env
-wp bricks-static cloudflare test ID                                # check the token + account</pre>
+wp shipstatic cloudflare status                                 # Cloudflare destinations
+CLOUDFLARE_API_TOKEN=… wp shipstatic cloudflare set ID --account=… --worker=my-site --token-from-env
+wp shipstatic cloudflare test ID                                # check the token + account
+
+wp shipstatic github status                                     # GitHub Pages destinations
+GITHUB_TOKEN=… wp shipstatic github set ID --owner=… --repo=my-site --token-from-env
+wp shipstatic github test ID                                    # check the token, write access + Pages</pre>
         <ul class="bs-docs__list">
-          <li><strong>Cache:</strong> the staging copy lives under <code>wp-content/cache/bricks-static</code> (or uploads if that isn’t writable).</li>
+          <li><strong>Cache:</strong> the staging copy lives under <code>wp-content/cache/shipstatic</code> (or uploads if that isn’t writable).</li>
           <li><strong>Server config:</strong> the managed <code>.htaccess</code> is uploaded automatically (Apache/LiteSpeed). nginx has no per-directory config, so it serves the static site with its defaults; the <em>Server config</em> tab has an optional tuning snippet to paste, plus <strong>Check server</strong>, which probes the destination and reports the web server and whether the cache rules are in effect.</li>
-          <li><strong>Filters:</strong> behaviour is adjustable via <code>bs_*</code> hooks (e.g. <code>bricks_static_generate_sitemaps</code>, <code>bricks_static_include_favicon</code>, <code>bricks_static_seed_from_sitemap</code>, <code>bricks_static_excluded_post_types</code>; for Cloudflare, <code>bricks_static_cloudflare_headers</code> and <code>bricks_static_cloudflare_redirects</code>).</li>
+          <li><strong>Filters:</strong> behaviour is adjustable via <code>bs_*</code> hooks (e.g. <code>shipstatic_generate_sitemaps</code>, <code>shipstatic_include_favicon</code>, <code>shipstatic_seed_from_sitemap</code>, <code>shipstatic_excluded_post_types</code>; for Cloudflare, <code>shipstatic_cloudflare_headers</code> and <code>shipstatic_cloudflare_redirects</code>).</li>
         </ul>
       </section>
     </div>

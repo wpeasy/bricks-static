@@ -3,15 +3,15 @@
  * Collects the videos referenced by the rendered site: <iframe> embeds
  * (YouTube/Vimeo/Maps) and locally-hosted <video>/<source> files.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Media;
+namespace WPEasy\ShipStatic\Media;
 
-use WPEasy\BricksStatic\Sync\Manifest;
+use WPEasy\ShipStatic\Sync\Manifest;
 
 defined('ABSPATH') || exit;
 

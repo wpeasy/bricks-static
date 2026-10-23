@@ -2,15 +2,15 @@
 /**
  * HTTP client for the Connector receiver (signed requests).
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   2.1.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Deploy;
+namespace WPEasy\ShipStatic\Deploy;
 
-use WPEasy\BricksStatic\Support\UrlSafety;
+use WPEasy\ShipStatic\Support\UrlSafety;
 
 defined('ABSPATH') || exit;
 

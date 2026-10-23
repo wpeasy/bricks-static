@@ -2,13 +2,13 @@
 /**
  * Gzip pre-compression of text output.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Sync;
+namespace WPEasy\ShipStatic\Sync;
 
 defined('ABSPATH') || exit;
 
@@ -33,7 +33,7 @@ final class Compressor {
     /**
      * Files smaller than this aren't worth gzipping — the ~20-byte gzip overhead
      * can make the sibling LARGER (e.g. a 76-byte robots.txt), and the per-request
-     * round trip to swap in a .gz isn't worth it. Filter `bricks_static_gzip_min_bytes`.
+     * round trip to swap in a .gz isn't worth it. Filter `shipstatic_gzip_min_bytes`.
      */
     private const MIN_BYTES = 1024;
 
@@ -48,7 +48,7 @@ final class Compressor {
      * Minimum file size (bytes) before a .gz sibling is worth writing.
      */
     public static function min_bytes(): int {
-        return (int) apply_filters('bricks_static_gzip_min_bytes', self::MIN_BYTES);
+        return (int) apply_filters('shipstatic_gzip_min_bytes', self::MIN_BYTES);
     }
 
     /**

@@ -2,13 +2,13 @@
 /**
  * Per-destination literal text replacement (scoped to text + image sources).
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Render;
+namespace WPEasy\ShipStatic\Render;
 
 defined('ABSPATH') || exit;
 

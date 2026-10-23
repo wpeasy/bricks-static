@@ -2,15 +2,15 @@
 /**
  * Transport factory + capability detection.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Transport;
+namespace WPEasy\ShipStatic\Transport;
 
-use WPEasy\BricksStatic\Settings\Settings;
+use WPEasy\ShipStatic\Settings\Settings;
 
 defined('ABSPATH') || exit;
 
@@ -35,7 +35,7 @@ final class TransportFactory {
          * @param TransportInterface|null $transport Override, or null for default.
          * @param array<string,mixed>     $config    Connection config.
          */
-        $override = apply_filters('bricks_static_transport', null, $config);
+        $override = apply_filters('shipstatic_transport', null, $config);
         if ($override instanceof TransportInterface) {
             return $override;
         }
@@ -43,6 +43,8 @@ final class TransportFactory {
         switch ($config['transport'] ?? 'sftp') {
             case 'cloudflare':
                 return new CloudflareTransport($config);
+            case 'github':
+                return new GitHubTransport($config);
             case 'connector':
                 return new ConnectorTransport($config);
             case 'ftps':
@@ -58,7 +60,7 @@ final class TransportFactory {
     /**
      * Which transports are usable on this server.
      *
-     * @return array{sftp:bool,ftps:bool,ftp:bool,connector:bool,cloudflare:bool}
+     * @return array{sftp:bool,ftps:bool,ftp:bool,connector:bool,cloudflare:bool,github:bool}
      */
     public static function capabilities(): array {
         return [
@@ -67,13 +69,14 @@ final class TransportFactory {
             'ftp'        => FtpTransport::is_available(),
             'connector'  => ConnectorTransport::is_available(),
             'cloudflare' => CloudflareTransport::is_available(),
+            'github'     => GitHubTransport::is_available(),
         ];
     }
 
     /**
      * Whether a transport id connects to an FTP/SFTP host (and so needs the
-     * host/port/username/password fields). The Connector and Cloudflare are
-     * reached over HTTPS without one.
+     * host/port/username/password fields). The Connector, Cloudflare and
+     * GitHub Pages are reached over HTTPS without one.
      *
      * @param string $transport Transport id.
      */
@@ -90,6 +93,6 @@ final class TransportFactory {
      * @param string $transport Transport id.
      */
     public static function is_snapshot(string $transport): bool {
-        return $transport === 'cloudflare';
+        return in_array($transport, ['cloudflare', 'github'], true);
     }
 }

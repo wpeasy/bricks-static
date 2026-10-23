@@ -2,15 +2,15 @@
 /**
  * Content manifest (per-file hashes) for delta sync.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Sync;
+namespace WPEasy\ShipStatic\Sync;
 
-use WPEasy\BricksStatic\Render\StableHash;
+use WPEasy\ShipStatic\Render\StableHash;
 
 defined('ABSPATH') || exit;
 
@@ -25,18 +25,18 @@ final class Manifest {
     /**
      * Option holding the manifest of the most recent local render (base).
      */
-    public const RENDER_OPTION = 'bricks_static_render_manifest';
+    public const RENDER_OPTION = 'shipstatic_render_manifest';
 
     /**
      * Option holding the manifest for the destination currently being deployed
      * (base render with that destination's text replacements applied to HTML).
      */
-    public const DEPLOY_OPTION = 'bricks_static_deploy_manifest';
+    public const DEPLOY_OPTION = 'shipstatic_deploy_manifest';
 
     /**
      * Option holding the manifest of the last successful push.
      */
-    public const PUSHED_OPTION = 'bricks_static_pushed_manifest';
+    public const PUSHED_OPTION = 'shipstatic_pushed_manifest';
 
     /**
      * Build a manifest by walking a directory.

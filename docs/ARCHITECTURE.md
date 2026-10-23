@@ -1,7 +1,7 @@
-# Bricks Static — Architecture
+# ShipStatic — Architecture
 
 > Status: design agreed; implementation in progress (M1).
-> Bricks Static renders a WordPress site to static HTML/asset files and pushes
+> ShipStatic renders a WordPress site to static HTML/asset files and pushes
 > them to a destination host over FTP/SFTP. It is **builder-agnostic** — it works
 > with Bricks, Gutenberg, or anything else, because it renders the final HTML
 > rather than reading builder internals.
@@ -25,19 +25,19 @@ WordPress install stays private/origin; the destination serves only flat files.
 | Credentials | Encrypted in `wp_options` (key derived from WP salts); **wp-config constants override** |
 | Destination server | Generate `.htaccess` **and** an nginx snippet (target may be Apache/LiteSpeed or nginx) |
 | Scale | Tuned for <100 URLs by default; queue + delta scale to thousands |
-| Staging cache | `wp-content/cache/bricks-static/` (constant + filter overridable; auto-fallback to `uploads/` if not writable) |
+| Staging cache | `wp-content/cache/shipstatic/` (constant + filter overridable; auto-fallback to `uploads/` if not writable) |
 | Durable state | Settings, encrypted creds, last-pushed manifest, job state → **DB** (purge-proof) |
 
 ## Storage layout
 
-- **Staging cache** `wp-content/cache/bricks-static/` — rendered HTML, `.gz` siblings, mirrored assets (relative paths preserved), current-render manifest. Locked down with an `index.html` + deny drop-in; never the source of truth.
-  - Overridable via `BRICKS_STATIC_CACHE_DIR` constant or a `bricks_static_cache_dir` filter; falls back to `wp-content/uploads/bricks-static/` if `wp-content/` is not writable.
+- **Staging cache** `wp-content/cache/shipstatic/` — rendered HTML, `.gz` siblings, mirrored assets (relative paths preserved), current-render manifest. Locked down with an `index.html` + deny drop-in; never the source of truth.
+  - Overridable via `SHIPSTATIC_CACHE_DIR` constant or a `shipstatic_cache_dir` filter; falls back to `wp-content/uploads/shipstatic/` if `wp-content/` is not writable.
 - **Durable (DB):**
-  - `bricks_static_settings` option — destination config + encrypted credentials (constants override at read time).
-  - `bricks_static_pushed_manifest` — hashes of what was last successfully pushed (drives "in sync").
-  - `{$wpdb->prefix}bricks_static_jobs` table (large sites) / option (small) — job phase, counts, per-item status, errors, for resumability.
+  - `shipstatic_settings` option — destination config + encrypted credentials (constants override at read time).
+  - `shipstatic_pushed_manifest` — hashes of what was last successfully pushed (drives "in sync").
+  - `{$wpdb->prefix}shipstatic_jobs` table (large sites) / option (small) — job phase, counts, per-item status, errors, for resumability.
 
-## PHP structure (`WPEasy\BricksStatic\…`, PSR-4 from `src/`)
+## PHP structure (`WPEasy\ShipStatic\…`, PSR-4 from `src/`)
 
 ```
 src/
@@ -65,7 +65,7 @@ src/
 │   ├── Compressor            # gzencode .gz siblings (if zlib)
 │   └── HtaccessBuilder       # .htaccess + nginx snippet
 ├── Settings/
-│   ├── Settings              # typed read/write of bricks_static_settings (+ constant override)
+│   ├── Settings              # typed read/write of shipstatic_settings (+ constant override)
 │   └── Schema                # field definitions / sanitisation
 └── Support/
     ├── Crypto                # encrypt/decrypt creds via WP salts
@@ -79,12 +79,12 @@ src/
 2. **Collect URLs** — WP content + sitemap; if no sitemap, seed the homepage. Enqueue.
 3. **Per page (batched)** — loopback render → harvest internal links (enqueue new unique) → rewrite origin → root-relative → extract assets → write `…/<relative>/index.html` → write `.gz` sibling if zlib.
 4. **Assets (batched)** — fetch each unique same-origin asset → store under the same relative path → parse CSS for nested `url()`.
-5. **Manifest diff** — hash every output, compare to `bricks_static_pushed_manifest` → compute the new/changed upload set.
+5. **Manifest diff** — hash every output, compare to `shipstatic_pushed_manifest` → compute the new/changed upload set.
 6. **Upload (batched)** — push changed files + `.gz` over the chosen transport, preserving paths. (A snapshot transport — Cloudflare — instead publishes the full deploy set in one `snapshot` phase; the far end dedupes, so only new/changed files travel, and nothing is pruned.)
 7. **`.htaccess`** — back up any existing one, then write: serve `.gz` when present; cache-control HTML short/revalidate, static assets long + `immutable`. Emit an nginx snippet for manual paste.
 8. **Finalize** — store the pushed manifest; status → *In sync*.
 
-## Admin dashboard (Svelte 5, `.bs` framework, REST `bricks-static/v1`)
+## Admin dashboard (Svelte 5, `.bs` framework, REST `shipstatic/v1`)
 
 - **Connection** — transport (SFTP/FTP), host/port/user/remote path, *Test connection*; indicates whether creds come from DB or wp-config constants.
 - **Status** — three indicators: *Connected* · *Pushed yet?* · *In sync*.
@@ -118,16 +118,16 @@ Proper form support (later): keep dynamic endpoints pointing at the live origin
 and `<img>` src/srcset only; "All Destinations" syncs **sequentially**.
 
 **Data model**
-- `bricks_static_common` — shared settings + master enable (shown above the tabs).
-- `bricks_static_destinations` — list; each `{ id, name, enabled,
+- `shipstatic_common` — shared settings + master enable (shown above the tabs).
+- `shipstatic_destinations` — list; each `{ id, name, enabled,
   includeInSinglePageSync, connection (transport/host/port/user/password(enc)/
   remotePath/basePath/destinationUrl), replacements: [{search, replace}] }`.
   - **enabled** — include this destination in full syncs / "All Destinations".
   - **includeInSinglePageSync** — include it when a single page is pushed from
     the editor (that editor button is TBA; the switch is wired now).
-- `bricks_static_pushed_{id}` — per-destination pushed manifest (independent sync state).
-- Migration: existing single `bricks_static_settings` → `destinations[0]`; `bricks_static_pushed_manifest`
-  → `bricks_static_pushed_{id0}`.
+- `shipstatic_pushed_{id}` — per-destination pushed manifest (independent sync state).
+- Migration: existing single `shipstatic_settings` → `destinations[0]`; `shipstatic_pushed_manifest`
+  → `shipstatic_pushed_{id0}`.
 
 **Render once, deploy many**
 - Render the base static site **once** (source-derived → cache + render manifest).
@@ -140,7 +140,7 @@ and `<img>` src/srcset only; "All Destinations" syncs **sequentially**.
 **Jobs**: per-destination job state; "Sync all" queues destinations sequentially.
 
 **REST/CLI**: destinations CRUD; check/sync per destination + sync-all;
-`wp bricks-static sync [--dest=<id> | --all]`.
+`wp shipstatic sync [--dest=<id> | --all]`.
 
 **UI**: tabs with `+` to add; common settings + shared status message above; each
 tab = connection + a Search/Replace repeater (optional, with a "be specific"

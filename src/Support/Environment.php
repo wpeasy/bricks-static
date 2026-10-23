@@ -2,15 +2,15 @@
 /**
  * Hosting-environment detection.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Support;
+namespace WPEasy\ShipStatic\Support;
 
-use WPEasy\BricksStatic\System\WpCli;
+use WPEasy\ShipStatic\System\WpCli;
 
 defined('ABSPATH') || exit;
 
@@ -50,7 +50,7 @@ final class Environment {
          *
          * @param bool $local Detected value.
          */
-        return (bool) apply_filters('bricks_static_is_local', $local);
+        return (bool) apply_filters('shipstatic_is_local', $local);
     }
 
     /**
@@ -71,7 +71,7 @@ final class Environment {
      * The WP-CLI command users should run for a reliable sync.
      */
     public static function cli_command(): string {
-        return 'wp bricks-static sync';
+        return 'wp shipstatic sync';
     }
 
     /**

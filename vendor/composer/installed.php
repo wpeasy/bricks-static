@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
-        'name' => 'wpeasy/bricks-static',
+        'name' => 'wpeasy/shipstatic',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '105013173901f423c2976de58e8ad2d17a1c3de4',
+        'reference' => '7bc924a0b0a774ff22a9643acc011f55089de64a',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -37,10 +37,10 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
-        'wpeasy/bricks-static' => array(
+        'wpeasy/shipstatic' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '105013173901f423c2976de58e8ad2d17a1c3de4',
+            'reference' => '7bc924a0b0a774ff22a9643acc011f55089de64a',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

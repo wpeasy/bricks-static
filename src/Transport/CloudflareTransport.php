@@ -2,17 +2,17 @@
 /**
  * Cloudflare (Workers static assets) transport.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   2.1.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Transport;
+namespace WPEasy\ShipStatic\Transport;
 
-use WPEasy\BricksStatic\Deploy\CloudflareAuthException;
-use WPEasy\BricksStatic\Deploy\CloudflareClient;
-use WPEasy\BricksStatic\Deploy\CloudflareHeaders;
+use WPEasy\ShipStatic\Deploy\CloudflareAuthException;
+use WPEasy\ShipStatic\Deploy\CloudflareClient;
+use WPEasy\ShipStatic\Deploy\CloudflareHeaders;
 
 defined('ABSPATH') || exit;
 

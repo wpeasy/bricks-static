@@ -90,7 +90,7 @@ Operations (`{"op": …}`):
 | `ping`     | —                                                               | `{ok, version, php, zip:bool, gzip:bool, writable:bool, free:int, server:"<SERVER_SOFTWARE>", dir:"<basename>"}` |
 | `manifest` | —                                                               | `{ok, files:{rel:{size,hash}}}` — walks its own dir, skips `.gz` siblings and itself; used to rebuild the pushed record after a wipe |
 | `stat`     | `{paths:[…]}`                                                   | `{ok, exists:{rel:bool}}` (for `.htaccess` merge / backup check)                             |
-| `get`      | `{path}`                                                        | `{ok, content:base64}` — **allow-listed to `.htaccess` and `.htaccess.bricks-static.bak` only** |
+| `get`      | `{path}`                                                        | `{ok, content:base64}` — **allow-listed to `.htaccess` and `.htaccess.shipstatic.bak` only** |
 | `put`      | multipart `file` + `path`                                       | `{ok}` — single small file (`.htaccess`, per-file fallback)                                   |
 | `chunk`    | multipart `file` + `upload`(id) + `index` + `total` + `sha256` (last chunk) | `{ok, received}` — appends to `bs-connector-<id>.<upload>.part`; on last chunk verifies sha256, renames to `.zip` |
 | `extract`  | `{upload, deletes:[…]}`                                         | `{ok, extracted, deleted, errors:[…]}` — the `UnzipScript` body: zip-slip guard, gzip siblings, prune list; deletes the zip after |
@@ -98,7 +98,7 @@ Operations (`{"op": …}`):
 
 Chunk size default 4 MB (below the common 8 MB `upload_max_filesize`; `ping`
 returns `upload_max` so the client can size chunks). Extract is called with a
-long timeout (`bricks_static_package_timeout`, existing filter).
+long timeout (`shipstatic_package_timeout`, existing filter).
 
 ## 5. Filesystem jail (non-negotiable, mirrors `UnzipScript`)
 
@@ -189,7 +189,7 @@ can't drift). `UnzipScript` stays for FTP destinations.
 ### 7.4 Settings / Schema
 
 New `Schema::fields()` entries: `connectorId` (string), `connectorSecret`
-(`secret => true`, constant `BRICKS_STATIC_CONNECTOR_SECRET`), `connectorVersion` (int).
+(`secret => true`, constant `SHIPSTATIC_CONNECTOR_SECRET`), `connectorVersion` (int).
 `transport => 'connector'` makes `host/port/username/password/remotePath`
 irrelevant — `Destination::connection_config()` returns `transport`, `url`,
 `connectorId`, `connectorSecret` (decrypted only here, same rule as passwords).
@@ -198,7 +198,7 @@ secret. `TransportFactory::capabilities()` adds `connector => true` (no runtime
 dependency beyond `wp_remote_*`); `make()` routes `'connector'`.
 
 `Destinations::update()` target-signature logic: changing `destinationUrl` or
-rotating the secret counts as a re-target (drops pushed manifest, `bricks_static_pkg_off_`,
+rotating the secret counts as a re-target (drops pushed manifest, `shipstatic_pkg_off_`,
 `ServerProbe` cache) — the connector's `manifest` op can rebuild the pushed
 record on the next Check instead of forcing a full re-upload (nice-to-have,
 phase 3).
@@ -274,7 +274,7 @@ and disappoint); phase 3 can follow.
    deploy ever writes above the connector's directory (it doesn't today — all
    paths are manifest-relative).
 3. **Should `extract` stream progress?** Not in v1 — one long request with the
-   existing `bricks_static_package_timeout`. If very large sites need it, a `status` op
+   existing `shipstatic_package_timeout`. If very large sites need it, a `status` op
    polling a progress file is the follow-up.
 4. **Version drift**: the source pins `connectorVersion`; the file reports
    `$VERSION`. Minor protocol additions are backward-compatible; a breaking change

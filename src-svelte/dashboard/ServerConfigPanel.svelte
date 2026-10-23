@@ -86,6 +86,7 @@
     litespeed: () => 'LiteSpeed',
     nginx: () => 'nginx',
     cloudflare: () => 'Cloudflare',
+    github: () => 'GitHub Pages',
     proxied: () => __('serverProxied'),
     other: () => __('serverUnknown'),
     unknown: () => __('serverUnknown'),

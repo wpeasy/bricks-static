@@ -2,33 +2,33 @@
 /**
  * Admin menu + page registration.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Admin;
+namespace WPEasy\ShipStatic\Admin;
 
-use WPEasy\BricksStatic\Support\Assets;
-use WPEasy\BricksStatic\Support\I18n;
+use WPEasy\ShipStatic\Support\Assets;
+use WPEasy\ShipStatic\Support\I18n;
 
 defined('ABSPATH') || exit;
 
 /**
- * Registers the top-level "Bricks Static" admin page and its assets.
+ * Registers the top-level "ShipStatic" admin page and its assets.
  */
 final class Menu {
 
     /**
      * Admin menu slug.
      */
-    private const MENU_SLUG = 'bricks-static';
+    private const MENU_SLUG = 'shipstatic';
 
     /**
      * Documentation submenu slug.
      */
-    private const DOCS_SLUG = 'bricks-static-docs';
+    private const DOCS_SLUG = 'shipstatic-docs';
 
     /**
      * Capability required to view the page.
@@ -38,12 +38,12 @@ final class Menu {
     /**
      * Script handle for the dashboard bundle (loaded as an ES module).
      */
-    private const SCRIPT_HANDLE = 'bricks-static-dashboard';
+    private const SCRIPT_HANDLE = 'shipstatic-dashboard';
 
     /**
      * Script handle for the documentation bundle.
      */
-    private const DOCS_HANDLE = 'bricks-static-docs';
+    private const DOCS_HANDLE = 'shipstatic-docs';
 
     /**
      * Page hook suffixes (dashboard, docs), used to scope asset enqueuing.
@@ -71,8 +71,8 @@ final class Menu {
      */
     public static function register_menu(): void {
         self::$page_hook = (string) add_menu_page(
-            __('Bricks Static', 'bricks-static'),
-            __('Bricks Static', 'bricks-static'),
+            __('ShipStatic', 'shipstatic'),
+            __('ShipStatic', 'shipstatic'),
             self::CAPABILITY,
             self::MENU_SLUG,
             [self::class, 'render_page'],
@@ -84,8 +84,8 @@ final class Menu {
         // "Dashboard", then add the Documentation page.
         add_submenu_page(
             self::MENU_SLUG,
-            __('Bricks Static', 'bricks-static'),
-            __('Dashboard', 'bricks-static'),
+            __('ShipStatic', 'shipstatic'),
+            __('Dashboard', 'shipstatic'),
             self::CAPABILITY,
             self::MENU_SLUG,
             [self::class, 'render_page']
@@ -93,8 +93,8 @@ final class Menu {
 
         self::$docs_hook = (string) add_submenu_page(
             self::MENU_SLUG,
-            __('Documentation', 'bricks-static'),
-            __('Documentation', 'bricks-static'),
+            __('Documentation', 'shipstatic'),
+            __('Documentation', 'shipstatic'),
             self::CAPABILITY,
             self::DOCS_SLUG,
             [self::class, 'render_docs']
@@ -116,8 +116,8 @@ final class Menu {
             wp_enqueue_media();
             self::enqueue_app('src-svelte/dashboard/main.ts', self::SCRIPT_HANDLE, [
                 // Whether the setup wizard has never been shown/dismissed yet —
-                // dashboard-only, so it never leaks onto the docs page's bricksStaticData.
-                'isFirstRun' => get_option('bricks_static_wizard_seen', '0') === '0',
+                // dashboard-only, so it never leaks onto the docs page's shipStaticData.
+                'isFirstRun' => get_option('shipstatic_wizard_seen', '0') === '0',
             ]);
         } elseif ($hook === self::$docs_hook) {
             self::enqueue_app('src-svelte/docs/main.ts', self::DOCS_HANDLE);
@@ -130,14 +130,14 @@ final class Menu {
      *
      * @param string               $entry_key Vite manifest input key.
      * @param string               $handle    Script handle (also the CSS handle prefix).
-     * @param array<string,mixed>  $extra     Extra key/value pairs merged into `bricksStaticData`.
+     * @param array<string,mixed>  $extra     Extra key/value pairs merged into `shipStaticData`.
      */
     private static function enqueue_app(string $entry_key, string $handle, array $extra = []): void {
         $entry = self::manifest_entry($entry_key);
         if ($entry === null) {
             add_action('admin_notices', static function (): void {
                 echo '<div class="notice notice-error"><p>'
-                    . esc_html__('Bricks Static: the admin assets are not built. Run "npm run build" in the plugin directory.', 'bricks-static')
+                    . esc_html__('ShipStatic: the admin assets are not built. Run "npm run build" in the plugin directory.', 'shipstatic')
                     . '</p></div>';
             });
             return;
@@ -148,15 +148,15 @@ final class Menu {
         // by the dashboard AND editor) is split by Vite into a shared chunk whose
         // CSS lives outside this entry's own `css[]` — walk imports so it loads.
         foreach (Assets::css_files($entry_key) as $i => $css_file) {
-            wp_enqueue_style($handle . '-' . $i, BRICKS_STATIC_PLUGIN_URL . 'assets/dist/' . $css_file, [], BRICKS_STATIC_VERSION);
+            wp_enqueue_style($handle . '-' . $i, SHIPSTATIC_PLUGIN_URL . 'assets/dist/' . $css_file, [], SHIPSTATIC_VERSION);
         }
 
-        wp_enqueue_script($handle, BRICKS_STATIC_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BRICKS_STATIC_VERSION, true);
+        wp_enqueue_script($handle, SHIPSTATIC_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], SHIPSTATIC_VERSION, true);
 
-        wp_localize_script($handle, 'bricksStaticData', array_merge([
-            'restUrl' => esc_url_raw(rest_url('bricks-static/v1')),
+        wp_localize_script($handle, 'shipStaticData', array_merge([
+            'restUrl' => esc_url_raw(rest_url('shipstatic/v1')),
             'nonce'   => wp_create_nonce('wp_rest'),
-            'version' => BRICKS_STATIC_VERSION,
+            'version' => SHIPSTATIC_VERSION,
             // Translated UI strings for the Svelte bundle (shared/i18n.ts).
             'i18n'    => I18n::all(),
         ], $extra));
@@ -189,7 +189,7 @@ final class Menu {
      * @return array<string,mixed>|null Entry data, or null if the build is missing.
      */
     private static function manifest_entry(string $entry_key): ?array {
-        $path = BRICKS_STATIC_PLUGIN_DIR . 'assets/dist/.vite/manifest.json';
+        $path = SHIPSTATIC_PLUGIN_DIR . 'assets/dist/.vite/manifest.json';
 
         if (!is_readable($path)) {
             return null;
@@ -209,7 +209,7 @@ final class Menu {
             return;
         }
 
-        require BRICKS_STATIC_PLUGIN_DIR . 'templates/admin/page.php';
+        require SHIPSTATIC_PLUGIN_DIR . 'templates/admin/page.php';
     }
 
     /**
@@ -220,6 +220,6 @@ final class Menu {
             return;
         }
 
-        require BRICKS_STATIC_PLUGIN_DIR . 'templates/admin/docs.php';
+        require SHIPSTATIC_PLUGIN_DIR . 'templates/admin/docs.php';
     }
 }

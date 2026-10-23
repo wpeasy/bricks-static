@@ -3,17 +3,17 @@
  * Video deploy replacer — swaps local/embed video sources and rewrites
  * embed origins to the destination at deploy time.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.4
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Render;
+namespace WPEasy\ShipStatic\Render;
 
-use WPEasy\BricksStatic\Settings\Destination;
-use WPEasy\BricksStatic\Support\Url;
-use WPEasy\BricksStatic\Sync\DeployReplacer;
+use WPEasy\ShipStatic\Settings\Destination;
+use WPEasy\ShipStatic\Support\Url;
+use WPEasy\ShipStatic\Sync\DeployReplacer;
 
 defined('ABSPATH') || exit;
 

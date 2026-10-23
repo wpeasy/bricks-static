@@ -2,16 +2,16 @@
 /**
  * Collects the images referenced by ONE rendered page.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Media;
+namespace WPEasy\ShipStatic\Media;
 
-use WPEasy\BricksStatic\Render\UrlRewriter;
-use WPEasy\BricksStatic\Sync\Manifest;
+use WPEasy\ShipStatic\Render\UrlRewriter;
+use WPEasy\ShipStatic\Sync\Manifest;
 
 defined('ABSPATH') || exit;
 

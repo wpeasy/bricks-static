@@ -2,16 +2,16 @@
 /**
  * Links REST controller.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\REST;
+namespace WPEasy\ShipStatic\REST;
 
 use WP_REST_Response;
-use WPEasy\BricksStatic\Media\LinkCollector;
+use WPEasy\ShipStatic\Media\LinkCollector;
 
 defined('ABSPATH') || exit;
 
@@ -23,7 +23,7 @@ final class LinksController {
     /**
      * REST namespace.
      */
-    private const NS = 'bricks-static/v1';
+    private const NS = 'shipstatic/v1';
 
     /**
      * Register routes.

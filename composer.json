@@ -1,6 +1,6 @@
 {
-    "name": "wpeasy/bricks-static",
-    "description": "Publish your WordPress site as static HTML over SFTP/FTP, HTTPS or Cloudflare. Bricks-aware; works with any WordPress content.",
+    "name": "wpeasy/shipstatic",
+    "description": "Publish your WordPress site as static HTML over SFTP/FTP, HTTPS, Cloudflare or GitHub Pages. Bricks-aware; works with any WordPress content.",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
     "authors": [
@@ -15,14 +15,14 @@
     },
     "autoload": {
         "psr-4": {
-            "WPEasy\\BricksStatic\\": "src/"
+            "WPEasy\\ShipStatic\\": "src/"
         }
     },
     "config": {
         "optimize-autoloader": true
     },
     "support": {
-        "forum": "https://wordpress.org/support/plugin/bricks-static/",
+        "forum": "https://wordpress.org/support/plugin/shipstatic/",
         "source": "https://github.com/wpeasy/bricks-static"
     }
 }

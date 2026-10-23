@@ -1,24 +1,18 @@
 # Changelog
 
-## v2.1.2 (2026-10-23)
+## v2.1.3 (2026-10-23)
 
 ### New
-Deleting the plugin now cleans up after itself. It removes its settings, your destinations (including any saved passwords and API tokens) and its cache folder. Files already published to your destinations are left exactly as they are.
+Publish to GitHub Pages. Choose GitHub Pages under Deploy via, enter your repository and an access token, and each sync becomes one commit with only the pages and files that changed. Removed pages are deleted, an unchanged site makes no commit, and every deploy is in your repository's history. A large first sync pauses for GitHub's upload limit and carries on by itself.
+
+### New
+Test now warns when a destination serves your site from a different sub-path than its links are built for, and tells you how to fix it — before you end up with pages that load without their styles or images.
+
+### Improved
+The plugin has a new name: ShipStatic (formerly Bricks Static). Everything works the same way. If you set connection details in wp-config.php or added custom filters, rename them from BRICKS_STATIC_ / bricks_static_ to SHIPSTATIC_ / shipstatic_.
 
 ### Fixed
-WordPress can now offer updates for Bricks Static. A setting in the plugin file was stopping update checks.
+"Served from sub-path" now works when WordPress is installed at the root of its domain. Previously the files moved into the sub-path but the links didn't, so the published site appeared without styling.
 
-### Improved
-Support for Bricks Static is now provided in its WordPress.org support forum.
-
-### Improved
-The documentation now explains the name. Bricks Static is Bricks-aware: Bricks gives page elements new random IDs every time a page is built, and the plugin ignores them, so only pages that really changed are uploaded. It works just as well with any standard WordPress content, including block editor and Classic Editor pages, archives and other themes.
-
-### Improved
-The French, German, Italian, Spanish and Dutch translations now cover the Cloudflare deploy method.
-
-### Improved
-Exported pages now identify themselves as Bricks Static in their generator tag.
-
-### Improved
-For developers: every setting, filter and constant now starts with `bricks_static_` / `BRICKS_STATIC_` instead of `bs_` / `BS_`, and the REST API lives at `bricks-static/v1`. If you set connection details in `wp-config.php`, rename them (for example `BS_HOST` becomes `BRICKS_STATIC_HOST`), and rename any custom filters you added.
+### Fixed
+No PHP 8.5 deprecation notice when the plugin creates a favicon.

@@ -2,15 +2,15 @@
 /**
  * Generates the Connector receiver script for a destination.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   2.1.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Deploy;
+namespace WPEasy\ShipStatic\Deploy;
 
-use WPEasy\BricksStatic\Sync\Compressor;
+use WPEasy\ShipStatic\Sync\Compressor;
 
 defined('ABSPATH') || exit;
 

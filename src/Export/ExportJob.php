@@ -2,20 +2,20 @@
 /**
  * Persisted, resumable Export ZIP job state.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Export;
+namespace WPEasy\ShipStatic\Export;
 
 defined('ABSPATH') || exit;
 
 /**
  * Holds one Export ZIP run's state in a single option so a browser-driven tick
  * loop can resume across requests. Deliberately separate from {@see
- * \WPEasy\BricksStatic\Sync\Job} — export walks a manifest it already has
+ * \WPEasy\ShipStatic\Sync\Job} — export walks a manifest it already has
  * (no page/asset crawl queue), and keeping its own option means it can never
  * collide with a running Sync/Check job's state.
  */
@@ -24,7 +24,7 @@ final class ExportJob {
     /**
      * Option storing the active export job.
      */
-    public const OPTION = 'bricks_static_export_job';
+    public const OPTION = 'shipstatic_export_job';
 
     /**
      * Phases that mean "not currently running".
@@ -65,7 +65,7 @@ final class ExportJob {
             'destId'      => $dest_id,
             'destName'    => $dest_name,
             'phase'       => 'preparing',
-            'message'     => __('Preparing export…', 'bricks-static'),
+            'message'     => __('Preparing export…', 'shipstatic'),
             'files'       => [],
             'manifest'    => [],
             'gzipIndex'   => 0,

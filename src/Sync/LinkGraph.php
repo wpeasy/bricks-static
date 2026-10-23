@@ -7,13 +7,13 @@
  * the export). Powers the manual-mode "this page links here / is linked from
  * here" integrity checks. Built on every check/sync by {@see Runner}.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.0.2
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Sync;
+namespace WPEasy\ShipStatic\Sync;
 
 defined('ABSPATH') || exit;
 
@@ -25,7 +25,7 @@ final class LinkGraph {
     /**
      * Option name.
      */
-    public const OPTION = 'bricks_static_link_graph';
+    public const OPTION = 'shipstatic_link_graph';
 
     /**
      * Load the graph.

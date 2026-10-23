@@ -2,16 +2,16 @@
 /**
  * Spawns the WP-CLI runner as a detached background process.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\CLI;
+namespace WPEasy\ShipStatic\CLI;
 
-use WPEasy\BricksStatic\Support\Paths;
-use WPEasy\BricksStatic\System\WpCli;
+use WPEasy\ShipStatic\Support\Paths;
+use WPEasy\ShipStatic\System\WpCli;
 
 defined('ABSPATH') || exit;
 
@@ -35,11 +35,11 @@ final class Background {
          *
          * @param bool $can Whether spawning is allowed.
          */
-        return (bool) apply_filters('bricks_static_can_spawn_cli', $available);
+        return (bool) apply_filters('shipstatic_can_spawn_cli', $available);
     }
 
     /**
-     * Spawn `wp bricks-static run` (detached) to drive the existing job.
+     * Spawn `wp shipstatic run` (detached) to drive the existing job.
      *
      * @return bool True if the spawn was attempted.
      */
@@ -59,7 +59,7 @@ final class Background {
     }
 
     /**
-     * Spawn N detached `wp bricks-static deploy_worker` processes — the parallel
+     * Spawn N detached `wp shipstatic deploy_worker` processes — the parallel
      * deploy pool. Each worker claims and uploads one destination at a time (its
      * own transport connection), so independent remote pushes overlap.
      *
@@ -119,12 +119,12 @@ final class Background {
     }
 
     /**
-     * Build the full shell command for `wp bricks-static <subcommand>`.
+     * Build the full shell command for `wp shipstatic <subcommand>`.
      *
-     * @param string $subcommand The bricks-static subcommand.
+     * @param string $subcommand The shipstatic subcommand.
      */
     private static function build(string $subcommand): ?string {
-        return WpCli::build_command('bricks-static ' . $subcommand . ' --path=' . escapeshellarg(rtrim((string) ABSPATH, '/\\')));
+        return WpCli::build_command('shipstatic ' . $subcommand . ' --path=' . escapeshellarg(rtrim((string) ABSPATH, '/\\')));
     }
 
     /**
@@ -163,9 +163,9 @@ final class Background {
         // Redirect START's stdio to NUL so the detached child doesn't inherit (and
         // then write to) this process's stdout pipe after we pclose it — that write
         // is what prints "The process tried to write to a nonexistent pipe" into a
-        // console-run `wp bricks-static sync`.
+        // console-run `wp shipstatic sync`.
         // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_popen -- spawns the background WP-CLI runner; the command is built from internal paths, not request input.
-        $handle = @popen('start "bricks-static" /B "' . $bat_win . '" <NUL >NUL 2>&1', 'r');
+        $handle = @popen('start "shipstatic" /B "' . $bat_win . '" <NUL >NUL 2>&1', 'r');
         if (is_resource($handle)) {
             pclose($handle);
             return true;

@@ -2,15 +2,15 @@
 /**
  * URL helpers: origins, internal detection, absolutising, and URL→file mapping.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Support;
+namespace WPEasy\ShipStatic\Support;
 
-use WPEasy\BricksStatic\Settings\Settings;
+use WPEasy\ShipStatic\Settings\Settings;
 
 defined('ABSPATH') || exit;
 

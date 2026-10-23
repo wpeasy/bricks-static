@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name:       Bricks Static
- * Description:       Publish your WordPress site as static HTML over SFTP/FTP, HTTPS or Cloudflare. Bricks-aware; works with any WordPress content.
- * Version:           2.1.2
+ * Plugin Name:       ShipStatic
+ * Description:       Publish your WordPress site as static HTML over SFTP/FTP, HTTPS, Cloudflare or GitHub Pages. Bricks-aware; works with any WordPress content.
+ * Version:           2.1.3
  * Requires at least: 6.5
  * Tested up to:      7.1
  * Requires PHP:      8.0
@@ -10,26 +10,26 @@
  * Author URI:        https://brxprod.com
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       bricks-static
+ * Text Domain:       shipstatic
  * Domain Path:       /languages
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic;
+namespace WPEasy\ShipStatic;
 
 defined('ABSPATH') || exit;
 
 /**
  * Plugin constants.
  */
-define('BRICKS_STATIC_VERSION', '2.1.2');
-define('BRICKS_STATIC_PLUGIN_FILE', __FILE__);
-define('BRICKS_STATIC_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('BRICKS_STATIC_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('BRICKS_STATIC_PLUGIN_BASENAME', plugin_basename(__FILE__));
+define('SHIPSTATIC_VERSION', '2.1.3');
+define('SHIPSTATIC_PLUGIN_FILE', __FILE__);
+define('SHIPSTATIC_PLUGIN_DIR', plugin_dir_path(__FILE__));
+define('SHIPSTATIC_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('SHIPSTATIC_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
 /**
  * Composer autoloader for bundled dependencies (phpseclib).
@@ -37,8 +37,8 @@ define('BRICKS_STATIC_PLUGIN_BASENAME', plugin_basename(__FILE__));
  * Shipped in the plugin zip so end users don't need Composer. Loaded if present;
  * the self-contained autoloader below still handles the plugin's own classes.
  */
-if (is_readable(BRICKS_STATIC_PLUGIN_DIR . 'vendor/autoload.php')) {
-    require BRICKS_STATIC_PLUGIN_DIR . 'vendor/autoload.php';
+if (is_readable(SHIPSTATIC_PLUGIN_DIR . 'vendor/autoload.php')) {
+    require SHIPSTATIC_PLUGIN_DIR . 'vendor/autoload.php';
 }
 
 /**
@@ -56,7 +56,7 @@ spl_autoload_register(static function (string $class): void {
     }
 
     $relative = substr($class, $len);
-    $file     = BRICKS_STATIC_PLUGIN_DIR . 'src/' . str_replace('\\', '/', $relative) . '.php';
+    $file     = SHIPSTATIC_PLUGIN_DIR . 'src/' . str_replace('\\', '/', $relative) . '.php';
 
     if (is_readable($file)) {
         require $file;
@@ -68,7 +68,7 @@ spl_autoload_register(static function (string $class): void {
  * which warns when a textdomain is loaded too early.
  */
 add_action('init', static function (): void {
-    load_plugin_textdomain('bricks-static', false, dirname(BRICKS_STATIC_PLUGIN_BASENAME) . '/languages');
+    load_plugin_textdomain('shipstatic', false, dirname(SHIPSTATIC_PLUGIN_BASENAME) . '/languages');
 });
 
 /**

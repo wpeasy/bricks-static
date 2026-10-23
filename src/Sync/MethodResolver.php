@@ -2,16 +2,16 @@
 /**
  * Resolves the method that a sync run will use (for display).
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Sync;
+namespace WPEasy\ShipStatic\Sync;
 
-use WPEasy\BricksStatic\Discovery\UrlCollector;
-use WPEasy\BricksStatic\Settings\Settings;
+use WPEasy\ShipStatic\Discovery\UrlCollector;
+use WPEasy\ShipStatic\Settings\Settings;
 
 defined('ABSPATH') || exit;
 
@@ -41,6 +41,7 @@ final class MethodResolver {
 
         $transport  = (string) Settings::get('transport');
         $cloudflare = $transport === 'cloudflare';
+        $github     = $transport === 'github';
 
         return [
             'discovery'    => [
@@ -48,12 +49,13 @@ final class MethodResolver {
                 'description' => $description,
             ],
             'transport'    => $transport,
-            // Cloudflare compresses at the edge itself (no .gz siblings needed).
-            'compression'  => ['gzip' => $cloudflare || function_exists('gzencode')],
-            // Cloudflare gets `_headers` instead of .htaccess / the nginx snippet.
+            // Cloudflare and GitHub Pages compress themselves (no .gz siblings needed).
+            'compression'  => ['gzip' => $cloudflare || $github || function_exists('gzencode')],
+            // Cloudflare gets `_headers` instead of .htaccess / the nginx
+            // snippet; GitHub Pages takes no server rules at all.
             'serverTarget' => [
-                'htaccess'          => !$cloudflare,
-                'nginxSnippet'      => !$cloudflare,
+                'htaccess'          => !$cloudflare && !$github,
+                'nginxSnippet'      => !$cloudflare && !$github,
                 'cloudflareHeaders' => $cloudflare,
             ],
             'links'        => 'root-relative',

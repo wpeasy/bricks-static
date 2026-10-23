@@ -191,7 +191,7 @@ name), host-required check (DestinationsController.php:377), labels in
   `Support\I18n`.
 
 ### 7.6 WP-CLI
-`wp bricks-static cloudflare set|test|status` — `set` takes `--account`,
+`wp shipstatic cloudflare set|test|status` — `set` takes `--account`,
 `--worker`, `--dest-url` and `--token-from-env` (reads `CLOUDFLARE_API_TOKEN`,
 keeping the token out of shell history); `status` lists Cloudflare
 destinations (worker, account, whether a token is set, URL).
@@ -274,7 +274,7 @@ the transport up automatically.
 | `src/Deploy/PackageDeployer.php` | `would_package()` is false for snapshot destinations. |
 | `src/REST/DestinationsController.php` | Test merges unsaved Cloudflare fields, returns `suggestedUrl`; package-test refuses snapshot destinations. |
 | `src/Sync/ServerProbe.php`, `MethodResolver.php`, `REST/SyncController.php` | Cloudflare server kind + message; method summary shows `_headers`; server-config payload carries `cloudflareHeaders`. |
-| `src/CLI/SyncCommand.php` | `wp bricks-static cloudflare …`. |
+| `src/CLI/SyncCommand.php` | `wp shipstatic cloudflare …`. |
 | `src-svelte/dashboard/DestinationPanel.svelte` | Third Segmented option, fields, how-to, URL auto-fill. Also `MethodPanel`, `ProgressPanel` (indeterminate bar for `snapshot`), `ServerConfigPanel` (`_headers` reference), `shared/types.ts`, `docs/Docs.svelte` (user guide). |
 | `src/Support/I18n.php` | New `opt/cf*` strings — English only until the i18n pipeline is re-run (CLAUDE.md → i18n). |
 

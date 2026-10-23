@@ -1,5 +1,5 @@
 <?php
-// Bricks Static — one-shot deploy helper. Safe to delete.
+// ShipStatic — one-shot deploy helper. Safe to delete.
 declare(strict_types=1);
 
 $TOKEN   = __BS_TOKEN__;

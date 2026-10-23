@@ -1,6 +1,6 @@
 /**
  * Build the distributable zip from this repo:
- *   dist/bricks-static-<version>.zip
+ *   dist/shipstatic-<version>.zip
  *
  * Assembled from an explicit ALLOWLIST (never a denylist) so dev-only files
  * (node_modules, src-svelte, tests, etc.) can never leak. Run `npm run build`
@@ -22,9 +22,9 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
 
 const PLUGIN = {
-  zip: 'bricks-static',
+  zip: 'shipstatic',
   allow: [
-    'bricks-static.php',
+    'shipstatic.php',
     'uninstall.php',
     'readme.txt',
     'src',
@@ -222,7 +222,7 @@ mkdirSync(DIST, { recursive: true });
 
 // 2. Stage + zip.
 console.log('• Staging…');
-const version = pluginVersion(join(ROOT, 'bricks-static.php'), 'BRICKS_STATIC_VERSION');
+const version = pluginVersion(join(ROOT, 'shipstatic.php'), 'SHIPSTATIC_VERSION');
 const stageDir = join(DIST, '_stage');
 stage(ROOT, PLUGIN.allow, join(stageDir, PLUGIN.zip));
 zip(stageDir, PLUGIN.zip, `${PLUGIN.zip}-${version}`);

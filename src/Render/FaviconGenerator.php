@@ -2,13 +2,13 @@
 /**
  * Generates a plain default favicon when the site has none.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Render;
+namespace WPEasy\ShipStatic\Render;
 
 defined('ABSPATH') || exit;
 
@@ -68,7 +68,8 @@ final class FaviconGenerator {
         ob_start();
         imagepng($im);
         $png = (string) ob_get_clean();
-        imagedestroy($im);
+        // No imagedestroy(): a no-op since PHP 8.0 (the image is freed when
+        // $im goes out of scope) and deprecated in PHP 8.5.
 
         return $png;
     }
@@ -80,7 +81,7 @@ final class FaviconGenerator {
      * @return array{0:int,1:int,2:int}
      */
     private static function brand_rgb(string $seed): array {
-        $hash = md5($seed !== '' ? $seed : 'bricks-static');
+        $hash = md5($seed !== '' ? $seed : 'shipstatic');
 
         // Keep each channel in 40–215 so the white glyph stays legible.
         $chan = static fn(int $offset): int => 40 + (hexdec(substr($hash, $offset, 2)) % 176);

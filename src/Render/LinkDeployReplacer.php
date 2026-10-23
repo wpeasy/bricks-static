@@ -2,16 +2,16 @@
 /**
  * Link deploy replacer — rewrites <a>/<button> href targets at deploy time.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.4
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Render;
+namespace WPEasy\ShipStatic\Render;
 
-use WPEasy\BricksStatic\Settings\Destination;
-use WPEasy\BricksStatic\Sync\DeployReplacer;
+use WPEasy\ShipStatic\Settings\Destination;
+use WPEasy\ShipStatic\Sync\DeployReplacer;
 
 defined('ABSPATH') || exit;
 

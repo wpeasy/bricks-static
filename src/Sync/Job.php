@@ -2,15 +2,15 @@
 /**
  * Persisted, resumable sync job state.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Sync;
+namespace WPEasy\ShipStatic\Sync;
 
-use WPEasy\BricksStatic\Support\Url;
+use WPEasy\ShipStatic\Support\Url;
 
 defined('ABSPATH') || exit;
 
@@ -24,7 +24,7 @@ final class Job {
     /**
      * Option storing the active (main) job.
      */
-    public const OPTION = 'bricks_static_job';
+    public const OPTION = 'shipstatic_job';
 
     /**
      * Path segments that are never rendered (matched at segment boundaries).
@@ -40,7 +40,7 @@ final class Job {
 
     /**
      * The option this job persists to. The main run uses {@see OPTION}; a
-     * parallel per-destination deploy worker uses its own `bricks_static_target_<id>` key
+     * parallel per-destination deploy worker uses its own `shipstatic_target_<id>` key
      * so concurrent workers never clobber each other's state.
      */
     private string $option;

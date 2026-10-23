@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { Button, Collapsible, ConfirmButton, Input, Segmented, Select, Status, Tooltip, fadeUp } from '@wpeasy/ab-ui';
+  import { Alert, Button, Collapsible, ConfirmButton, Input, Segmented, Select, Status, Tooltip, fadeUp } from '@wpeasy/ab-ui';
   import { api, connectorDownloadUrl } from '../shared/api';
   import type { Capabilities, ConnectionInput, DestinationDisplay, Transport } from '../shared/types';
   import { __, __f } from '../shared/i18n';
@@ -26,7 +26,7 @@
     onExport: (id: string) => void;
   } = $props();
 
-  type FtpTransport = Exclude<Transport, 'connector' | 'cloudflare'>;
+  type FtpTransport = Exclude<Transport, 'connector' | 'cloudflare' | 'github'>;
   const DEFAULT_PORTS: Record<FtpTransport, number> = { sftp: 22, ftps: 21, ftp: 21 };
   const KNOWN_DEFAULT_PORTS = [0, 21, 22];
 
@@ -44,24 +44,36 @@
   let cfAccountId = $state(d.cfAccountId.value);
   let cfWorker = $state(d.cfWorker.value);
   let cfApiToken = $state('');
+  // GitHub Pages. The token is write-only, like the password.
+  let ghOwner = $state(d.ghOwner.value);
+  let ghRepo = $state(d.ghRepo.value);
+  let ghBranch = $state(d.ghBranch.value || 'gh-pages');
+  let ghFolder = $state<'/' | '/docs'>(d.ghFolder.value === '/docs' ? '/docs' : '/');
+  let ghToken = $state('');
+  const ghFolderOptions = [
+    { value: '/', label: __('optGhRoot') },
+    { value: '/docs', label: __('optGhDocs') },
+  ];
 
   let saving = $state(false);
   let testing = $state(false);
   let message = $state('');
   let messageOk = $state(true);
+  let warnings = $state<string[]>([]);
   let busy = $derived(saving || testing || running || exporting);
 
-  // ---- Deploy method: FTP/SFTP vs Connector vs Cloudflare — ONE per
+  // ---- Deploy method: FTP/SFTP vs Connector vs Cloudflare vs GitHub — ONE per
   // destination (it IS the saved `transport`), so a Segmented choice rather
   // than tabs. The FTP protocol picker lives inside the FTP branch.
-  type Method = 'ftp' | 'connector' | 'cloudflare';
-  const isFtp = (t: Transport): t is FtpTransport => t !== 'connector' && t !== 'cloudflare';
+  type Method = 'ftp' | 'connector' | 'cloudflare' | 'github';
+  const isFtp = (t: Transport): t is FtpTransport => t !== 'connector' && t !== 'cloudflare' && t !== 'github';
   let method = $derived<Method>(isFtp(transport) ? 'ftp' : transport);
   let lastFtp: FtpTransport = isFtp(d.transport.value) ? d.transport.value : 'ftps';
   let methodOptions = $derived([
     { value: 'ftp', label: __('tabFtp') },
     { value: 'connector', label: __('optConnector'), disabled: !capabilities.connector },
     { value: 'cloudflare', label: __('optCloudflare'), disabled: !capabilities.cloudflare },
+    { value: 'github', label: __('optGitHub'), disabled: !capabilities.github },
   ]);
   function selectMethod(value: string): void {
     if (isFtp(transport)) lastFtp = transport;
@@ -127,12 +139,14 @@
   }
 
   function payload(includeMeta: boolean): ConnectionInput {
-    const data: ConnectionInput = { transport, host, port, username, remotePath, cfAccountId, cfWorker };
+    const data: ConnectionInput = { transport, host, port, username, remotePath, cfAccountId, cfWorker, ghOwner, ghRepo, ghBranch, ghFolder };
     if (password) data.password = password;
     if (cfApiToken) data.cfApiToken = cfApiToken;
+    if (ghToken) data.ghToken = ghToken;
+    // Test needs the URL too (for the sub-path check); only Save stores it.
+    data.destinationUrl = destinationUrl;
     if (includeMeta) {
       data.basePath = basePath;
-      data.destinationUrl = destinationUrl;
     }
     return data;
   }
@@ -144,6 +158,8 @@
       await api.updateDestination(d.id, payload(true));
       password = '';
       cfApiToken = '';
+      ghToken = '';
+      warnings = [];
       message = __('msgSaved');
       messageOk = true;
       onSaved();
@@ -160,12 +176,15 @@
   async function test(): Promise<void> {
     testing = true;
     message = '';
+    warnings = [];
     try {
       const r = await api.testDestination(d.id, payload(false));
       message = r.message;
       messageOk = r.ok;
-      // Cloudflare: offer the workers.dev address as the Destination URL when
-      // none is set yet (sitemap/robots/replacements all build from it).
+      warnings = r.warnings ?? [];
+      // Cloudflare / GitHub Pages: offer the address the site is served at as
+      // the Destination URL when none is set yet (sitemap/robots/replacements
+      // all build from it).
       if (r.ok && r.suggestedUrl && !destinationUrl && !d.destinationUrl.fromConstant) {
         destinationUrl = r.suggestedUrl;
         message += ' ' + __('cfUrlFilled');
@@ -194,7 +213,9 @@
       ? !!host
       : method === 'connector'
         ? paired
-        : !!cfAccountId && !!cfWorker && (!!cfApiToken || d.cfApiToken.hasValue),
+        : method === 'github'
+          ? !!ghOwner && !!ghRepo && (!!ghToken || d.ghToken.hasValue)
+          : !!cfAccountId && !!cfWorker && (!!cfApiToken || d.cfApiToken.hasValue),
   );
   let pairing = $state(false);
   let downloadToken = $state('');
@@ -263,6 +284,7 @@
 
   let zipHelpOpen = $state(false);
   let cfHelpOpen = $state(!d.cfApiToken.hasValue);
+  let ghHelpOpen = $state(!d.ghToken.hasValue);
 </script>
 
 <section class="bs-card bs-stack bs-stack--md">
@@ -333,6 +355,35 @@
           <p class="bs-lead">{@html __('cfLimits')}</p>
           <!-- eslint-enable svelte/no-at-html-tags -->
         </Collapsible>
+      {:else if method === 'github'}
+        <p class="bs-lead">{__('ghLead')}</p>
+        <div class="bs-grid">
+          <Input label={__('fldGhOwner')} bind:value={ghOwner} placeholder="my-account" autocomplete="off" disabled={d.ghOwner.fromConstant || busy} />
+          <Input label={__('fldGhRepo')} bind:value={ghRepo} placeholder="my-site" autocomplete="off" disabled={d.ghRepo.fromConstant || busy} />
+          <Input label={__('fldGhBranch')} bind:value={ghBranch} placeholder="gh-pages" autocomplete="off" disabled={d.ghBranch.fromConstant || busy} />
+          <Select
+            label={__('fldGhFolder')}
+            id="bs-gh-folder-{d.id}"
+            value={ghFolder}
+            options={ghFolderOptions}
+            disabled={d.ghFolder.fromConstant || busy}
+            onchange={(v) => (ghFolder = String(v) === '/docs' ? '/docs' : '/')}
+          />
+        </div>
+        <Input label={__('fldGhToken')} type="password" bind:value={ghToken} autocomplete="new-password" placeholder={d.ghToken.hasValue ? __('phSavedBlank') : 'github_pat_…'} disabled={d.ghToken.fromConstant || busy} />
+        <p class="bs-lead">{__('ghReplaceNote')}</p>
+        <Collapsible title={__('cfHowTo')} bind:open={ghHelpOpen}>
+          <!-- eslint-disable svelte/no-at-html-tags -- trusted PHP dictionary -->
+          <ol class="bs-steps">
+            <li>{@html __('ghStep1')}</li>
+            <li>{@html __('ghStep2')}</li>
+            <li>{@html __('ghStep3')}</li>
+            <li>{@html __('ghStep4')}</li>
+            <li>{@html __('ghStep5')}</li>
+          </ol>
+          <p class="bs-lead">{@html __('ghLimits')}</p>
+          <!-- eslint-enable svelte/no-at-html-tags -->
+        </Collapsible>
       {:else}
         <p class="bs-lead">{__('connectorLead')}</p>
         <!-- eslint-disable svelte/no-at-html-tags -- trusted PHP dictionary -->
@@ -386,6 +437,9 @@
   {#if message}
     <p class="bs-msg bs-msg--{messageOk ? 'ok' : 'err'}">{message}</p>
   {/if}
+  {#each warnings as w (w)}
+    <Alert tone="warning" description={w} />
+  {/each}
 
   <div class="bs-row bs-row--between">
     <div class="bs-row bs-row--wrap">

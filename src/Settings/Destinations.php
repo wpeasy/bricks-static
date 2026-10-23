@@ -2,31 +2,31 @@
 /**
  * The list of sync destinations + migration from the single-destination model.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Settings;
+namespace WPEasy\ShipStatic\Settings;
 
 defined('ABSPATH') || exit;
 
 /**
  * Manages the destinations list (stored in one option) and migrates the legacy
- * single `bricks_static_settings` destination into `destinations[0]` on first run.
+ * single `shipstatic_settings` destination into `destinations[0]` on first run.
  */
 final class Destinations {
 
     /**
      * Option holding the destinations list.
      */
-    public const OPTION = 'bricks_static_destinations';
+    public const OPTION = 'shipstatic_destinations';
 
     /**
      * Legacy single-destination option (migrated then left in place).
      */
-    private const LEGACY_OPTION = 'bricks_static_settings';
+    private const LEGACY_OPTION = 'shipstatic_settings';
 
     /**
      * All destination arrays (raw, password encrypted).
@@ -165,20 +165,20 @@ final class Destinations {
                 // re-probe whether package deploy works on the new host.
                 if (self::target_signature($after) !== $before) {
                     delete_option(self::pushed_option($id));
-                    delete_option('bricks_static_pkg_off_' . $id);
-                    delete_option('bricks_static_sync_sig_' . $id);
-                    \WPEasy\BricksStatic\Sync\ServerProbe::forget($id);
+                    delete_option('shipstatic_pkg_off_' . $id);
+                    delete_option('shipstatic_sync_sig_' . $id);
+                    \WPEasy\ShipStatic\Sync\ServerProbe::forget($id);
 
                     // Re-pointed at a different server — forget the old target's
                     // trusted SFTP host key so the new one is established afresh.
                     $cfg = $after->connection_config();
-                    \WPEasy\BricksStatic\Transport\SftpTransport::forget_host_key((string) $cfg['host'], (int) $cfg['port']);
+                    \WPEasy\ShipStatic\Transport\SftpTransport::forget_host_key((string) $cfg['host'], (int) $cfg['port']);
                 } elseif ($url_after !== $url_before) {
                     // Destination URL changed on its own (host unchanged) — the
                     // package-deploy probe result for the OLD guessed/explicit URL
                     // no longer applies, so give the new URL a fresh chance.
-                    delete_option('bricks_static_pkg_off_' . $id);
-                    \WPEasy\BricksStatic\Sync\ServerProbe::forget($id);
+                    delete_option('shipstatic_pkg_off_' . $id);
+                    \WPEasy\ShipStatic\Sync\ServerProbe::forget($id);
                 }
 
                 return $after;
@@ -206,6 +206,12 @@ final class Destinations {
         // rotated without the published files changing.
         if ($d->is_cloudflare()) {
             return 'cloudflare|' . (string) ($c['cfAccountId'] ?? '') . '|' . (string) ($c['cfWorker'] ?? '');
+        }
+
+        // A GitHub Pages destination IS its repo + branch + folder (GitHub
+        // names are case-insensitive); the token can be rotated freely.
+        if ($d->is_github()) {
+            return strtolower(implode('|', ['github', (string) ($c['ghOwner'] ?? ''), (string) ($c['ghRepo'] ?? ''), (string) ($c['ghBranch'] ?? ''), (string) ($c['ghFolder'] ?? '')]));
         }
 
         return implode('|', [
@@ -237,10 +243,10 @@ final class Destinations {
             $connector_id = bin2hex(random_bytes(8));
             $secret       = bin2hex(random_bytes(32));
             $dest         = new Destination($data, $i === 0);
-            $list[$i]     = $dest->set_connector($connector_id, $secret, \WPEasy\BricksStatic\Deploy\ConnectorScript::VERSION);
+            $list[$i]     = $dest->set_connector($connector_id, $secret, \WPEasy\ShipStatic\Deploy\ConnectorScript::VERSION);
             update_option(self::OPTION, $list, false);
             // The old file (if any) is dead; a stale "connected" state would mislead.
-            delete_option('bricks_static_conn_' . $id);
+            delete_option('shipstatic_conn_' . $id);
 
             return ['id' => $connector_id, 'secret' => $secret];
         }
@@ -263,7 +269,7 @@ final class Destinations {
             $dest     = new Destination($data, $i === 0);
             $list[$i] = $dest->set_connector('', '', 0);
             update_option(self::OPTION, $list, false);
-            delete_option('bricks_static_conn_' . $id);
+            delete_option('shipstatic_conn_' . $id);
 
             return true;
         }
@@ -290,7 +296,7 @@ final class Destinations {
 
         update_option(self::OPTION, $kept, false);
         delete_option(self::pushed_option($id));
-        \WPEasy\BricksStatic\Sync\ServerProbe::forget($id);
+        \WPEasy\ShipStatic\Sync\ServerProbe::forget($id);
 
         return true;
     }
@@ -301,7 +307,7 @@ final class Destinations {
      * @param string $id Destination id.
      */
     public static function pushed_option(string $id): string {
-        return 'bricks_static_pushed_' . $id;
+        return 'shipstatic_pushed_' . $id;
     }
 
     /**
@@ -328,7 +334,7 @@ final class Destinations {
         update_option(self::OPTION, [$dest], false);
 
         // Carry over the single pushed manifest to the migrated destination.
-        $pushed = get_option('bricks_static_pushed_manifest', null);
+        $pushed = get_option('shipstatic_pushed_manifest', null);
         if (is_array($pushed)) {
             update_option(self::pushed_option($id), $pushed, false);
         }

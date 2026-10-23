@@ -7,6 +7,6 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'phpseclib3\\' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
-    'WPEasy\\BricksStatic\\' => array($baseDir . '/src'),
+    'WPEasy\\ShipStatic\\' => array($baseDir . '/src'),
     'ParagonIE\\ConstantTime\\' => array($vendorDir . '/paragonie/constant_time_encoding/src'),
 );

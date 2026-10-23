@@ -2,13 +2,13 @@
 /**
  * Destination transport contract.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Transport;
+namespace WPEasy\ShipStatic\Transport;
 
 defined('ABSPATH') || exit;
 

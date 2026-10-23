@@ -2,13 +2,13 @@
 /**
  * Transport that publishes a complete snapshot of the site per deploy.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   2.1.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Transport;
+namespace WPEasy\ShipStatic\Transport;
 
 defined('ABSPATH') || exit;
 

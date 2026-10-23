@@ -2,15 +2,15 @@
 /**
  * Extracts internal links and same-origin assets from rendered output.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Render;
+namespace WPEasy\ShipStatic\Render;
 
-use WPEasy\BricksStatic\Support\Url;
+use WPEasy\ShipStatic\Support\Url;
 
 defined('ABSPATH') || exit;
 

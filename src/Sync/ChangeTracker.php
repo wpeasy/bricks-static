@@ -3,15 +3,15 @@
  * Tracks whether the site content has changed since the last render, so the
  * dashboard can flag destinations out of sync and prompt a re-render.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.0.2
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Sync;
+namespace WPEasy\ShipStatic\Sync;
 
-use WPEasy\BricksStatic\Discovery\UrlCollector;
+use WPEasy\ShipStatic\Discovery\UrlCollector;
 
 defined('ABSPATH') || exit;
 
@@ -28,13 +28,13 @@ final class ChangeTracker {
     /**
      * Option: set when public content has changed since the last full render.
      */
-    public const DIRTY_OPTION = 'bricks_static_content_dirty';
+    public const DIRTY_OPTION = 'shipstatic_content_dirty';
 
     /**
      * Option: the discovery mode in force at the last full render. A mode change
      * also makes the render (and the included/excluded split) stale.
      */
-    public const MODE_OPTION = 'bricks_static_render_mode';
+    public const MODE_OPTION = 'shipstatic_render_mode';
 
     /**
      * Register hooks.

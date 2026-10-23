@@ -2,13 +2,13 @@
 /**
  * Filesystem paths for the staging cache.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Support;
+namespace WPEasy\ShipStatic\Support;
 
 defined('ABSPATH') || exit;
 
@@ -167,12 +167,12 @@ final class Paths {
      * fallback to uploads/ when wp-content is not writable.
      */
     private static function resolve(): string {
-        if (defined('BRICKS_STATIC_CACHE_DIR') && BRICKS_STATIC_CACHE_DIR) {
+        if (defined('SHIPSTATIC_CACHE_DIR') && SHIPSTATIC_CACHE_DIR) {
             /** This filter is documented below. */
-            return (string) apply_filters('bricks_static_cache_dir', (string) BRICKS_STATIC_CACHE_DIR);
+            return (string) apply_filters('shipstatic_cache_dir', (string) SHIPSTATIC_CACHE_DIR);
         }
 
-        $dir = trailingslashit(WP_CONTENT_DIR) . 'cache/bricks-static';
+        $dir = trailingslashit(WP_CONTENT_DIR) . 'cache/shipstatic';
 
         $content_ok = wp_is_writable(WP_CONTENT_DIR)
             || is_dir(trailingslashit(WP_CONTENT_DIR) . 'cache');
@@ -180,7 +180,7 @@ final class Paths {
         if (!$content_ok) {
             $uploads = wp_upload_dir();
             if (empty($uploads['error'])) {
-                $dir = trailingslashit($uploads['basedir']) . 'bricks-static';
+                $dir = trailingslashit($uploads['basedir']) . 'shipstatic';
             }
         }
 
@@ -189,7 +189,7 @@ final class Paths {
          *
          * @param string $dir Resolved cache directory.
          */
-        return (string) apply_filters('bricks_static_cache_dir', $dir);
+        return (string) apply_filters('shipstatic_cache_dir', $dir);
     }
 
     /**

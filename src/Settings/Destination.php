@@ -2,15 +2,15 @@
 /**
  * A single sync destination (connection + meta + text replacements).
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Settings;
+namespace WPEasy\ShipStatic\Settings;
 
-use WPEasy\BricksStatic\Support\Crypto;
+use WPEasy\ShipStatic\Support\Crypto;
 
 defined('ABSPATH') || exit;
 
@@ -118,6 +118,12 @@ final class Destination {
             'cfAccountId'     => (string) $this->get('cfAccountId'),
             'cfWorker'        => (string) $this->get('cfWorker'),
             'cfApiToken'      => (string) $this->get('cfApiToken'),
+            // GitHub Pages transport.
+            'ghOwner'         => (string) $this->get('ghOwner'),
+            'ghRepo'          => (string) $this->get('ghRepo'),
+            'ghBranch'        => (string) $this->get('ghBranch'),
+            'ghFolder'        => (string) $this->get('ghFolder'),
+            'ghToken'         => (string) $this->get('ghToken'),
         ];
     }
 
@@ -136,11 +142,26 @@ final class Destination {
     }
 
     /**
+     * Whether this is the primary (first) destination — the one whose
+     * "Served from sub-path" links are rendered for.
+     */
+    public function is_primary(): bool {
+        return $this->is_primary;
+    }
+
+    /**
+     * Whether this destination publishes to GitHub Pages (commits to a branch).
+     */
+    public function is_github(): bool {
+        return (string) $this->get('transport') === 'github';
+    }
+
+    /**
      * Whether this destination publishes whole snapshots (see
      * `Transport\SnapshotCapableTransport`) rather than uploading a delta.
      */
     public function is_snapshot(): bool {
-        return \WPEasy\BricksStatic\Transport\TransportFactory::is_snapshot((string) $this->get('transport'));
+        return \WPEasy\ShipStatic\Transport\TransportFactory::is_snapshot((string) $this->get('transport'));
     }
 
     /**

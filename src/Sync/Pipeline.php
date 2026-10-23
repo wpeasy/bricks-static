@@ -8,13 +8,13 @@
  * The Runner consults this registry at deploy time, so it never references a
  * concrete (or Pro) replacer class directly.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.4
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Sync;
+namespace WPEasy\ShipStatic\Sync;
 
 defined('ABSPATH') || exit;
 

@@ -1,6 +1,6 @@
 // Shared types mirroring the REST payloads (src/REST/*Controller.php).
 
-export type Transport = 'sftp' | 'ftps' | 'ftp' | 'connector' | 'cloudflare';
+export type Transport = 'sftp' | 'ftps' | 'ftp' | 'connector' | 'cloudflare' | 'github';
 
 export interface ValueField<T> {
   value: T;
@@ -29,6 +29,12 @@ export interface SettingsDisplay {
   cfAccountId: ValueField<string>;
   cfWorker: ValueField<string>;
   cfApiToken: SecretField;
+  /** GitHub Pages (commits to a branch) — see docs/GITHUB_PAGES_PLAN.md. */
+  ghOwner: ValueField<string>;
+  ghRepo: ValueField<string>;
+  ghBranch: ValueField<string>;
+  ghFolder: ValueField<'/' | '/docs'>;
+  ghToken: SecretField;
 }
 
 export interface Capabilities {
@@ -37,6 +43,7 @@ export interface Capabilities {
   ftp: boolean;
   connector: boolean;
   cloudflare: boolean;
+  github: boolean;
 }
 
 /** POST /destinations/{id}/connector/pair */
@@ -251,8 +258,10 @@ export interface Preflight {
 export interface TestResult {
   ok: boolean;
   message: string;
-  /** Cloudflare Test: the Worker's workers.dev address, when the account has one. */
+  /** Cloudflare / GitHub Pages Test: the address the site will be served at. */
   suggestedUrl?: string;
+  /** Problems worth fixing that don't fail the test (e.g. a sub-path mismatch). */
+  warnings?: string[];
 }
 
 export interface SyncCounts {
@@ -378,7 +387,7 @@ export interface ServerConfig {
   checks: Record<string, ServerCheck>;
 }
 
-export type ServerKind = 'apache' | 'litespeed' | 'nginx' | 'cloudflare' | 'proxied' | 'other' | 'unknown';
+export type ServerKind = 'apache' | 'litespeed' | 'nginx' | 'cloudflare' | 'github' | 'proxied' | 'other' | 'unknown';
 
 /** Result of probing a destination's public URL (Sync\ServerProbe). */
 export interface ServerCheck {
@@ -416,6 +425,12 @@ export interface ConnectionInput {
   cfAccountId?: string;
   cfWorker?: string;
   cfApiToken?: string;
+  /** GitHub Pages transport. `ghToken` is write-only (never echoed back). */
+  ghOwner?: string;
+  ghRepo?: string;
+  ghBranch?: string;
+  ghFolder?: '/' | '/docs';
+  ghToken?: string;
   name?: string;
   enabled?: boolean;
   replacements?: Replacement[];

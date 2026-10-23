@@ -2,15 +2,15 @@
 /**
  * Cloudflare `_headers` / `_redirects` builder.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   2.1.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Deploy;
+namespace WPEasy\ShipStatic\Deploy;
 
-use WPEasy\BricksStatic\Sync\HtaccessBuilder;
+use WPEasy\ShipStatic\Sync\HtaccessBuilder;
 
 defined('ABSPATH') || exit;
 
@@ -54,7 +54,7 @@ final class CloudflareHeaders {
          *
          * @param string $text `_headers` file contents.
          */
-        return (string) apply_filters('bricks_static_cloudflare_headers', $text);
+        return (string) apply_filters('shipstatic_cloudflare_headers', $text);
     }
 
     /**
@@ -68,6 +68,6 @@ final class CloudflareHeaders {
          *
          * @param string $text `_redirects` file contents.
          */
-        return (string) apply_filters('bricks_static_cloudflare_redirects', '');
+        return (string) apply_filters('shipstatic_cloudflare_redirects', '');
     }
 }

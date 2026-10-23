@@ -2,30 +2,31 @@
 /**
  * Batched sync orchestrator.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Sync;
+namespace WPEasy\ShipStatic\Sync;
 
-use WPEasy\BricksStatic\CLI\Background;
-use WPEasy\BricksStatic\Deploy\PackageDeployer;
-use WPEasy\BricksStatic\Discovery\UrlCollector;
-use WPEasy\BricksStatic\Settings\Destinations;
-use WPEasy\BricksStatic\Render\AssetExtractor;
-use WPEasy\BricksStatic\Render\CompatibilityScanner;
-use WPEasy\BricksStatic\Render\FaviconGenerator;
-use WPEasy\BricksStatic\Render\HeadCleaner;
-use WPEasy\BricksStatic\Render\PageRenderer;
-use WPEasy\BricksStatic\Render\StableHash;
-use WPEasy\BricksStatic\Render\UrlRewriter;
-use WPEasy\BricksStatic\Support\Paths;
-use WPEasy\BricksStatic\Support\Url;
-use WPEasy\BricksStatic\Transport\SnapshotCapableTransport;
-use WPEasy\BricksStatic\Transport\TransportFactory;
-use WPEasy\BricksStatic\Transport\TransportInterface;
+use WPEasy\ShipStatic\CLI\Background;
+use WPEasy\ShipStatic\Deploy\PackageDeployer;
+use WPEasy\ShipStatic\Discovery\UrlCollector;
+use WPEasy\ShipStatic\Settings\Destinations;
+use WPEasy\ShipStatic\Render\AssetExtractor;
+use WPEasy\ShipStatic\Render\CompatibilityScanner;
+use WPEasy\ShipStatic\Render\FaviconGenerator;
+use WPEasy\ShipStatic\Render\HeadCleaner;
+use WPEasy\ShipStatic\Render\PageRenderer;
+use WPEasy\ShipStatic\Render\StableHash;
+use WPEasy\ShipStatic\Render\UrlRewriter;
+use WPEasy\ShipStatic\Support\Paths;
+use WPEasy\ShipStatic\Support\Url;
+use WPEasy\ShipStatic\Transport\ResumableSnapshotTransport;
+use WPEasy\ShipStatic\Transport\SnapshotCapableTransport;
+use WPEasy\ShipStatic\Transport\TransportFactory;
+use WPEasy\ShipStatic\Transport\TransportInterface;
 
 defined('ABSPATH') || exit;
 
@@ -62,7 +63,7 @@ final class Runner {
     /**
      * Where a destination's pre-existing .htaccess is preserved, once.
      */
-    private const HTACCESS_BAK = '.htaccess.bricks-static.bak';
+    private const HTACCESS_BAK = '.htaccess.shipstatic.bak';
 
     /**
      * Start a fresh run: prepare the cache, seed the queue, enter render phase.
@@ -77,8 +78,8 @@ final class Runner {
             throw new \RuntimeException('The staging cache directory is not writable: ' . Paths::cache_dir());
         }
 
-        if (\WPEasy\BricksStatic\Export\ExportRunner::is_running()) {
-            throw new \RuntimeException(__('An Export ZIP is currently running — wait for it to finish, then try again.', 'bricks-static'));
+        if (\WPEasy\ShipStatic\Export\ExportRunner::is_running()) {
+            throw new \RuntimeException(__('An Export ZIP is currently running — wait for it to finish, then try again.', 'shipstatic'));
         }
 
         // Single-page sync: push ONE changed page (and only NEW pages it links to),
@@ -343,12 +344,12 @@ final class Runner {
      * Option holding the cancel flag, kept separate from the job blob so a
      * concurrent tick's save() cannot clobber it.
      */
-    private const CANCEL_FLAG = 'bricks_static_cancel';
+    private const CANCEL_FLAG = 'shipstatic_cancel';
 
     /**
      * Option holding the last "a driver is actively working" timestamp.
      */
-    private const HEARTBEAT = 'bricks_static_driver_heartbeat';
+    private const HEARTBEAT = 'shipstatic_driver_heartbeat';
 
     /**
      * Seconds since the last heartbeat after which the driver is presumed dead.
@@ -361,7 +362,7 @@ final class Runner {
      * Separate from the coordinator heartbeat so worker death is detectable even
      * while the coordinator keeps monitoring (which keeps HEARTBEAT/cliAlive warm).
      */
-    private const WORKER_HEARTBEAT = 'bricks_static_worker_heartbeat';
+    private const WORKER_HEARTBEAT = 'shipstatic_worker_heartbeat';
 
     /**
      * Seconds to wait for the deploy pool to come alive before giving up. Guards
@@ -378,7 +379,7 @@ final class Runner {
      * this OUT of the job blob makes the monitor the sole writer of that blob, so
      * the two processes never clobber each other's writes.
      */
-    private const DISPATCH_MARK = 'bricks_static_deploy_dispatch_at';
+    private const DISPATCH_MARK = 'shipstatic_deploy_dispatch_at';
 
     /**
      * Stamp the worker heartbeat (called by a deploy worker as files upload).
@@ -412,7 +413,7 @@ final class Runner {
     /**
      * Option naming the single process allowed to drive the job ('cli' | 'browser').
      */
-    private const DRIVER_OPTION = 'bricks_static_driver';
+    private const DRIVER_OPTION = 'shipstatic_driver';
 
     /**
      * Atomically claim the right to drive the active job. Only ONE driver may
@@ -516,7 +517,7 @@ final class Runner {
 
     /**
      * The no-progress window before a running job is auto-discarded. Filterable
-     * so a site that raised {@see bricks_static_render_timeout}/{@see bricks_static_asset_timeout}
+     * so a site that raised {@see shipstatic_render_timeout}/{@see shipstatic_asset_timeout}
      * above the default can keep this window comfortably larger than a single
      * request, or the watchdog could reap a job that's still working.
      */
@@ -527,7 +528,7 @@ final class Runner {
          *
          * @param int $seconds Window in seconds.
          */
-        return max(30, (int) apply_filters('bricks_static_stale_seconds', self::STALE_SECONDS));
+        return max(30, (int) apply_filters('shipstatic_stale_seconds', self::STALE_SECONDS));
     }
 
     /**
@@ -565,9 +566,9 @@ final class Runner {
         $hints = [
             // Bricks serves its maintenance screen with 503; other maintenance
             // plugins and WAFs use 403/401 for the same "site is closed" state.
-            503 => __('site is in maintenance mode, or temporarily unavailable', 'bricks-static'),
-            403 => __('blocked — maintenance mode, a security plugin, or a firewall', 'bricks-static'),
-            401 => __('password protected, or behind HTTP authentication', 'bricks-static'),
+            503 => __('site is in maintenance mode, or temporarily unavailable', 'shipstatic'),
+            403 => __('blocked — maintenance mode, a security plugin, or a firewall', 'shipstatic'),
+            401 => __('password protected, or behind HTTP authentication', 'shipstatic'),
         ];
 
         $reason = 'HTTP ' . $code;
@@ -820,12 +821,12 @@ final class Runner {
 
     /**
      * Whether THIS process is a detached, console-less coordinator (the dashboard-
-     * spawned `wp bricks-static run`). Such a process CANNOT reliably spawn further
+     * spawned `wp shipstatic run`). Such a process CANNOT reliably spawn further
      * background processes on Windows (`start` needs a console — the symptom is
      * "The process tried to write to a nonexistent pipe"), so it must NOT launch
      * the worker pool itself: it flags `needsDispatch` and the dashboard's poll
      * launches the workers from a web request (valid handles). A console-attached
-     * `wp bricks-static sync` leaves this false and spawns directly.
+     * `wp shipstatic sync` leaves this false and spawns directly.
      */
     private static bool $detached = false;
 
@@ -855,7 +856,7 @@ final class Runner {
         $pool = min(DeployPool::concurrency(), count($targets));
 
         if (!self::$detached) {
-            // Console context (terminal `wp bricks-static sync`) — spawn directly.
+            // Console context (terminal `wp shipstatic sync`) — spawn directly.
             $spawned = DeployPool::spawn_workers($pool);
             if ($spawned < 1) {
                 // Spawning failed outright — fall back to sequential so the sync
@@ -1150,8 +1151,8 @@ final class Runner {
                 'destId'       => $dest_id,
                 'destName'     => $name,
                 'message'      => $has_rendered
-                    ? __('The page list has changed since the last render. Click Process to refresh it, then Check again.', 'bricks-static')
-                    : __('Nothing has been rendered yet. Click Process first, then Check.', 'bricks-static'),
+                    ? __('The page list has changed since the last render. Click Process to refresh it, then Check again.', 'shipstatic')
+                    : __('Nothing has been rendered yet. Click Process first, then Check.', 'shipstatic'),
             ];
         }
 
@@ -1229,7 +1230,7 @@ final class Runner {
                     '%d published page isn’t in the export — see View list.',
                     '%d published pages aren’t in the export — see View list.',
                     $excluded,
-                    'bricks-static'
+                    'shipstatic'
                 ),
                 $excluded
             );
@@ -1291,7 +1292,7 @@ final class Runner {
      */
     private static function emit_favicon(Job $job): void {
         /** Filters whether a root /favicon.ico is included in the export. */
-        if (!apply_filters('bricks_static_include_favicon', true) || isset($job->data['plan']['favicon.ico'])) {
+        if (!apply_filters('shipstatic_include_favicon', true) || isset($job->data['plan']['favicon.ico'])) {
             return;
         }
 
@@ -1440,7 +1441,7 @@ final class Runner {
      * render + that destination's active replacers + sitemap/robots origin
      * rewrite) — the same content a real Sync would push. Pure passthrough to
      * {@see build_deploy_manifest()}; see its docblock for side effects (it
-     * writes into cache/bricks-static/deploy/{destId}/ when replacers are
+     * writes into cache/shipstatic/deploy/{destId}/ when replacers are
      * active — the same dir a real Sync already uses, not export-specific).
      *
      * @param array<string,array{size:int,hash:string,src:string}> $base    Base render manifest.
@@ -1678,7 +1679,7 @@ final class Runner {
 
         // Server config first (merge-safe), same as the per-file path.
         self::upload_htaccess($transport);
-        update_option('bricks_static_nginx_snippet', HtaccessBuilder::nginx(), false);
+        update_option('shipstatic_nginx_snippet', HtaccessBuilder::nginx(), false);
         self::beat();
 
         $files = [];
@@ -1741,8 +1742,8 @@ final class Runner {
     }
 
     /**
-     * Publish the whole target to a snapshot destination (Cloudflare) in one
-     * operation: hand the transport the FULL deploy manifest; it uploads only
+     * Publish the whole target to a snapshot destination (Cloudflare, GitHub
+     * Pages): hand the transport the FULL deploy manifest; it uploads only
      * what the far end doesn't already hold and swaps the new set in
      * atomically. Removed pages are gone simply because they're not in the
      * snapshot, so there is no prune phase — and none of the filesystem steps
@@ -1753,15 +1754,33 @@ final class Runner {
      * failed per-file upload. A failure is reported as an error — there is no
      * per-file fallback for a destination without a filesystem.
      *
+     * Cloudflare publishes in ONE tick. A {@see ResumableSnapshotTransport}
+     * (GitHub Pages, whose write limit can make a big first publish take
+     * hours) does one step per tick, its progress kept in
+     * `snapshotState`; while it waits out a rate limit, ticks only beat so the
+     * stale reaper never fires.
+     *
      * @param Job $job Active job.
      */
     private static function tick_snapshot(Job $job): void {
+        $label = self::snapshot_label($job);
+
+        $wait = (int) ($job->data['snapshotWait'] ?? 0);
+        if ($wait > time()) {
+            self::beat();
+            $job->save();
+            if (PHP_SAPI === 'cli') {
+                sleep(min(5, $wait - time())); // Don't spin the WP-CLI runner.
+            }
+            return;
+        }
+
         try {
             $transport = self::target_transport($job);
         } catch (\Throwable $e) {
             self::close_connection();
             $job->data['phase']   = 'error';
-            $job->data['message'] = 'Cloudflare connection failed: ' . $e->getMessage();
+            $job->data['message'] = $label . ' connection failed: ' . $e->getMessage();
             $job->save();
             return;
         }
@@ -1788,15 +1807,30 @@ final class Runner {
             $job->save();
         };
 
-        $result = $transport->deploy_snapshot($files, $progress);
+        if ($transport instanceof ResumableSnapshotTransport) {
+            $state  = (array) ($job->data['snapshotState'] ?? []);
+            $result = $transport->deploy_snapshot_step($files, $state, $progress);
+            if (!empty($result['pending'])) {
+                $job->data['snapshotState'] = $state;
+                $job->data['snapshotWait']  = (int) ($result['waitUntil'] ?? 0);
+                $job->data['message']       = (string) $result['message'];
+                self::beat();
+                $job->save();
+                return;
+            }
+            unset($job->data['snapshotState'], $job->data['snapshotWait']);
+        } else {
+            $result = $transport->deploy_snapshot($files, $progress);
+        }
 
         if (empty($result['ok'])) {
             self::close_connection();
             $job->data['phase']   = 'error';
-            $job->data['message'] = 'Publishing to Cloudflare failed: ' . (string) $result['message'];
+            $job->data['message'] = 'Publishing to ' . $label . ' failed: ' . (string) $result['message'];
             $job->save();
             return;
         }
+        $job->data['snapshotMessage'] = (string) $result['message'];
 
         // The far end now serves exactly the snapshot, minus anything skipped.
         $skipped = array_values((array) ($result['skipped'] ?? []));
@@ -1818,6 +1852,17 @@ final class Runner {
             self::close_connection();
         }
         $job->save();
+    }
+
+    /**
+     * Display name of the current target's snapshot service.
+     *
+     * @param Job $job Active job.
+     */
+    private static function snapshot_label(Job $job): string {
+        $dest = Destinations::get((string) ($job->data['destId'] ?? ''));
+
+        return $dest !== null && $dest->is_github() ? 'GitHub Pages' : 'Cloudflare';
     }
 
     /**
@@ -1859,7 +1904,7 @@ final class Runner {
                 }
 
                 self::upload_htaccess($transport);
-                update_option('bricks_static_nginx_snippet', HtaccessBuilder::nginx(), false);
+                update_option('shipstatic_nginx_snippet', HtaccessBuilder::nginx(), false);
                 $job->data['htaccessDone'] = true;
                 // +1 for the home page only when we'll actually (re)upload it:
                 // because it changed, or to replace a holding page we put up.
@@ -2025,7 +2070,7 @@ final class Runner {
     /**
      * Option-name prefix for a destination's last-synced signature.
      */
-    public const SYNC_SIG = 'bricks_static_sync_sig_';
+    public const SYNC_SIG = 'shipstatic_sync_sig_';
 
     /**
      * A fingerprint of what a destination's deploy depends on: the current
@@ -2035,7 +2080,7 @@ final class Runner {
      * render) isn't wrongly flagged out of date, while a real source or
      * replacement change is.
      *
-     * @param \WPEasy\BricksStatic\Settings\Destination|null $dest Destination.
+     * @param \WPEasy\ShipStatic\Settings\Destination|null $dest Destination.
      */
     public static function sync_signature($dest): string {
         $render = Manifest::load(Manifest::RENDER_OPTION);
@@ -2137,7 +2182,7 @@ final class Runner {
      * render + replacements (used for the dashboard's "in sync" dot).
      *
      * @param string                                          $dest_id Destination id.
-     * @param \WPEasy\BricksStatic\Settings\Destination|null  $dest    Destination.
+     * @param \WPEasy\ShipStatic\Settings\Destination|null  $dest    Destination.
      */
     public static function in_sync(string $dest_id, $dest): bool {
         // Content edited since the last render → the export is stale everywhere.
@@ -2157,7 +2202,7 @@ final class Runner {
      */
     private static function done_message(Job $job): string {
         if (!empty($job->data['snapshotNotes'])) {
-            // Cloudflare left files out (e.g. over its 25 MiB limit) — a retry
+            // The snapshot left files out (e.g. over the per-file limit) — a retry
             // won't help, so say which and why instead.
             $notes = (array) $job->data['snapshotNotes'];
             return sprintf('Published, but %d file(s) were left out: %s', count($notes), implode('; ', array_slice($notes, 0, 3)) . (count($notes) > 3 ? '; …' : '.'));
@@ -2169,6 +2214,11 @@ final class Runner {
         $done = (int) $job->data['targetsDone'];
         if ($done > 1) {
             return sprintf('Pushed to %d destinations — all in sync.', $done);
+        }
+
+        // A snapshot transport's own summary (e.g. the GitHub commit made).
+        if (!empty($job->data['snapshotMessage'])) {
+            return (string) $job->data['snapshotMessage'];
         }
 
         $pruned = (int) $job->data['counts']['pruned'];

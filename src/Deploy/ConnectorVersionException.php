@@ -2,13 +2,13 @@
 /**
  * Connector: protocol version mismatch.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   2.1.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Deploy;
+namespace WPEasy\ShipStatic\Deploy;
 
 defined('ABSPATH') || exit;
 

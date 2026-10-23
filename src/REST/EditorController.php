@@ -6,35 +6,35 @@
  * modal when the discovery mode is `manual`. Admin-only (consistent with the
  * rest of the plugin) plus a per-post `edit_post` ownership check.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.0.2
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\REST;
+namespace WPEasy\ShipStatic\REST;
 
 use WP_REST_Request;
 use WP_REST_Response;
-use WPEasy\BricksStatic\Discovery\UrlCollector;
-use WPEasy\BricksStatic\Render\AssetExtractor;
-use WPEasy\BricksStatic\Render\PageRenderer;
-use WPEasy\BricksStatic\Support\Url;
-use WPEasy\BricksStatic\Sync\LinkGraph;
-use WPEasy\BricksStatic\Sync\Manifest;
-use WPEasy\BricksStatic\Sync\Runner;
+use WPEasy\ShipStatic\Discovery\UrlCollector;
+use WPEasy\ShipStatic\Render\AssetExtractor;
+use WPEasy\ShipStatic\Render\PageRenderer;
+use WPEasy\ShipStatic\Support\Url;
+use WPEasy\ShipStatic\Sync\LinkGraph;
+use WPEasy\ShipStatic\Sync\Manifest;
+use WPEasy\ShipStatic\Sync\Runner;
 
 defined('ABSPATH') || exit;
 
 /**
- * Reads/writes the `_bricks_static_manual_include` post meta for `manual` discovery mode.
+ * Reads/writes the `_shipstatic_manual_include` post meta for `manual` discovery mode.
  */
 final class EditorController {
 
     /**
      * REST namespace.
      */
-    private const NS = 'bricks-static/v1';
+    private const NS = 'shipstatic/v1';
 
     /**
      * Register routes.

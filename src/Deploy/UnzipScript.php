@@ -2,13 +2,13 @@
 /**
  * Generates the one-shot server-side deploy helper.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Deploy;
+namespace WPEasy\ShipStatic\Deploy;
 
 defined('ABSPATH') || exit;
 

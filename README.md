@@ -1,4 +1,4 @@
-# Bricks Static
+# ShipStatic
 
 Publish a WordPress site as static HTML to any host over SFTP/FTPS/FTP, the HTTPS Connector, or Cloudflare. [Bricks](https://bricksbuilder.io/)-aware, and works with all standard WordPress content.
 
@@ -6,13 +6,13 @@ Publish a WordPress site as static HTML to any host over SFTP/FTPS/FTP, the HTTP
 
 ## Overview
 
-**Bricks Static** renders your WordPress pages to static HTML (via authenticated loopback requests), rewrites their URLs to be portable, and pushes the result to one or more destinations — turning a dynamic WordPress site into a fast, static front end while you keep editing in WordPress.
+**ShipStatic** renders your WordPress pages to static HTML (via authenticated loopback requests), rewrites their URLs to be portable, and pushes the result to one or more destinations — turning a dynamic WordPress site into a fast, static front end while you keep editing in WordPress.
 
-### Why "Bricks" Static?
+### Built for Bricks
 
 It's Bricks-aware. Bricks gives elements a new random ID (`brxe-…`, form field IDs, several `data-*` attributes) on every render, so to a generic exporter every Bricks page looks changed every time. `Render\StableHash` normalises those IDs when comparing renders (the deployed HTML keeps its real IDs), so only genuinely changed pages upload and "in sync" is accurate. It also renders through Bricks' maintenance / coming-soon mode (`bricks/maintenance/should_apply`) and keeps its single-page Sync button out of the builder's preview iframe.
 
-Bricks isn't required. The renderer is builder-agnostic (authenticated loopback requests capture whatever the site outputs), so block editor, Classic Editor, archives and any theme export the same way. Other builders can add their own per-render noise patterns via `bricks_static_stable_hash_patterns`.
+Bricks isn't required. The renderer is builder-agnostic (authenticated loopback requests capture whatever the site outputs), so block editor, Classic Editor, archives and any theme export the same way. Other builders can add their own per-render noise patterns via `shipstatic_stable_hash_patterns`.
 
 A single free plugin: unlimited pages and destinations, link/"all"/manual page discovery, text/media/link/video replacements, gzip pre-compression, remote pruning, sitemap generation, per-file or packaged deploy, `.htaccess` output, single-page sync, and an optional AI/MCP integration.
 
@@ -32,7 +32,7 @@ Discover URLs ─▶ Render (loopback) ─▶ Rewrite URLs ─▶ Cache ─▶ D
 
 1. **Discover** the pages to export, based on the **discovery mode** (below).
 2. **Render** each page with an authenticated loopback request, then clean the `<head>` (drop WordPress-only links, set a single generator tag) and rewrite URLs to root-relative.
-3. **Cache** the result under `wp-content/cache/bricks-static/site/` and record a **render manifest**.
+3. **Cache** the result under `wp-content/cache/shipstatic/site/` and record a **render manifest**.
 4. **Deploy**: for each destination, apply that destination’s replacements, build a deploy manifest, diff it against what was last pushed, and upload only what changed (as a single package + server-side unzip where possible, otherwise file-by-file).
 
 The run is **batched and resumable**, driven by WP-CLI where available (best on low-worker hosts) and by the browser otherwise.
@@ -90,13 +90,13 @@ The generated **`.htaccess`** (uploaded automatically) and an **nginx** snippet.
 
 ### Connector (HTTPS) transport
 
-A third way to deploy, alongside FTP/SFTP and Export ZIP: **Deploy via → Connector** pairs the destination with a single PHP receiver (`bs-connector-<id>.php`) that you download from the dashboard and upload to the destination web root once. From then on every sync is one chunked package over signed HTTPS — no FTP account. The receiver embeds only the *hash* of the pairing secret, verifies an HMAC + single-use nonce on every request, writes only inside its own folder, and refuses executable files (`.php` etc.) and handler-registering `.htaccess` lines, so a leaked secret can deface the static folder but never run code. Re-pair to rotate (the old file stops working), Revoke to disconnect, **Rebuild push record** to re-establish what's already on the destination after a reset or re-pair (identical files aren't re-uploaded; files the plugin never pushed are left alone). Headless: `wp bricks-static connector pair <dest> --dest-url=https://… --to=<dir>`, then `test`, `rebuild`, `revoke`, `status`. Needs PHP 7.4+ at the destination; ZipArchive there enables package deploys (else file-by-file). Spec: `docs/CONNECTOR_PLAN.md`; security notes: `SECURITY_PATTERNS.md` §3b.
+A third way to deploy, alongside FTP/SFTP and Export ZIP: **Deploy via → Connector** pairs the destination with a single PHP receiver (`bs-connector-<id>.php`) that you download from the dashboard and upload to the destination web root once. From then on every sync is one chunked package over signed HTTPS — no FTP account. The receiver embeds only the *hash* of the pairing secret, verifies an HMAC + single-use nonce on every request, writes only inside its own folder, and refuses executable files (`.php` etc.) and handler-registering `.htaccess` lines, so a leaked secret can deface the static folder but never run code. Re-pair to rotate (the old file stops working), Revoke to disconnect, **Rebuild push record** to re-establish what's already on the destination after a reset or re-pair (identical files aren't re-uploaded; files the plugin never pushed are left alone). Headless: `wp shipstatic connector pair <dest> --dest-url=https://… --to=<dir>`, then `test`, `rebuild`, `revoke`, `status`. Needs PHP 7.4+ at the destination; ZipArchive there enables package deploys (else file-by-file). Spec: `docs/CONNECTOR_PLAN.md`; security notes: `SECURITY_PATTERNS.md` §3b.
 
 **Check server** (`GET /sync/server-check?dest=…`, `Sync\ServerProbe`) fetches the destination's home page and one pushed asset through the `UrlSafety` SSRF guard and reports the web server (Apache / LiteSpeed / nginx / CDN-proxied), whether the HTML is gzip-served, and whether the cache policy is actually in effect — the only way to confirm a manual nginx paste (or a working `.htaccess`) took. The last result per destination is stored and returned with `/sync/server-config`.
 
 ### AI tools (Abilities API / MCP)
 
-When the host WordPress exposes the **Abilities API** (WP 6.9+), Bricks Static registers abilities so an AI agent / MCP client can operate it. Two opt-in toggles gate what’s allowed:
+When the host WordPress exposes the **Abilities API** (WP 6.9+), ShipStatic registers abilities so an AI agent / MCP client can operate it. Two opt-in toggles gate what’s allowed:
 
 - **Read-only** (always available): get sync status, get sync method, list exportable pages, get page sync status, check page link integrity, list destinations, get sync progress.
 - **Allow changes** (`aiAllowChanges`): set discovery mode, include/exclude a page, include multiple pages.
@@ -108,13 +108,13 @@ Both toggles default **off** — the AI can look but not touch until you opt in.
 
 The configurable timeouts are **render / fetch ceilings during caching, not upload limits**:
 
-- `bricks_static_render_timeout` (60s) bounds each **page** loopback render; `bricks_static_asset_timeout` (60s) bounds fetching a **dynamically-served** asset. Static files (uploads, theme CSS/JS) are read from disk, never fetched — so most assets aren’t subject to either.
-- The **upload** itself is bundled: in package mode every changed file goes into **one zip** + a single server-side extract (`bricks_static_package_timeout`, 120s); the per-file fallback is paced by transport (SFTP/FTP) timeouts. There is no per-asset upload ceiling.
+- `shipstatic_render_timeout` (60s) bounds each **page** loopback render; `shipstatic_asset_timeout` (60s) bounds fetching a **dynamically-served** asset. Static files (uploads, theme CSS/JS) are read from disk, never fetched — so most assets aren’t subject to either.
+- The **upload** itself is bundled: in package mode every changed file goes into **one zip** + a single server-side extract (`shipstatic_package_timeout`, 120s); the per-file fallback is paced by transport (SFTP/FTP) timeouts. There is no per-asset upload ceiling.
 - A `cURL error 28` therefore only comes from an HTTP call (page render, dynamic-asset fetch, or the package-extract POST) — never from an SFTP/FTP upload.
 
-All of these are **filterable** for slow hosts (see Hooks). The sync **watchdog** that discards stalled jobs (`bricks_static_stale_seconds`) is filterable too, so raising a request timeout above the default window doesn’t cause a still-working job to be reaped.
+All of these are **filterable** for slow hosts (see Hooks). The sync **watchdog** that discards stalled jobs (`shipstatic_stale_seconds`) is filterable too, so raising a request timeout above the default window doesn’t cause a still-working job to be reaped.
 
-## REST API (`bricks-static/v1`)
+## REST API (`shipstatic/v1`)
 
 All routes require `manage_options`.
 
@@ -137,30 +137,30 @@ All routes require `manage_options`.
 
 ## Hooks
 
-Selected filters/actions (prefix `bricks_static_`):
+Selected filters/actions (prefix `shipstatic_`):
 
 **Extension seams**
-- `bricks_static_transport` — supply a custom transport implementation.
+- `shipstatic_transport` — supply a custom transport implementation.
 
 **Discovery / render**
-- `bricks_static_seed_urls`, `bricks_static_excluded_post_types` — tune what’s discovered.
-- `bricks_static_render_request_args`, `bricks_static_render_sslverify`, `bricks_static_strip_emoji`, `bricks_static_clean_head`, `bricks_static_include_favicon` — tune rendering / head cleaning.
-- `bricks_static_render_timeout`, `bricks_static_asset_timeout` — per-page / per-asset loopback timeouts (seconds).
-- `bricks_static_stale_seconds` — no-progress window before a stalled sync job is discarded.
+- `shipstatic_seed_urls`, `shipstatic_excluded_post_types` — tune what’s discovered.
+- `shipstatic_render_request_args`, `shipstatic_render_sslverify`, `shipstatic_strip_emoji`, `shipstatic_clean_head`, `shipstatic_include_favicon` — tune rendering / head cleaning.
+- `shipstatic_render_timeout`, `shipstatic_asset_timeout` — per-page / per-asset loopback timeouts (seconds).
+- `shipstatic_stale_seconds` — no-progress window before a stalled sync job is discarded.
 
 **Deploy / transport**
-- `bricks_static_package_timeout`, `bricks_static_package_sslverify` — remote unzip request.
-- `bricks_static_sftp_verify_host_key` — SFTP host-key trust policy.
-- `bricks_static_gzip_min_bytes`, `bricks_static_cache_dir`, `bricks_static_can_spawn_cli`, `bricks_static_is_local`.
+- `shipstatic_package_timeout`, `shipstatic_package_sslverify` — remote unzip request.
+- `shipstatic_sftp_verify_host_key` — SFTP host-key trust policy.
+- `shipstatic_gzip_min_bytes`, `shipstatic_cache_dir`, `shipstatic_can_spawn_cli`, `shipstatic_is_local`.
 
 ## WP-CLI
 
 ```bash
-wp bricks-static sync            # full sync to the primary destination
-wp bricks-static sync --check    # render only (no upload) — same as Process
-wp bricks-static sync --all      # sync all enabled destinations
-wp bricks-static sync --dest=ID  # a specific destination
-wp bricks-static sync --prune    # also remove deleted files
+wp shipstatic sync            # full sync to the primary destination
+wp shipstatic sync --check    # render only (no upload) — same as Process
+wp shipstatic sync --all      # sync all enabled destinations
+wp shipstatic sync --dest=ID  # a specific destination
+wp shipstatic sync --prune    # also remove deleted files
 ```
 
 Running WP-CLI against a Local by Flywheel site on Windows: see [`WP_CLI_LOCAL.md`](WP_CLI_LOCAL.md).
@@ -169,14 +169,14 @@ Running WP-CLI against a Local by Flywheel site on Windows: see [`WP_CLI_LOCAL.m
 
 | Property | Value |
 |----------|-------|
-| PHP namespace | `WPEasy\BricksStatic` |
-| Constants prefix | `BRICKS_STATIC_` |
-| Textdomain | `bricks-static` |
-| REST namespace | `bricks-static/v1` |
-| Options / hooks prefix | `bricks_static_` (no custom tables) |
-| JS globals | `bricksStaticData` (+ `…EditorData`, `…FabData`, `…ListData`) |
+| PHP namespace | `WPEasy\ShipStatic` |
+| Constants prefix | `SHIPSTATIC_` |
+| Textdomain | `shipstatic` |
+| REST namespace | `shipstatic/v1` |
+| Options / hooks prefix | `shipstatic_` (no custom tables) |
+| JS globals | `shipStaticData` (+ `…EditorData`, `…FabData`, `…ListData`) |
 | CSS prefix | `.bs-` |
-| Static cache | `wp-content/cache/bricks-static/site/` |
+| Static cache | `wp-content/cache/shipstatic/site/` |
 
 ## Development
 

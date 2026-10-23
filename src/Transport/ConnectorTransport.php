@@ -2,18 +2,18 @@
 /**
  * Connector (HTTPS) transport.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   2.1.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Transport;
+namespace WPEasy\ShipStatic\Transport;
 
-use WPEasy\BricksStatic\Deploy\ConnectorAuthException;
-use WPEasy\BricksStatic\Deploy\ConnectorClient;
-use WPEasy\BricksStatic\Deploy\ConnectorHostException;
-use WPEasy\BricksStatic\Deploy\ConnectorVersionException;
+use WPEasy\ShipStatic\Deploy\ConnectorAuthException;
+use WPEasy\ShipStatic\Deploy\ConnectorClient;
+use WPEasy\ShipStatic\Deploy\ConnectorHostException;
+use WPEasy\ShipStatic\Deploy\ConnectorVersionException;
 
 defined('ABSPATH') || exit;
 
@@ -195,7 +195,7 @@ final class ConnectorTransport implements TransportInterface, PackageCapableTran
             });
 
             $report('Extracting on the destination…');
-            $r = $this->client->extract($upload, $deletes, max(10, (int) apply_filters('bricks_static_package_timeout', 120)));
+            $r = $this->client->extract($upload, $deletes, max(10, (int) apply_filters('shipstatic_package_timeout', 120)));
         } catch (ConnectorAuthException | ConnectorVersionException | ConnectorHostException $e) {
             // Nothing transient about a bad pairing / missing receiver — but the
             // per-file fallback would fail the same way, so keep package enabled

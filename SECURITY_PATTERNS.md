@@ -1,4 +1,4 @@
-# Security Patterns — Bricks Static
+# Security Patterns — ShipStatic
 
 > **Read this before working on any REST controller, the deploy layer
 > (`PackageDeployer` / `UnzipScript` / the Connector: `ConnectorScript`,
@@ -12,8 +12,8 @@
 > rule below and keep this file accurate (it's the reference a future audit
 > grades the code against — a wrong example is worse than none).
 
-Namespace `WPEasy\BricksStatic`, REST namespace `bricks-static/v1`, option/hook/constant prefix
-`bricks_static_`/`BRICKS_STATIC_`.
+Namespace `WPEasy\ShipStatic`, REST namespace `shipstatic/v1`, option/hook/constant prefix
+`shipstatic_`/`SHIPSTATIC_`.
 
 ---
 
@@ -24,7 +24,7 @@ Every REST route in `src/REST/*` registers `permission_callback => [self::class,
 **Rules for new surfaces:**
 - A new REST route is `manage_options` by default. If you need anything lower-privileged, that is a design change — justify it, and then the IDOR/ownership rules below apply.
 - This plugin operates on **site-level** state (options, the rendered site, destinations) — there is no per-post/per-user object model, so there is currently no IDOR surface. If you ever read/write a request-supplied `post_id`/`user_id`/attachment id, you MUST check `current_user_can('edit_post', $id)` (ownership) **inside the handler**, not just the route capability. A `(?P<id>\d+)` path token is resolved before `permission_callback`; body params are not — re-assert in the handler.
-- REST relies on the `wp_rest` nonce (`Admin\Menu` localizes it as `bricksStaticData.nonce`, the client sends `X-WP-Nonce`). Don't add a parallel auth path that skips it.
+- REST relies on the `wp_rest` nonce (`Admin\Menu` localizes it as `shipStaticData.nonce`, the client sends `X-WP-Nonce`). Don't add a parallel auth path that skips it.
 
 ---
 
@@ -35,7 +35,7 @@ SSRF risk is asymmetric: a remote browser can't reach `127.0.0.1` or the cloud-m
 **Rule:** any server-side fetch of a URL that originated from a request MUST go through `UrlSafety`:
 
 ```php
-use WPEasy\BricksStatic\Support\UrlSafety;
+use WPEasy\ShipStatic\Support\UrlSafety;
 
 // Validates scheme (http/https), resolves the host to IP(s), and rejects
 // private/reserved/link-local ranges. Loopback (127/8, ::1) is intentionally
@@ -60,12 +60,12 @@ if (is_wp_error($response)) { /* blocked, redirected, or transport error */ }
 ```php
 // PackageDeployer::sslverify() and PageRenderer::should_verify_ssl()
 $local = UrlSafety::is_dev_host($host);   // localhost, *.local, *.test, or a loopback IP
-return apply_filters('bricks_static_package_sslverify', !$local, $url);
+return apply_filters('shipstatic_package_sslverify', !$local, $url);
 ```
 
 - `UrlSafety::is_dev_host()` uses **exact** matching. Do NOT reintroduce `strpos($host, '127.0.0.1') === 0` — that prefix test also matched `127.0.0.1.attacker.com` (a real public host an attacker can register), silently disabling TLS for it. This was a real audit finding.
 - `.local` / `.test` are reserved special-use TLDs — never publicly resolvable or certifiable — so relaxing TLS for them is safe. Anything else verifies.
-- The `bricks_static_*_sslverify` filters exist for genuinely broken dev certs; do not use them to paper over a real cert problem on a public destination.
+- The `shipstatic_*_sslverify` filters exist for genuinely broken dev certs; do not use them to paper over a real cert problem on a public destination.
 
 ---
 
@@ -101,7 +101,7 @@ The Connector transport replaces FTP with a **user-installed, persistent** PHP r
 **Filesystem jail** (`bs_safe` / `bs_target` / `bs_existing` / `bs_write_allowed`)
 - Same `$safe()` string rules as `UnzipScript`, **plus** `realpath` containment of the deepest existing ancestor (symlink-escape guard), a refusal to write through a symlink or over a directory, a `..`-segment check, and refusal of names ending in a dot or space (Windows strips them, turning `x.php.` into `x.php`).
 - **Executable write deny-list**: any extension segment in `php php3-8 phtml phar phps pht phpt cgi pl py sh bash ini htpasswd` (so `x.php.txt` is refused too), `web.config`, `.user.ini`, `php.ini`, and anything named `bs-connector-*` (the receiver can never overwrite itself, its state, or in-flight parts). **`.htaccess` is ALLOW-LISTED, at every depth** (`bs_htaccess_allowed()`, protocol v2): after joining backslash continuations, every directive line must be one of `<IfModule>`/`<Files>`/`<FilesMatch>` (+ closers), `DirectoryIndex`, `ErrorDocument`, `Header`, `Expires*`, `Rewrite{Engine,Base,Cond,Rule}`, `Redirect*`, `Options` — and `RewriteRule` may not carry handler/type flags (`H=`/`T=`), `Options` may only turn features *off* (or allow symlink following). A line outside the list is accepted only if that exact line is already in the file being replaced (the plugin merges into the host's existing `.htaccess` and must write the host's own rules back; a request can never *add* one). `bs_write_allowed()` **fails closed**: any basename equal to `.htaccess` in any case that arrives without its content is refused — both write paths (`chunk` and `extract`) probe by `strtolower(basename())`. (v1 used a deny-list of handler directives and only probed a ROOT `.htaccess` on the `chunk` path, so a nested one skipped the scan — a real audit finding.) **Never go back to a deny-list**, and never add a write path that doesn't pass the content. **Blast radius with a stolen secret: deface the static folder — never code execution, never a read outside it.**
-- `get` is allow-listed to `.htaccess` and `.htaccess.bricks-static.bak` (the two files the merge needs). `manifest` is the only listing op: names + size + md5 of regular files under BASE (never contents, never symlinks, never our own files or `.htaccess`).
+- `get` is allow-listed to `.htaccess` and `.htaccess.shipstatic.bak` (the two files the merge needs). `manifest` is the only listing op: names + size + md5 of regular files under BASE (never contents, never symlinks, never our own files or `.htaccess`).
 - `delete` removes files only (+ prunes empty parents, never BASE); `extract` is the `UnzipScript` body with the deny-list applied per entry.
 
 **Client-side handling**
@@ -124,6 +124,20 @@ The Cloudflare transport (`Transport\CloudflareTransport`, `docs/CLOUDFLARE_PLAN
 
 **Rules for changes:** no new user-supplied value in an API path without a strict validator in both places; keep the token out of every message; never relax `sslverify`.
 
+## 3d. The GitHub client (`Deploy\GitHubClient`) — fixed host, no redirects, fast-forward only
+
+The GitHub Pages transport (`Transport\GitHubTransport`, `docs/GITHUB_PAGES_PLAN.md`) talks only to the GitHub REST API. Same shape as §3c, plus two git-specific rules:
+
+- **Fixed host.** The base URL is the constant `https://api.github.com`. Do not make it configurable (GitHub Enterprise would need `UrlSafety` like any user URL).
+- **Path-safe names.** Owner, repository and branch are the only user-supplied values in a URL; each is validated in `Schema` (`gh_owner` / `gh_repo` / `gh_branch`, invalid → `''` or `gh-pages`) and again in the client (`valid_owner()` / `valid_repo()` / `valid_branch()`), and every path segment is `rawurlencode()`d. Object SHAs from GitHub's own answers pass `sha()` (exactly 40 hex) before entering a path. The folder is one of two literals (`/`, `/docs`).
+- **No redirects** (`redirection => 0`, `sslverify => true`). A renamed repository answers 301; following it would send the token on. The client reports the move instead.
+- **The token is a `secret` Schema field** (`ghToken`): encrypted, `{hasValue, fromConstant}` to the browser, sent only as `Authorization: Bearer`, never logged or in a message. The CLI reads `GITHUB_TOKEN` (`--token-from-env`).
+- **Never force-push.** The branch moves with `force: false`; a non-fast-forward answer becomes `GitHubConflictException` → rebuild on the new head once, then stop. The plugin can't discard anyone's commits.
+- **Scope of writes.** Deletions are limited to the chosen folder and skip the keep list; files outside the folder are never touched. Because `/` on a repository's default branch would replace its source code, Test warns when the branch is the default branch.
+- **Least privilege is documented, not enforced.** Users are told to create a fine-grained token for one repository with Contents: Read and write (Pages: Read-only optional). Turning Pages on via the API needs Administration: write, so the plugin doesn't offer it.
+
+**Rules for changes:** same as §3c; keep `force: false`; keep deletions folder-scoped.
+
 ---
 
 ## 4. Credential storage (`Support\Crypto`)
@@ -138,7 +152,7 @@ FTP/SFTP passwords are encrypted at rest with **AES-256-GCM** (random 12-byte IV
 
 ## 5. Transport integrity (MITM)
 
-- **SFTP host key is verified (trust-on-first-use).** `SftpTransport::verify_host_key()` reads `getServerPublicHostKey()` **before** `login()` (so credentials are never sent to an unverified host), records it per `host:port` on first connect, and refuses on a later mismatch (`hash_equals`) — an active MITM presenting a different key is rejected instead of capturing the password. Filter `bricks_static_sftp_verify_host_key` can disable it; don't. Escape hatch for a legitimate key change (server rebuild/migration): the stored key is cleared on connection-target change (`Destinations::update`) and by "Reset sync state" (`SftpTransport::forget_host_key()`). Keep the read-before-login ordering if you refactor `connect()`.
+- **SFTP host key is verified (trust-on-first-use).** `SftpTransport::verify_host_key()` reads `getServerPublicHostKey()` **before** `login()` (so credentials are never sent to an unverified host), records it per `host:port` on first connect, and refuses on a later mismatch (`hash_equals`) — an active MITM presenting a different key is rejected instead of capturing the password. Filter `shipstatic_sftp_verify_host_key` can disable it; don't. Escape hatch for a legitimate key change (server rebuild/migration): the stored key is cleared on connection-target change (`Destinations::update`) and by "Reset sync state" (`SftpTransport::forget_host_key()`). Keep the read-before-login ordering if you refactor `connect()`.
 - **Plain FTP** sends credentials and content in cleartext — this is an explicit user transport choice (FTPS/SFTP are preferred in the UI). Don't silently "upgrade" or hide the choice.
 - Remote paths passed to `put`/`delete` derive from the site's own URLs/manifest, not direct request input. If a future feature lets a user supply a remote path, normalise `..` before `absolute()` (the per-file transports don't, unlike the package helper which does).
 
@@ -151,7 +165,7 @@ The only DOM-HTML sink is `{@html row.replace}` in `dashboard/TextReplacements.s
 - **Safety rests on the server:** `Settings\Destination::sanitize_replacements()` runs **`wp_kses_post()`** on every `rich` replacement on write (and `sanitize_text_field()` on plain). Keep that sanitisation **unconditional** — the client does not re-escape at render time.
 - Authorship is `manage_options`-only, so this is not a low-privilege stored-XSS vector today; it would become one if replacement editing were ever opened to a lower capability. Re-evaluate this sink if that happens.
 - No other `innerHTML`/`{@html}`/`document.write` exists. There are **no** `postMessage` listeners and **no** `BroadcastChannel` — if you add either, validate `event.origin` AND `event.source` for postMessage, and authenticate BroadcastChannel messages with a per-session nonce (a same-origin channel is not a security boundary). Never `postMessage(payload, '*')`.
-- The `wp_rest` nonce lives only in `bricksStaticData.nonce` (sent as `X-WP-Nonce`); never render it to the DOM and never put secrets in localStorage.
+- The `wp_rest` nonce lives only in `shipStaticData.nonce` (sent as `X-WP-Nonce`); never render it to the DOM and never put secrets in localStorage.
 
 ---
 
@@ -180,10 +194,10 @@ Every ability registers a `permission_callback` that:
         return false;                       // same bar as every REST route
     }
     if ($permission === 'changes' && !self::changes_enabled()) {
-        return false;                       // opt-in: bricks_static_ai_allow_changes
+        return false;                       // opt-in: shipstatic_ai_allow_changes
     }
     if ($permission === 'sync' && !self::sync_enabled()) {
-        return false;                       // opt-in: bricks_static_ai_allow_sync
+        return false;                       // opt-in: shipstatic_ai_allow_sync
     }
     return true;
 },
@@ -191,8 +205,8 @@ Every ability registers a `permission_callback` that:
 
 **Three tiers, two opt-ins (both default OFF):**
 - **Read-only** (always registered): status, method, list pages, page status, link integrity, list destinations, progress. `manage_options` only; no state change.
-- **Changes** (`bricks_static_ai_allow_changes`): set discovery mode, include/exclude page(s).
-- **Sync** (`bricks_static_ai_allow_sync`): scan, sync, single-page sync, cancel, reset.
+- **Changes** (`shipstatic_ai_allow_changes`): set discovery mode, include/exclude page(s).
+- **Sync** (`shipstatic_ai_allow_sync`): scan, sync, single-page sync, cancel, reset.
 
 **Rules for new abilities:**
 - Gate on `manage_options` via the shared `register()` helper — never write a bare `'permission_callback' => '__return_true'` or a lower capability. An ability is not "more trusted" than REST.
@@ -209,6 +223,7 @@ Every ability registers a `permission_callback` that:
 - New server-side fetch of a request URL → `UrlSafety::guarded_post()` / `guarded_get()` / `is_safe_url()`, never a bare `wp_remote_*`.
 - New outbound call → `sslverify` left at the WP default (verified); relax only via `UrlSafety::is_dev_host()`.
 - Touching `UnzipScript` → token + expiry + zip-slip + self-delete all intact.
+- Touching the GitHub client → host fixed; owner/repo/branch validated before a path and segments encoded; `redirection => 0`; ref updates `force: false`; deletions folder-scoped.
 - Touching the Cloudflare client → host stays the fixed constant; account id / Worker name validated before entering a path; token + JWTs never in a message or REST response; `sslverify` stays `true`.
 - Touching the Connector template/client → signature + nonce + timestamp + hash-only secret intact; executable deny-list, `.htaccess` allow-list (every depth, fail closed) and `realpath` jail intact; HTTPS checked before every send; lockout applied only on failure; no new op without an allow-list; `VERSION` bumped on wire or security-check changes.
 - New `{@html}` / `innerHTML` → server-sanitise the source with `wp_kses_post`, or escape client-side.

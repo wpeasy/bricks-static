@@ -1,15 +1,15 @@
 [
   {
-    "msgid": "Bricks Static"
+    "msgid": "ShipStatic"
   },
   {
-    "msgid": "Publish your WordPress site as static HTML over SFTP/FTP, HTTPS or Cloudflare. Bricks-aware; works with any WordPress content."
+    "msgid": "Publish your WordPress site as static HTML over SFTP/FTP, HTTPS, Cloudflare or GitHub Pages. Bricks-aware; works with any WordPress content."
   },
   {
     "msgid": "BRXProd"
   },
   {
-    "msgid": "Inspect and drive the Bricks Static export/sync engine."
+    "msgid": "Inspect and drive the ShipStatic export/sync engine."
   },
   {
     "msgid": "Get sync status"
@@ -153,7 +153,7 @@
     "msgid": "Documentation"
   },
   {
-    "msgid": "Bricks Static: the admin assets are not built. Run \"npm run build\" in the plugin directory."
+    "msgid": "ShipStatic: the admin assets are not built. Run \"npm run build\" in the plugin directory."
   },
   {
     "msgid": "Missing download token."
@@ -249,13 +249,22 @@
     "msgid": "This pairing is no longer current — pair again."
   },
   {
-    "msgid": "Cloudflare destinations publish whole snapshots — package deploy does not apply."
+    "msgid": "This destination publishes whole snapshots — package deploy does not apply."
   },
   {
     "msgid": "Connector reached — %s."
   },
   {
     "msgid": "Cloudflare token accepted — %s."
+  },
+  {
+    "msgid": "Links are built for %1$s, but this destination serves the site from %2$s — pages would load without their styles and images."
+  },
+  {
+    "msgid": "Set “Served from sub-path” to %s, save, then press Process."
+  },
+  {
+    "msgid": "Links follow the first destination’s “Served from sub-path”, so use a destination with the same sub-path, or a custom domain."
   },
   {
     "msgid": "(no title)"
@@ -288,7 +297,7 @@
     "msgid": "AI tools (MCP)"
   },
   {
-    "msgid": "Expose Bricks Static to AI assistants through the WordPress Abilities API. Read-only abilities (status, page list, link checks) are always available to administrators; the actions below are off by default."
+    "msgid": "Expose ShipStatic to AI assistants through the WordPress Abilities API. Read-only abilities (status, page list, link checks) are always available to administrators; the actions below are off by default."
   },
   {
     "msgid": "Requires WordPress 6.9 or newer (the Abilities API). Read-only and action abilities are unavailable on this site."
@@ -742,6 +751,54 @@
   },
   {
     "msgid": "The Destination URL has been set to this address — Save to keep it."
+  },
+  {
+    "msgid": "GitHub Pages"
+  },
+  {
+    "msgid": "Publishes the site to GitHub Pages by committing it to a branch of your repository — no web host, PHP or FTP account needed. Each sync is one commit with only the files that changed."
+  },
+  {
+    "msgid": "Owner"
+  },
+  {
+    "msgid": "Repository"
+  },
+  {
+    "msgid": "Branch"
+  },
+  {
+    "msgid": "Folder"
+  },
+  {
+    "msgid": "Whole branch (/)"
+  },
+  {
+    "msgid": "The /docs folder"
+  },
+  {
+    "msgid": "Access token"
+  },
+  {
+    "msgid": "Everything in this folder of the branch is replaced by the site on each sync, except CNAME, README, LICENSE and .github/."
+  },
+  {
+    "msgid": "Create a repository on GitHub with at least one commit (tick <strong>Add a README</strong>). Make it public — GitHub Pages on a private repository needs a paid GitHub plan."
+  },
+  {
+    "msgid": "Create a fine-grained token (<strong>Settings → Developer settings → Fine-grained tokens → Generate new token</strong>): <strong>Only select repositories</strong> → this repository, with <strong>Contents: Read and write</strong>. Optionally add <strong>Pages: Read-only</strong> so Test can show the Pages status."
+  },
+  {
+    "msgid": "Enter the owner, repository and token here. Keep the branch <code>gh-pages</code> and GitHub turns Pages on by itself at the first sync; for another branch or <code>/docs</code>, choose it afterwards in the repository’s <strong>Settings → Pages → Deploy from a branch</strong>."
+  },
+  {
+    "msgid": "Press <strong>Test</strong>. An empty Destination URL is filled with the Pages address. A project site lives at <code>https://owner.github.io/repository/</code>, so “Served from sub-path” must be <code>/repository</code> — Test says so if it isn’t. <strong>Save</strong>, then Check / Sync as usual."
+  },
+  {
+    "msgid": "For a custom domain, set it in the repository’s <strong>Settings → Pages</strong> (or enter it as the Destination URL); the plugin keeps the <code>CNAME</code> file GitHub uses."
+  },
+  {
+    "msgid": "<strong>Limits:</strong> 25 MiB per file and 1 GB per site. GitHub allows about 500 uploads an hour, so a first sync with many images pauses and carries on by itself. Pages rebuilds at most about 10 times an hour and sets its own cache headers; on a project site robots.txt has no effect. Forms that post back to WordPress don’t work on a static copy."
   },
   {
     "msgid": "Re-pair (new file)"
@@ -1438,6 +1495,9 @@
     "msgid": "%s is answering, but nothing has been synced to this destination yet — run a Sync, then check again."
   },
   {
+    "msgid": "GitHub Pages — the site is being served. GitHub sets its own cache headers (about 10 minutes for every file) and compresses files itself; custom cache rules can’t be applied there."
+  },
+  {
     "msgid": "%s — cache policy in effect (assets long-cached, HTML revalidated)."
   },
   {
@@ -1459,9 +1519,9 @@
     "msgid": "%s detected — the cache policy is not in effect. On Apache/LiteSpeed the .htaccess is uploaded automatically; on nginx, apply the snippet below."
   },
   {
-    "msgid": "Bricks Static documentation requires JavaScript."
+    "msgid": "ShipStatic documentation requires JavaScript."
   },
   {
-    "msgid": "Bricks Static requires JavaScript."
+    "msgid": "ShipStatic requires JavaScript."
   }
 ]

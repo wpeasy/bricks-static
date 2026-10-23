@@ -1,4 +1,4 @@
-<svg width="772" height="250" viewBox="0 0 772 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bricks Static — a plugin by BRXProd">
+<svg width="772" height="250" viewBox="0 0 772 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ShipStatic — a plugin by BRXProd">
   <!--
     Banner FOREGROUND: a left-weighted dark shade + text + the logo pill, on a
     transparent base. scripts/render-assets.mjs composites this over the
@@ -14,7 +14,7 @@
 
   <rect width="772" height="250" fill="url(#shade)"/>
 
-  <text x="52" y="92" font-family="Arial, sans-serif" font-size="58" font-weight="700" fill="#ffffff">Bricks Static</text>
+  <text x="52" y="92" font-family="Arial, sans-serif" font-size="58" font-weight="700" fill="#ffffff">ShipStatic</text>
   <text x="54" y="130" font-family="Arial, sans-serif" font-size="20" fill="#ffffff" fill-opacity="0.92">Fast static sites from Bricks — no CMS, no database.</text>
 
   <text x="54" y="182" font-family="Arial, sans-serif" font-size="16" fill="#ffffff" fill-opacity="0.85">Another plugin by</text>

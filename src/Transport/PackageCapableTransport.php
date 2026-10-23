@@ -2,13 +2,13 @@
 /**
  * Transport that can take a whole deploy as one package.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   2.1.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Transport;
+namespace WPEasy\ShipStatic\Transport;
 
 defined('ABSPATH') || exit;
 

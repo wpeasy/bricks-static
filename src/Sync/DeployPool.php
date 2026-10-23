@@ -14,16 +14,16 @@
  * untouched fallback whenever the pool is not eligible (concurrency of 1, a
  * single target, or a host that cannot spawn CLI workers).
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Sync;
+namespace WPEasy\ShipStatic\Sync;
 
-use WPEasy\BricksStatic\CLI\Background;
-use WPEasy\BricksStatic\Settings\Destinations;
+use WPEasy\ShipStatic\CLI\Background;
+use WPEasy\ShipStatic\Settings\Destinations;
 
 defined('ABSPATH') || exit;
 
@@ -35,12 +35,12 @@ final class DeployPool {
     /**
      * Prefix for a per-destination deploy worker's job state option.
      */
-    private const TARGET_PREFIX = 'bricks_static_target_';
+    private const TARGET_PREFIX = 'shipstatic_target_';
 
     /**
      * Prefix for a per-destination atomic claim row (one worker owns a target).
      */
-    private const CLAIM_PREFIX = 'bricks_static_tclaim_';
+    private const CLAIM_PREFIX = 'shipstatic_tclaim_';
 
     /**
      * Seconds a claimed-but-unfinished target may go without its worker updating
@@ -53,7 +53,7 @@ final class DeployPool {
     /**
      * Option storing the user's max-concurrent-deploys preference.
      */
-    private const OPTION = 'bricks_static_concurrent_syncs';
+    private const OPTION = 'shipstatic_concurrent_syncs';
 
     /**
      * Default number of destinations deployed at once.
@@ -83,7 +83,7 @@ final class DeployPool {
          *
          * @param int $raw Stored value.
          */
-        $raw = (int) apply_filters('bricks_static_concurrent_syncs', $raw);
+        $raw = (int) apply_filters('shipstatic_concurrent_syncs', $raw);
 
         return self::clamp($raw);
     }

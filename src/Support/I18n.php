@@ -4,16 +4,16 @@
  *
  * Single source of truth for every string the Free admin UI renders. PHP owns
  * the strings (so one `.mo` translates both PHP and JS); `Admin\Menu` localises
- * `self::all()` onto `window.bricksStaticData.i18n` and the Svelte `shared/i18n.ts` helper
+ * `self::all()` onto `window.shipStaticData.i18n` and the Svelte `shared/i18n.ts` helper
  * looks each key up. Keep keys stable — they are referenced by the JS bundle.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Support;
+namespace WPEasy\ShipStatic\Support;
 
 defined('ABSPATH') || exit;
 
@@ -64,14 +64,14 @@ final class I18n {
      */
     private static function ai(): array {
         return [
-            'aiTitle'        => __('AI tools (MCP)', 'bricks-static'),
-            'aiIntro'        => __('Expose Bricks Static to AI assistants through the WordPress Abilities API. Read-only abilities (status, page list, link checks) are always available to administrators; the actions below are off by default.', 'bricks-static'),
-            'aiUnavailable'  => __('Requires WordPress 6.9 or newer (the Abilities API). Read-only and action abilities are unavailable on this site.', 'bricks-static'),
-            'aiConsumerNote' => __('An MCP client (e.g. the WordPress MCP plugin) is needed to actually reach these abilities.', 'bricks-static'),
-            'aiAllowChanges' => __('Allow AI to change settings', 'bricks-static'),
-            'aiAllowChangesHint' => __('Discovery mode and the per-page Include switch.', 'bricks-static'),
-            'aiAllowSync'    => __('Allow AI to run syncs', 'bricks-static'),
-            'aiAllowSyncHint'=> __('Scan, sync, single-page sync, cancel and reset. These render pages and push to your destinations.', 'bricks-static'),
+            'aiTitle'        => __('AI tools (MCP)', 'shipstatic'),
+            'aiIntro'        => __('Expose ShipStatic to AI assistants through the WordPress Abilities API. Read-only abilities (status, page list, link checks) are always available to administrators; the actions below are off by default.', 'shipstatic'),
+            'aiUnavailable'  => __('Requires WordPress 6.9 or newer (the Abilities API). Read-only and action abilities are unavailable on this site.', 'shipstatic'),
+            'aiConsumerNote' => __('An MCP client (e.g. the WordPress MCP plugin) is needed to actually reach these abilities.', 'shipstatic'),
+            'aiAllowChanges' => __('Allow AI to change settings', 'shipstatic'),
+            'aiAllowChangesHint' => __('Discovery mode and the per-page Include switch.', 'shipstatic'),
+            'aiAllowSync'    => __('Allow AI to run syncs', 'shipstatic'),
+            'aiAllowSyncHint'=> __('Scan, sync, single-page sync, cancel and reset. These render pages and push to your destinations.', 'shipstatic'),
         ];
     }
 
@@ -82,13 +82,13 @@ final class I18n {
      */
     private static function wizard(): array {
         return [
-            'wizardBtn'       => __('Wizard', 'bricks-static'),
-            'wizardTitle'     => __('Setup Wizard', 'bricks-static'),
-            'wizardIntro'     => __('A few basics before your first sync — you can change any of these later in Settings.', 'bricks-static'),
-            'wizardBack'      => __('Back', 'bricks-static'),
-            'wizardNext'      => __('Next', 'bricks-static'),
-            'wizardFinish'    => __('Finish & Process', 'bricks-static'),
-            'wizardFinishing' => __('Processing…', 'bricks-static'),
+            'wizardBtn'       => __('Wizard', 'shipstatic'),
+            'wizardTitle'     => __('Setup Wizard', 'shipstatic'),
+            'wizardIntro'     => __('A few basics before your first sync — you can change any of these later in Settings.', 'shipstatic'),
+            'wizardBack'      => __('Back', 'shipstatic'),
+            'wizardNext'      => __('Next', 'shipstatic'),
+            'wizardFinish'    => __('Finish & Process', 'shipstatic'),
+            'wizardFinishing' => __('Processing…', 'shipstatic'),
         ];
     }
 
@@ -99,13 +99,13 @@ final class I18n {
      */
     private static function export(): array {
         return [
-            'exportPhasePreparing'  => __('Preparing…', 'bricks-static'),
-            'exportPhaseGzip'       => __('Creating gzip files…', 'bricks-static'),
-            'exportPhasePackaging'  => __('Packaging…', 'bricks-static'),
-            'exportPhaseSaving'     => __('Saving…', 'bricks-static'),
-            'exportPhaseDone'       => __('Export ready', 'bricks-static'),
-            'exportNeedsProcess'    => __('Nothing has been rendered yet. Click Process first, then Export.', 'bricks-static'),
-            'exportCancel'          => __('Cancel', 'bricks-static'),
+            'exportPhasePreparing'  => __('Preparing…', 'shipstatic'),
+            'exportPhaseGzip'       => __('Creating gzip files…', 'shipstatic'),
+            'exportPhasePackaging'  => __('Packaging…', 'shipstatic'),
+            'exportPhaseSaving'     => __('Saving…', 'shipstatic'),
+            'exportPhaseDone'       => __('Export ready', 'shipstatic'),
+            'exportNeedsProcess'    => __('Nothing has been rendered yet. Click Process first, then Export.', 'shipstatic'),
+            'exportCancel'          => __('Cancel', 'shipstatic'),
         ];
     }
 
@@ -116,22 +116,22 @@ final class I18n {
      */
     private static function editor(): array {
         return [
-            'editorInclude'      => __('Include in static export', 'bricks-static'),
-            'editorIncludeHint'  => __('When off, this page is left out of the static export.', 'bricks-static'),
-            'editorSyncThisPage' => __('Sync this page', 'bricks-static'),
-            'editorSyncing'      => __('Syncing…', 'bricks-static'),
-            'editorPublishFirst' => __('Publish this page to sync it.', 'bricks-static'),
-            'editorNoTargets'    => __('Enable a destination to sync this page.', 'bricks-static'),
-            'editorNotPushed'    => __('Not pushed', 'bricks-static'),
+            'editorInclude'      => __('Include in static export', 'shipstatic'),
+            'editorIncludeHint'  => __('When off, this page is left out of the static export.', 'shipstatic'),
+            'editorSyncThisPage' => __('Sync this page', 'shipstatic'),
+            'editorSyncing'      => __('Syncing…', 'shipstatic'),
+            'editorPublishFirst' => __('Publish this page to sync it.', 'shipstatic'),
+            'editorNoTargets'    => __('Enable a destination to sync this page.', 'shipstatic'),
+            'editorNotPushed'    => __('Not pushed', 'shipstatic'),
             /* translators: %d is the number of included pages. */
-            'editorIncludedUnlimited' => __('%d pages included', 'bricks-static'),
+            'editorIncludedUnlimited' => __('%d pages included', 'shipstatic'),
             /* translators: %d is a count of linked pages. */
-            'editorLinksOut'   => __('This page links to %d page(s) not included:', 'bricks-static'),
+            'editorLinksOut'   => __('This page links to %d page(s) not included:', 'shipstatic'),
             /* translators: %d is a count of pages that link here. */
-            'editorLinksIn'    => __('%d included page(s) link here — they will have dead links:', 'bricks-static'),
-            'editorLinksInNote'=> __('Based on the last check/sync — run a check to refresh.', 'bricks-static'),
-            'editorIncludeAll' => __('Include all', 'bricks-static'),
-            'editorIncluding'  => __('Including…', 'bricks-static'),
+            'editorLinksIn'    => __('%d included page(s) link here — they will have dead links:', 'shipstatic'),
+            'editorLinksInNote'=> __('Based on the last check/sync — run a check to refresh.', 'shipstatic'),
+            'editorIncludeAll' => __('Include all', 'shipstatic'),
+            'editorIncluding'  => __('Including…', 'shipstatic'),
         ];
     }
 
@@ -142,21 +142,21 @@ final class I18n {
      */
     private static function header(): array {
         return [
-            'appLead'      => __('Generate and serve static HTML versions of your site for performance.', 'bricks-static'),
-            'byPrefix'     => __('Another plugin by', 'bricks-static'),
-            'settings'     => __('Settings', 'bricks-static'),
-            'styleGroup'   => __('Style', 'bricks-static'),
-            'compactMode'  => __('Compact', 'bricks-static'),
-            'colorScheme'  => __('Colour scheme', 'bricks-static'),
-            'csAuto'       => __('Auto', 'bricks-static'),
-            'csLight'      => __('Light', 'bricks-static'),
-            'csDark'       => __('Dark', 'bricks-static'),
-            'themeAccent'  => __('Theme', 'bricks-static'),
-            'accentBlue'   => __('Blue', 'bricks-static'),
-            'accentGreen'  => __('Green', 'bricks-static'),
-            'accentYellow' => __('Yellow', 'bricks-static'),
-            'accentPurple' => __('Purple', 'bricks-static'),
-            'accentCustom' => __('Custom', 'bricks-static'),
+            'appLead'      => __('Generate and serve static HTML versions of your site for performance.', 'shipstatic'),
+            'byPrefix'     => __('Another plugin by', 'shipstatic'),
+            'settings'     => __('Settings', 'shipstatic'),
+            'styleGroup'   => __('Style', 'shipstatic'),
+            'compactMode'  => __('Compact', 'shipstatic'),
+            'colorScheme'  => __('Colour scheme', 'shipstatic'),
+            'csAuto'       => __('Auto', 'shipstatic'),
+            'csLight'      => __('Light', 'shipstatic'),
+            'csDark'       => __('Dark', 'shipstatic'),
+            'themeAccent'  => __('Theme', 'shipstatic'),
+            'accentBlue'   => __('Blue', 'shipstatic'),
+            'accentGreen'  => __('Green', 'shipstatic'),
+            'accentYellow' => __('Yellow', 'shipstatic'),
+            'accentPurple' => __('Purple', 'shipstatic'),
+            'accentCustom' => __('Custom', 'shipstatic'),
         ];
     }
 
@@ -167,12 +167,12 @@ final class I18n {
      */
     private static function globalbar(): array {
         return [
-            'enableSyncButton' => __('Enable sync single button', 'bricks-static'),
-            'syncGroup'        => __('Sync', 'bricks-static'),
-            'concurrentSyncs'  => __('Concurrent syncs', 'bricks-static'),
-            'concurrentSyncsHelp' => __('How many destinations to upload to at the same time during a multi-destination sync. Higher is faster but uses more connections. Requires WP-CLI; otherwise syncs run one at a time.', 'bricks-static'),
-            'tabDestinations'  => __('Destinations', 'bricks-static'),
-            'tabServerConfig'  => __('Destination Server Configuration', 'bricks-static'),
+            'enableSyncButton' => __('Enable sync single button', 'shipstatic'),
+            'syncGroup'        => __('Sync', 'shipstatic'),
+            'concurrentSyncs'  => __('Concurrent syncs', 'shipstatic'),
+            'concurrentSyncsHelp' => __('How many destinations to upload to at the same time during a multi-destination sync. Higher is faster but uses more connections. Requires WP-CLI; otherwise syncs run one at a time.', 'shipstatic'),
+            'tabDestinations'  => __('Destinations', 'shipstatic'),
+            'tabServerConfig'  => __('Destination Server Configuration', 'shipstatic'),
         ];
     }
 
@@ -183,14 +183,14 @@ final class I18n {
      */
     private static function controls(): array {
         return [
-            'resetHint'         => __('Wiped a remote, or want a full re-upload? Reset clears the push record for every destination.', 'bricks-static'),
-            'btnResetSync'      => __('Reset sync state', 'bricks-static'),
-            'btnConfirmReset'   => __('Confirm reset?', 'bricks-static'),
-            'btnConfirmSync'    => __('Confirm sync?', 'bricks-static'),
-            'btnConfirmSyncAll' => __('Sync all destinations?', 'bricks-static'),
-            'destinationDefault'=> __('Destination', 'bricks-static'),
+            'resetHint'         => __('Wiped a remote, or want a full re-upload? Reset clears the push record for every destination.', 'shipstatic'),
+            'btnResetSync'      => __('Reset sync state', 'shipstatic'),
+            'btnConfirmReset'   => __('Confirm reset?', 'shipstatic'),
+            'btnConfirmSync'    => __('Confirm sync?', 'shipstatic'),
+            'btnConfirmSyncAll' => __('Sync all destinations?', 'shipstatic'),
+            'destinationDefault'=> __('Destination', 'shipstatic'),
             /* translators: %d is the new destination's number. */
-            'destinationNumbered' => __('Destination %d', 'bricks-static'),
+            'destinationNumbered' => __('Destination %d', 'shipstatic'),
         ];
     }
 
@@ -201,34 +201,34 @@ final class I18n {
      */
     private static function discovery(): array {
         return [
-            'pagesToInclude'  => __('Pages to include', 'bricks-static'),
-            'onlyLinkedPages' => __('Only linked pages', 'bricks-static'),
-            'allPublished'    => __('All published', 'bricks-static'),
-            'manualSelection' => __('Manual selection', 'bricks-static'),
-            'whatsDifference' => __("What's the difference?", 'bricks-static'),
-            'discControls'    => __('Controls which pages are discovered and exported.', 'bricks-static'),
-            'tagDefault'      => __('default', 'bricks-static'),
-            'discManualBody'  => __('Export only the pages you choose. Each Page, Post and custom post type gets an "Include" switch — off by default, except the home page — in its editor, the Pages/Posts list and the front-end Sync panel. Nothing else is crawled in, so the export is exactly your selection.', 'bricks-static'),
-            'discLinkedBody'  => __('Starts at your home page and follows internal links from page to page. A page that nothing links to isn\'t reachable by a visitor, so it\'s left out — this also keeps builder-only URLs (such as Bricks <code>/template/…</code> previews) out of the static site.', 'bricks-static'),
-            'discAllBody'     => __('Also includes every published page, post and taxonomy archive — even ones nothing links to (orphaned content). Use this if you rely on pages reached only through JavaScript navigation, or deliberately keep unlinked landing pages.', 'bricks-static'),
-            'discNote'        => __('Either way, builder/preview post types are never exported.', 'bricks-static'),
-            'viewPagesList'   => __('View included/excluded pages', 'bricks-static'),
-            'btnProcess'      => __('Process', 'bricks-static'),
-            'btnProcessHint'  => __('Render the site for the current mode so the page list is accurate.', 'bricks-static'),
-            'btnViewList'     => __('View processed list', 'bricks-static'),
+            'pagesToInclude'  => __('Pages to include', 'shipstatic'),
+            'onlyLinkedPages' => __('Only linked pages', 'shipstatic'),
+            'allPublished'    => __('All published', 'shipstatic'),
+            'manualSelection' => __('Manual selection', 'shipstatic'),
+            'whatsDifference' => __("What's the difference?", 'shipstatic'),
+            'discControls'    => __('Controls which pages are discovered and exported.', 'shipstatic'),
+            'tagDefault'      => __('default', 'shipstatic'),
+            'discManualBody'  => __('Export only the pages you choose. Each Page, Post and custom post type gets an "Include" switch — off by default, except the home page — in its editor, the Pages/Posts list and the front-end Sync panel. Nothing else is crawled in, so the export is exactly your selection.', 'shipstatic'),
+            'discLinkedBody'  => __('Starts at your home page and follows internal links from page to page. A page that nothing links to isn\'t reachable by a visitor, so it\'s left out — this also keeps builder-only URLs (such as Bricks <code>/template/…</code> previews) out of the static site.', 'shipstatic'),
+            'discAllBody'     => __('Also includes every published page, post and taxonomy archive — even ones nothing links to (orphaned content). Use this if you rely on pages reached only through JavaScript navigation, or deliberately keep unlinked landing pages.', 'shipstatic'),
+            'discNote'        => __('Either way, builder/preview post types are never exported.', 'shipstatic'),
+            'viewPagesList'   => __('View included/excluded pages', 'shipstatic'),
+            'btnProcess'      => __('Process', 'shipstatic'),
+            'btnProcessHint'  => __('Render the site for the current mode so the page list is accurate.', 'shipstatic'),
+            'btnViewList'     => __('View processed list', 'shipstatic'),
             /* translators: %d: number of published pages not in the static export. */
-            'excludedHint'    => __('%d not in export', 'bricks-static'),
-            'excludedHintTip' => __('Published pages that aren’t in the static export. Click to view them.', 'bricks-static'),
-            'pagesOverviewTitle' => __('Pages in the static export', 'bricks-static'),
-            'tabIncluded'     => __('Included', 'bricks-static'),
-            'tabExcluded'     => __('Excluded', 'bricks-static'),
-            'pagesLoading'    => __('Loading…', 'bricks-static'),
-            'noIncludedPages' => __('No pages are in the export yet.', 'bricks-static'),
-            'noExcludedPages' => __('Every published page is in the export.', 'bricks-static'),
-            'colPage'         => __('Page', 'bricks-static'),
-            'colPath'         => __('Path', 'bricks-static'),
-            'colNotices'      => __('Notices', 'bricks-static'),
-            'colReason'       => __('Reason', 'bricks-static'),
+            'excludedHint'    => __('%d not in export', 'shipstatic'),
+            'excludedHintTip' => __('Published pages that aren’t in the static export. Click to view them.', 'shipstatic'),
+            'pagesOverviewTitle' => __('Pages in the static export', 'shipstatic'),
+            'tabIncluded'     => __('Included', 'shipstatic'),
+            'tabExcluded'     => __('Excluded', 'shipstatic'),
+            'pagesLoading'    => __('Loading…', 'shipstatic'),
+            'noIncludedPages' => __('No pages are in the export yet.', 'shipstatic'),
+            'noExcludedPages' => __('Every published page is in the export.', 'shipstatic'),
+            'colPage'         => __('Page', 'shipstatic'),
+            'colPath'         => __('Path', 'shipstatic'),
+            'colNotices'      => __('Notices', 'shipstatic'),
+            'colReason'       => __('Reason', 'shipstatic'),
         ];
     }
 
@@ -239,15 +239,15 @@ final class I18n {
      */
     private static function notice(): array {
         return [
-            'wpCliDetected'     => __('WP-CLI detected', 'bricks-static'),
-            'wpCliBody'         => __('pages are rendered by a WP-CLI process, taking the load off your web server.', 'bricks-static'),
-            'runFromCli'        => __('Run Sync from the command line on this host', 'bricks-static'),
-            'cliWarnBody'       => __('This environment serves PHP requests one at a time, so browser-driven Sync can time out. Run it from a terminal instead:', 'bricks-static'),
-            'cliFlagsHint'      => __('Add <code>--check</code> for a dry run, or <code>--prune</code> to remove deleted files.', 'bricks-static'),
-            'testBrowserRender' => __('Test browser rendering', 'bricks-static'),
-            'permalinksTitle'   => __('Permalinks are set to “Plain”', 'bricks-static'),
-            'permalinksBody'    => __('Every page shares the same address in this mode (<code>/?page_id=9</code>), so there is no separate file to export any of them to — the whole site would collapse into one page. Choose any other permalink structure, then run Process again.', 'bricks-static'),
-            'permalinksAction'  => __('Open Permalink settings', 'bricks-static'),
+            'wpCliDetected'     => __('WP-CLI detected', 'shipstatic'),
+            'wpCliBody'         => __('pages are rendered by a WP-CLI process, taking the load off your web server.', 'shipstatic'),
+            'runFromCli'        => __('Run Sync from the command line on this host', 'shipstatic'),
+            'cliWarnBody'       => __('This environment serves PHP requests one at a time, so browser-driven Sync can time out. Run it from a terminal instead:', 'shipstatic'),
+            'cliFlagsHint'      => __('Add <code>--check</code> for a dry run, or <code>--prune</code> to remove deleted files.', 'shipstatic'),
+            'testBrowserRender' => __('Test browser rendering', 'shipstatic'),
+            'permalinksTitle'   => __('Permalinks are set to “Plain”', 'shipstatic'),
+            'permalinksBody'    => __('Every page shares the same address in this mode (<code>/?page_id=9</code>), so there is no separate file to export any of them to — the whole site would collapse into one page. Choose any other permalink structure, then run Process again.', 'shipstatic'),
+            'permalinksAction'  => __('Open Permalink settings', 'shipstatic'),
         ];
     }
 
@@ -258,16 +258,16 @@ final class I18n {
      */
     private static function method(): array {
         return [
-            'method'         => __('Method', 'bricks-static'),
-            'methodLead'     => __('How the next sync will run, resolved for this site:', 'bricks-static'),
-            'mDiscovery'     => __('Discovery', 'bricks-static'),
-            'methodDiscLinked' => __('Internal-link crawl from the home page — only pages reachable by following links.', 'bricks-static'),
-            'methodDiscAll'    => __('Every published page, post and taxonomy archive — including content nothing links to.', 'bricks-static'),
-            'methodDiscManual' => __('Only the pages you mark “Include” (per-post).', 'bricks-static'),
-            'mTransport'     => __('Transport', 'bricks-static'),
-            'mCompression'   => __('Compression', 'bricks-static'),
-            'mServerTarget'  => __('Server target', 'bricks-static'),
-            'mLinks'         => __('Links', 'bricks-static'),
+            'method'         => __('Method', 'shipstatic'),
+            'methodLead'     => __('How the next sync will run, resolved for this site:', 'shipstatic'),
+            'mDiscovery'     => __('Discovery', 'shipstatic'),
+            'methodDiscLinked' => __('Internal-link crawl from the home page — only pages reachable by following links.', 'shipstatic'),
+            'methodDiscAll'    => __('Every published page, post and taxonomy archive — including content nothing links to.', 'shipstatic'),
+            'methodDiscManual' => __('Only the pages you mark “Include” (per-post).', 'shipstatic'),
+            'mTransport'     => __('Transport', 'shipstatic'),
+            'mCompression'   => __('Compression', 'shipstatic'),
+            'mServerTarget'  => __('Server target', 'shipstatic'),
+            'mLinks'         => __('Links', 'shipstatic'),
         ];
     }
 
@@ -278,81 +278,97 @@ final class I18n {
      */
     private static function destination(): array {
         return [
-            'fldTransport'     => __('Transport', 'bricks-static'),
-            'optUnavailable'   => __(' (unavailable)', 'bricks-static'),
-            'optFtps'          => __('FTPS (FTP over TLS)', 'bricks-static'),
-            'optFtp'           => __('FTP (insecure)', 'bricks-static'),
-            'fldPort'          => __('Port', 'bricks-static'),
-            'fldHost'          => __('Host', 'bricks-static'),
-            'fldUsername'      => __('Username', 'bricks-static'),
-            'fldPassword'      => __('Password', 'bricks-static'),
-            'phSavedBlank'     => __('Saved — leave blank to keep', 'bricks-static'),
-            'fldRemotePath'    => __('Remote path (web root)', 'bricks-static'),
-            'phRemoteEmpty'    => __('(empty = FTP login dir)', 'bricks-static'),
-            'fldDestUrl'       => __('Destination URL (optional)', 'bricks-static'),
-            'fldSubPath'       => __('Served from sub-path (optional)', 'bricks-static'),
-            'deployFastOk'     => __('Fast deploy: one package, extracted on the destination.', 'bricks-static'),
-            'deployFastGuessed'=> __('Fast deploy enabled — the URL was guessed from the host. Set a Destination URL above to be sure it keeps working.', 'bricks-static'),
-            'deployPerFileErr' => __('Per-file upload — package deploy hit an error and was turned off here.', 'bricks-static'),
-            'deployNoZip'      => __('Per-file upload — ZipArchive isn’t available on this server.', 'bricks-static'),
-            'deployPerFile'    => __('Per-file upload (slower). Set a Destination URL above to enable fast package deploy (needs PHP on the host).', 'bricks-static'),
-            'btnReTesting'     => __('Re-testing…', 'bricks-static'),
-            'btnReTest'        => __('Re-test', 'bricks-static'),
+            'fldTransport'     => __('Transport', 'shipstatic'),
+            'optUnavailable'   => __(' (unavailable)', 'shipstatic'),
+            'optFtps'          => __('FTPS (FTP over TLS)', 'shipstatic'),
+            'optFtp'           => __('FTP (insecure)', 'shipstatic'),
+            'fldPort'          => __('Port', 'shipstatic'),
+            'fldHost'          => __('Host', 'shipstatic'),
+            'fldUsername'      => __('Username', 'shipstatic'),
+            'fldPassword'      => __('Password', 'shipstatic'),
+            'phSavedBlank'     => __('Saved — leave blank to keep', 'shipstatic'),
+            'fldRemotePath'    => __('Remote path (web root)', 'shipstatic'),
+            'phRemoteEmpty'    => __('(empty = FTP login dir)', 'shipstatic'),
+            'fldDestUrl'       => __('Destination URL (optional)', 'shipstatic'),
+            'fldSubPath'       => __('Served from sub-path (optional)', 'shipstatic'),
+            'deployFastOk'     => __('Fast deploy: one package, extracted on the destination.', 'shipstatic'),
+            'deployFastGuessed'=> __('Fast deploy enabled — the URL was guessed from the host. Set a Destination URL above to be sure it keeps working.', 'shipstatic'),
+            'deployPerFileErr' => __('Per-file upload — package deploy hit an error and was turned off here.', 'shipstatic'),
+            'deployNoZip'      => __('Per-file upload — ZipArchive isn’t available on this server.', 'shipstatic'),
+            'deployPerFile'    => __('Per-file upload (slower). Set a Destination URL above to enable fast package deploy (needs PHP on the host).', 'shipstatic'),
+            'btnReTesting'     => __('Re-testing…', 'shipstatic'),
+            'btnReTest'        => __('Re-test', 'shipstatic'),
             // Deploy method (FTP/SFTP vs Connector — one per destination) + Manual ZIP.
-            'lblDeployVia'     => __('Deploy via', 'bricks-static'),
-            'tabFtp'           => __('FTP / SFTP', 'bricks-static'),
-            'tabConnector'     => __('Connector', 'bricks-static'),
-            'tabManualZip'     => __('Manual ZIP', 'bricks-static'),
-            'optConnector'     => __('Connector (HTTPS)', 'bricks-static'),
-            'ftpLead'          => __('Sync uploads straight to the destination over FTP, FTPS or SFTP. Enter the connection details, Test, then Save.', 'bricks-static'),
-            'connectorLead'    => __('A single PHP file you download here and upload to the destination web root once. After that, syncs run over signed HTTPS — no FTP account, and each sync goes up as one package.', 'bricks-static'),
-            'connectorStep1'   => __('Enter the <strong>Destination URL</strong> above (it must be HTTPS) and <strong>Save</strong>.', 'bricks-static'),
-            'connectorStep2'   => __('Press <strong>Pair</strong>, then download the connector file made for this destination only (the link works once).', 'bricks-static'),
-            'connectorStep3'   => __('Upload <code>bs-connector-&lt;id&gt;.php</code> to the folder served at that URL.', 'bricks-static'),
-            'connectorStep4'   => __('Press <strong>Test</strong>, then Check / Sync as usual.', 'bricks-static'),
-            'connectorReq'     => __('Needs PHP 7.4+ at the destination; ZipArchive there enables one-package deploys (otherwise files upload one by one).', 'bricks-static'),
-            'connectorUnpaired'=> __('Not paired yet.', 'bricks-static'),
+            'lblDeployVia'     => __('Deploy via', 'shipstatic'),
+            'tabFtp'           => __('FTP / SFTP', 'shipstatic'),
+            'tabConnector'     => __('Connector', 'shipstatic'),
+            'tabManualZip'     => __('Manual ZIP', 'shipstatic'),
+            'optConnector'     => __('Connector (HTTPS)', 'shipstatic'),
+            'ftpLead'          => __('Sync uploads straight to the destination over FTP, FTPS or SFTP. Enter the connection details, Test, then Save.', 'shipstatic'),
+            'connectorLead'    => __('A single PHP file you download here and upload to the destination web root once. After that, syncs run over signed HTTPS — no FTP account, and each sync goes up as one package.', 'shipstatic'),
+            'connectorStep1'   => __('Enter the <strong>Destination URL</strong> above (it must be HTTPS) and <strong>Save</strong>.', 'shipstatic'),
+            'connectorStep2'   => __('Press <strong>Pair</strong>, then download the connector file made for this destination only (the link works once).', 'shipstatic'),
+            'connectorStep3'   => __('Upload <code>bs-connector-&lt;id&gt;.php</code> to the folder served at that URL.', 'shipstatic'),
+            'connectorStep4'   => __('Press <strong>Test</strong>, then Check / Sync as usual.', 'shipstatic'),
+            'connectorReq'     => __('Needs PHP 7.4+ at the destination; ZipArchive there enables one-package deploys (otherwise files upload one by one).', 'shipstatic'),
+            'connectorUnpaired'=> __('Not paired yet.', 'shipstatic'),
             /* translators: %s: connector filename */
-            'connectorPaired'  => __('Paired — expects %s in the destination folder.', 'bricks-static'),
-            'connectorConst'   => __('Pairing is set by wp-config constants.', 'bricks-static'),
+            'connectorPaired'  => __('Paired — expects %s in the destination folder.', 'shipstatic'),
+            'connectorConst'   => __('Pairing is set by wp-config constants.', 'shipstatic'),
             // Cloudflare (Workers static assets) — docs/CLOUDFLARE_PLAN.md.
-            'optCloudflare'    => __('Cloudflare', 'bricks-static'),
-            'cfLead'           => __('Publishes the site to Cloudflare’s global network as a static Worker — no web host, PHP or FTP account needed. Each sync uploads only the files Cloudflare doesn’t already have, then switches the whole site over at once.', 'bricks-static'),
-            'fldCfAccount'     => __('Account ID', 'bricks-static'),
-            'fldCfWorker'      => __('Worker name', 'bricks-static'),
-            'fldCfToken'       => __('API token', 'bricks-static'),
-            'cfHowTo'          => __('How to set it up', 'bricks-static'),
-            'cfStep1'          => __('In the Cloudflare dashboard, open <strong>Workers &amp; Pages</strong> and copy your <strong>Account ID</strong> (shown on the right of the overview).', 'bricks-static'),
-            'cfStep2'          => __('Create an API token (<strong>My Profile → API Tokens → Create Token → Custom token</strong>) with the permission <strong>Account → Workers Scripts → Edit</strong>, limited to that account.', 'bricks-static'),
-            'cfStep3'          => __('Choose a <strong>Worker name</strong> for this site (lowercase letters, numbers and dashes, e.g. <code>my-site</code>). It doesn’t need to exist — the first sync creates it.', 'bricks-static'),
-            'cfStep4'          => __('Press <strong>Test</strong>. If the Destination URL is empty it is filled with the Worker’s <code>workers.dev</code> address — or enter your own domain once it is attached to the Worker (<strong>Worker → Settings → Domains &amp; Routes</strong>). <strong>Save</strong>, then Check / Sync as usual.', 'bricks-static'),
-            'cfStep5'          => __('Cache headers are published automatically (Cloudflare’s <code>_headers</code>); Cloudflare compresses files itself, so no <code>.htaccess</code> or <code>.gz</code> files are used.', 'bricks-static'),
-            'cfLimits'         => __('<strong>Limits:</strong> 25 MiB per file (larger files are left out and reported) and 20,000 files on the Free plan (100,000 on paid plans). Forms that post back to WordPress don’t work on a static copy.', 'bricks-static'),
-            'cfUrlFilled'      => __('The Destination URL has been set to this address — Save to keep it.', 'bricks-static'),
-            'btnRepair'        => __('Re-pair (new file)', 'bricks-static'),
-            'btnPairing'       => __('Pairing…', 'bricks-static'),
-            'btnRevoke'        => __('Revoke', 'bricks-static'),
-            'btnConfirmRevoke' => __('Yes, revoke', 'bricks-static'),
+            'optCloudflare'    => __('Cloudflare', 'shipstatic'),
+            'cfLead'           => __('Publishes the site to Cloudflare’s global network as a static Worker — no web host, PHP or FTP account needed. Each sync uploads only the files Cloudflare doesn’t already have, then switches the whole site over at once.', 'shipstatic'),
+            'fldCfAccount'     => __('Account ID', 'shipstatic'),
+            'fldCfWorker'      => __('Worker name', 'shipstatic'),
+            'fldCfToken'       => __('API token', 'shipstatic'),
+            'cfHowTo'          => __('How to set it up', 'shipstatic'),
+            'cfStep1'          => __('In the Cloudflare dashboard, open <strong>Workers &amp; Pages</strong> and copy your <strong>Account ID</strong> (shown on the right of the overview).', 'shipstatic'),
+            'cfStep2'          => __('Create an API token (<strong>My Profile → API Tokens → Create Token → Custom token</strong>) with the permission <strong>Account → Workers Scripts → Edit</strong>, limited to that account.', 'shipstatic'),
+            'cfStep3'          => __('Choose a <strong>Worker name</strong> for this site (lowercase letters, numbers and dashes, e.g. <code>my-site</code>). It doesn’t need to exist — the first sync creates it.', 'shipstatic'),
+            'cfStep4'          => __('Press <strong>Test</strong>. If the Destination URL is empty it is filled with the Worker’s <code>workers.dev</code> address — or enter your own domain once it is attached to the Worker (<strong>Worker → Settings → Domains &amp; Routes</strong>). <strong>Save</strong>, then Check / Sync as usual.', 'shipstatic'),
+            'cfStep5'          => __('Cache headers are published automatically (Cloudflare’s <code>_headers</code>); Cloudflare compresses files itself, so no <code>.htaccess</code> or <code>.gz</code> files are used.', 'shipstatic'),
+            'cfLimits'         => __('<strong>Limits:</strong> 25 MiB per file (larger files are left out and reported) and 20,000 files on the Free plan (100,000 on paid plans). Forms that post back to WordPress don’t work on a static copy.', 'shipstatic'),
+            'cfUrlFilled'      => __('The Destination URL has been set to this address — Save to keep it.', 'shipstatic'),
+            'optGitHub'        => __('GitHub Pages', 'shipstatic'),
+            'ghLead'           => __('Publishes the site to GitHub Pages by committing it to a branch of your repository — no web host, PHP or FTP account needed. Each sync is one commit with only the files that changed.', 'shipstatic'),
+            'fldGhOwner'       => __('Owner', 'shipstatic'),
+            'fldGhRepo'        => __('Repository', 'shipstatic'),
+            'fldGhBranch'      => __('Branch', 'shipstatic'),
+            'fldGhFolder'      => __('Folder', 'shipstatic'),
+            'optGhRoot'        => __('Whole branch (/)', 'shipstatic'),
+            'optGhDocs'        => __('The /docs folder', 'shipstatic'),
+            'fldGhToken'       => __('Access token', 'shipstatic'),
+            'ghReplaceNote'    => __('Everything in this folder of the branch is replaced by the site on each sync, except CNAME, README, LICENSE and .github/.', 'shipstatic'),
+            'ghStep1'          => __('Create a repository on GitHub with at least one commit (tick <strong>Add a README</strong>). Make it public — GitHub Pages on a private repository needs a paid GitHub plan.', 'shipstatic'),
+            'ghStep2'          => __('Create a fine-grained token (<strong>Settings → Developer settings → Fine-grained tokens → Generate new token</strong>): <strong>Only select repositories</strong> → this repository, with <strong>Contents: Read and write</strong>. Optionally add <strong>Pages: Read-only</strong> so Test can show the Pages status.', 'shipstatic'),
+            'ghStep3'          => __('Enter the owner, repository and token here. Keep the branch <code>gh-pages</code> and GitHub turns Pages on by itself at the first sync; for another branch or <code>/docs</code>, choose it afterwards in the repository’s <strong>Settings → Pages → Deploy from a branch</strong>.', 'shipstatic'),
+            'ghStep4'          => __('Press <strong>Test</strong>. An empty Destination URL is filled with the Pages address. A project site lives at <code>https://owner.github.io/repository/</code>, so “Served from sub-path” must be <code>/repository</code> — Test says so if it isn’t. <strong>Save</strong>, then Check / Sync as usual.', 'shipstatic'),
+            'ghStep5'          => __('For a custom domain, set it in the repository’s <strong>Settings → Pages</strong> (or enter it as the Destination URL); the plugin keeps the <code>CNAME</code> file GitHub uses.', 'shipstatic'),
+            'ghLimits'         => __('<strong>Limits:</strong> 25 MiB per file and 1 GB per site. GitHub allows about 500 uploads an hour, so a first sync with many images pauses and carries on by itself. Pages rebuilds at most about 10 times an hour and sets its own cache headers; on a project site robots.txt has no effect. Forms that post back to WordPress don’t work on a static copy.', 'shipstatic'),
+            'btnRepair'        => __('Re-pair (new file)', 'shipstatic'),
+            'btnPairing'       => __('Pairing…', 'shipstatic'),
+            'btnRevoke'        => __('Revoke', 'shipstatic'),
+            'btnConfirmRevoke' => __('Yes, revoke', 'shipstatic'),
             /* translators: %s: connector filename */
-            'btnDownloadFile'  => __('Download %s', 'bricks-static'),
-            'btnPair'          => __('Pair', 'bricks-static'),
-            'repairHint'       => __('Re-pairing invalidates the file currently on the destination — upload the new one before the next sync.', 'bricks-static'),
-            'btnRebuild'       => __('Rebuild push record', 'bricks-static'),
-            'btnRebuilding'    => __('Rebuilding…', 'bricks-static'),
-            'rebuildHint'      => __('Ask the connector what is already on the destination and rebuild the push record from it — so after a reset or re-pair, files that are already there and identical don’t upload again.', 'bricks-static'),
-            'zipHeading'       => __('Manual deploy', 'bricks-static'),
-            'zipHowTo'         => __('How it works', 'bricks-static'),
-            'zipLead'          => __('No server access needed. <strong>Export ZIP</strong> packages the current render — with this destination’s replacements applied — into a zip you upload and extract yourself. The plugin uploads nothing and the destination’s sync stats are untouched.', 'bricks-static'),
-            'zipStep1'         => __('If the pages list is stale, run <strong>Process</strong> first (Export never renders on its own).', 'bricks-static'),
-            'zipStep2'         => __('Press <strong>Export ZIP</strong> and download it when it finishes.', 'bricks-static'),
-            'zipStep3'         => __('Extract it into the destination web root — the folder served at the <strong>Destination URL</strong>. If the site lives under a sub-folder, set <strong>Served from sub-path</strong> above <em>before</em> exporting so links are rewritten for it.', 'bricks-static'),
-            'zipStep4'         => __('The zip includes the <code>.htaccess</code> (Apache/LiteSpeed), <code>.gz</code> siblings where supported, <code>sitemap.xml</code> and <code>robots.txt</code>. On nginx, see the <em>Destination Server Configuration</em> tab for the optional snippet and <strong>Check server</strong>.', 'bricks-static'),
-            'zipDisabledHint'  => __('Enable this destination to export.', 'bricks-static'),
-            'msgSaved'         => __('Saved.', 'bricks-static'),
-            'btnTest'          => __('Test', 'bricks-static'),
-            'confirmRemoveDest'=> __('Remove this destination?', 'bricks-static'),
-            'btnYesRemove'     => __('Yes, remove', 'bricks-static'),
-            'btnRemoveDest'    => __('Remove destination', 'bricks-static'),
+            'btnDownloadFile'  => __('Download %s', 'shipstatic'),
+            'btnPair'          => __('Pair', 'shipstatic'),
+            'repairHint'       => __('Re-pairing invalidates the file currently on the destination — upload the new one before the next sync.', 'shipstatic'),
+            'btnRebuild'       => __('Rebuild push record', 'shipstatic'),
+            'btnRebuilding'    => __('Rebuilding…', 'shipstatic'),
+            'rebuildHint'      => __('Ask the connector what is already on the destination and rebuild the push record from it — so after a reset or re-pair, files that are already there and identical don’t upload again.', 'shipstatic'),
+            'zipHeading'       => __('Manual deploy', 'shipstatic'),
+            'zipHowTo'         => __('How it works', 'shipstatic'),
+            'zipLead'          => __('No server access needed. <strong>Export ZIP</strong> packages the current render — with this destination’s replacements applied — into a zip you upload and extract yourself. The plugin uploads nothing and the destination’s sync stats are untouched.', 'shipstatic'),
+            'zipStep1'         => __('If the pages list is stale, run <strong>Process</strong> first (Export never renders on its own).', 'shipstatic'),
+            'zipStep2'         => __('Press <strong>Export ZIP</strong> and download it when it finishes.', 'shipstatic'),
+            'zipStep3'         => __('Extract it into the destination web root — the folder served at the <strong>Destination URL</strong>. If the site lives under a sub-folder, set <strong>Served from sub-path</strong> above <em>before</em> exporting so links are rewritten for it.', 'shipstatic'),
+            'zipStep4'         => __('The zip includes the <code>.htaccess</code> (Apache/LiteSpeed), <code>.gz</code> siblings where supported, <code>sitemap.xml</code> and <code>robots.txt</code>. On nginx, see the <em>Destination Server Configuration</em> tab for the optional snippet and <strong>Check server</strong>.', 'shipstatic'),
+            'zipDisabledHint'  => __('Enable this destination to export.', 'shipstatic'),
+            'msgSaved'         => __('Saved.', 'shipstatic'),
+            'btnTest'          => __('Test', 'shipstatic'),
+            'confirmRemoveDest'=> __('Remove this destination?', 'shipstatic'),
+            'btnYesRemove'     => __('Yes, remove', 'shipstatic'),
+            'btnRemoveDest'    => __('Remove destination', 'shipstatic'),
         ];
     }
 
@@ -363,11 +379,11 @@ final class I18n {
      */
     private static function tabs(): array {
         return [
-            'allDestinations' => __('All Destinations', 'bricks-static'),
-            'destNameAria'    => __('Destination name', 'bricks-static'),
-            'dblClickRename'  => __('Double-click to rename', 'bricks-static'),
-            'tabOff'          => __('off', 'bricks-static'),
-            'addDestAria'     => __('Add destination', 'bricks-static'),
+            'allDestinations' => __('All Destinations', 'shipstatic'),
+            'destNameAria'    => __('Destination name', 'shipstatic'),
+            'dblClickRename'  => __('Double-click to rename', 'shipstatic'),
+            'tabOff'          => __('off', 'shipstatic'),
+            'addDestAria'     => __('Add destination', 'shipstatic'),
         ];
     }
 
@@ -378,21 +394,21 @@ final class I18n {
      */
     private static function toolbar(): array {
         return [
-            'enableFirst'   => __('Enable this destination first', 'bricks-static'),
-            'testConnFirst' => __('Test the connection first', 'bricks-static'),
-            'stConnected'   => __('Connected', 'bricks-static'),
-            'stPushed'      => __('Pushed', 'bricks-static'),
-            'stInSync'      => __('In sync', 'bricks-static'),
-            'swEnabled'     => __('Enabled', 'bricks-static'),
-            'btnCheck'      => __('Check', 'bricks-static'),
-            'btnChecking'   => __('Checking…', 'bricks-static'),
-            'btnCheckHint'  => __('Preview what a sync would change on this destination — compares the last render, uploads nothing.', 'bricks-static'),
-            'btnSync'       => __('Sync', 'bricks-static'),
-            'visitSite'     => __('Visit site ↗', 'bricks-static'),
-            'btnExport'     => __('Export ZIP', 'bricks-static'),
-            'btnExporting'  => __('Exporting…', 'bricks-static'),
-            'btnExportHint' => __('Package the current render into a downloadable zip for this destination — an alternative to Sync for manual deploys. Uploads nothing.', 'bricks-static'),
-            'btnDownload'   => __('Download', 'bricks-static'),
+            'enableFirst'   => __('Enable this destination first', 'shipstatic'),
+            'testConnFirst' => __('Test the connection first', 'shipstatic'),
+            'stConnected'   => __('Connected', 'shipstatic'),
+            'stPushed'      => __('Pushed', 'shipstatic'),
+            'stInSync'      => __('In sync', 'shipstatic'),
+            'swEnabled'     => __('Enabled', 'shipstatic'),
+            'btnCheck'      => __('Check', 'shipstatic'),
+            'btnChecking'   => __('Checking…', 'shipstatic'),
+            'btnCheckHint'  => __('Preview what a sync would change on this destination — compares the last render, uploads nothing.', 'shipstatic'),
+            'btnSync'       => __('Sync', 'shipstatic'),
+            'visitSite'     => __('Visit site ↗', 'shipstatic'),
+            'btnExport'     => __('Export ZIP', 'shipstatic'),
+            'btnExporting'  => __('Exporting…', 'shipstatic'),
+            'btnExportHint' => __('Package the current render into a downloadable zip for this destination — an alternative to Sync for manual deploys. Uploads nothing.', 'shipstatic'),
+            'btnDownload'   => __('Download', 'shipstatic'),
         ];
     }
 
@@ -403,8 +419,8 @@ final class I18n {
      */
     private static function replacements(): array {
         return [
-            'replacements'    => __('Replacements', 'bricks-static'),
-            'replacementsSub' => __('(applied to this destination only · saved automatically)', 'bricks-static'),
+            'replacements'    => __('Replacements', 'shipstatic'),
+            'replacementsSub' => __('(applied to this destination only · saved automatically)', 'shipstatic'),
         ];
     }
 
@@ -416,30 +432,30 @@ final class I18n {
      */
     private static function media(): array {
         return [
-            'mediaReplacer'        => __('Image Replacer', 'bricks-static'),
-            'mediaSelectPage'      => __('Page', 'bricks-static'),
-            'mediaSelectPagePh'    => __('Select a page…', 'bricks-static'),
-            'mediaPickPageFirst'   => __('Select a page above to replace its images.', 'bricks-static'),
-            'noRenderForMedia'     => __('Process the site first, then choose a page to replace its images.', 'bricks-static'),
-            'noMediaOnPage'        => __('No replaceable images on this page.', 'bricks-static'),
-            'loadingMedia'         => __('Loading images…', 'bricks-static'),
-            'chooseReplacement'    => __('Choose a replacement', 'bricks-static'),
-            'useThisMedia'         => __('Use this image', 'bricks-static'),
-            'clickToReplace'       => __('Click to replace', 'bricks-static'),
-            'noAlt'                => __('— no alt —', 'bricks-static'),
-            'replacedWith'         => __('↳ replaced with', 'bricks-static'),
-            'noMediaMatch'         => __('No images match the current filter.', 'bricks-static'),
-            'mediaPagesWithSwaps'  => __('Pages with replacements:', 'bricks-static'),
+            'mediaReplacer'        => __('Image Replacer', 'shipstatic'),
+            'mediaSelectPage'      => __('Page', 'shipstatic'),
+            'mediaSelectPagePh'    => __('Select a page…', 'shipstatic'),
+            'mediaPickPageFirst'   => __('Select a page above to replace its images.', 'shipstatic'),
+            'noRenderForMedia'     => __('Process the site first, then choose a page to replace its images.', 'shipstatic'),
+            'noMediaOnPage'        => __('No replaceable images on this page.', 'shipstatic'),
+            'loadingMedia'         => __('Loading images…', 'shipstatic'),
+            'chooseReplacement'    => __('Choose a replacement', 'shipstatic'),
+            'useThisMedia'         => __('Use this image', 'shipstatic'),
+            'clickToReplace'       => __('Click to replace', 'shipstatic'),
+            'noAlt'                => __('— no alt —', 'shipstatic'),
+            'replacedWith'         => __('↳ replaced with', 'shipstatic'),
+            'noMediaMatch'         => __('No images match the current filter.', 'shipstatic'),
+            'mediaPagesWithSwaps'  => __('Pages with replacements:', 'shipstatic'),
             /* translators: %d is the number of image sizes. */
-            'nSizes'               => __('%d sizes', 'bricks-static'),
-            'mediaNotInLibrary'    => __('not in library', 'bricks-static'),
-            'mediaNotInLibraryTip' => __('This image isn’t in the media library, so only this exact URL is swapped — other responsive sizes may remain.', 'bricks-static'),
-            'mediaUnavailable'     => __('The WordPress media library is unavailable on this page.', 'bricks-static'),
-            'btnReplace'           => __('Replace…', 'bricks-static'),
-            'btnRemove'            => __('Remove', 'bricks-static'),
-            'filterByPage'         => __('Filter by page…', 'bricks-static'),
-            'filterByPageAria'     => __('Filter by page', 'bricks-static'),
-            'onlyReplacements'     => __('Only replacements', 'bricks-static'),
+            'nSizes'               => __('%d sizes', 'shipstatic'),
+            'mediaNotInLibrary'    => __('not in library', 'shipstatic'),
+            'mediaNotInLibraryTip' => __('This image isn’t in the media library, so only this exact URL is swapped — other responsive sizes may remain.', 'shipstatic'),
+            'mediaUnavailable'     => __('The WordPress media library is unavailable on this page.', 'shipstatic'),
+            'btnReplace'           => __('Replace…', 'shipstatic'),
+            'btnRemove'            => __('Remove', 'shipstatic'),
+            'filterByPage'         => __('Filter by page…', 'shipstatic'),
+            'filterByPageAria'     => __('Filter by page', 'shipstatic'),
+            'onlyReplacements'     => __('Only replacements', 'shipstatic'),
         ];
     }
 
@@ -450,24 +466,24 @@ final class I18n {
      */
     private static function links(): array {
         return [
-            'linkReplacer'      => __('Link replacer', 'bricks-static'),
+            'linkReplacer'      => __('Link replacer', 'shipstatic'),
             /* translators: %d is a link count (singular). */
-            'nLink'             => __('%d link', 'bricks-static'),
+            'nLink'             => __('%d link', 'shipstatic'),
             /* translators: %d is a link count (plural). */
-            'nLinks'            => __('%d links', 'bricks-static'),
+            'nLinks'            => __('%d links', 'shipstatic'),
             /* translators: %d is a count of replaced links. */
-            'nReplaced'         => __(', %d replaced', 'bricks-static'),
-            'phSearchUrlLabel'  => __('Search URL or label…', 'bricks-static'),
-            'linksHint'         => __('Replace a link target (<code>&lt;a&gt;</code>/button <code>href</code>) with another URL for this destination. Leave blank to keep the original.', 'bricks-static'),
-            'loadingLinks'      => __('Loading links…', 'bricks-static'),
-            'noLinksYet'        => __('No links found yet — run a Check or Sync first so the pages are rendered.', 'bricks-static'),
-            'noLabel'           => __('— no label —', 'bricks-static'),
+            'nReplaced'         => __(', %d replaced', 'shipstatic'),
+            'phSearchUrlLabel'  => __('Search URL or label…', 'shipstatic'),
+            'linksHint'         => __('Replace a link target (<code>&lt;a&gt;</code>/button <code>href</code>) with another URL for this destination. Leave blank to keep the original.', 'shipstatic'),
+            'loadingLinks'      => __('Loading links…', 'shipstatic'),
+            'noLinksYet'        => __('No links found yet — run a Check or Sync first so the pages are rendered.', 'shipstatic'),
+            'noLabel'           => __('— no label —', 'shipstatic'),
             /* translators: %d is a page count (singular). */
-            'nPage'             => __('%d page', 'bricks-static'),
+            'nPage'             => __('%d page', 'shipstatic'),
             /* translators: %d is a page count (plural). */
-            'nPages'            => __('%d pages', 'bricks-static'),
-            'phReplacementUrl'  => __('Replacement URL…', 'bricks-static'),
-            'noLinksMatch'      => __('No links match the current filter.', 'bricks-static'),
+            'nPages'            => __('%d pages', 'shipstatic'),
+            'phReplacementUrl'  => __('Replacement URL…', 'shipstatic'),
+            'noLinksMatch'      => __('No links match the current filter.', 'shipstatic'),
         ];
     }
 
@@ -478,23 +494,23 @@ final class I18n {
      */
     private static function videos(): array {
         return [
-            'videoReplacer'      => __('Video replacer', 'bricks-static'),
-            'videoSelectPage'    => __('Page', 'bricks-static'),
-            'videoPickPageFirst' => __('Select a page above to replace its videos.', 'bricks-static'),
-            'noVideosOnPage'     => __('No replaceable videos on this page.', 'bricks-static'),
+            'videoReplacer'      => __('Video replacer', 'shipstatic'),
+            'videoSelectPage'    => __('Page', 'shipstatic'),
+            'videoPickPageFirst' => __('Select a page above to replace its videos.', 'shipstatic'),
+            'noVideosOnPage'     => __('No replaceable videos on this page.', 'shipstatic'),
             /* translators: %d is a video count (singular). */
-            'nVideo'             => __('%d video', 'bricks-static'),
+            'nVideo'             => __('%d video', 'shipstatic'),
             /* translators: %d is a video count (plural). */
-            'nVideos'            => __('%d videos', 'bricks-static'),
-            'phSearchUrlTitle'   => __('Search URL or title…', 'bricks-static'),
-            'videosHint'         => __('Local videos swap via the media library; embeds (YouTube, Vimeo, …) take a URL <em>or</em> a video ID (like Bricks). An embed’s <code>origin=</code> is rewritten to this destination automatically when a Destination URL is set.', 'bricks-static'),
-            'loadingVideos'      => __('Loading videos…', 'bricks-static'),
-            'noVideosYet'        => __('No videos found yet — run a Check or Sync first so the pages are rendered.', 'bricks-static'),
-            'localFile'          => __('local file', 'bricks-static'),
-            'chooseReplacementVideo' => __('Choose a replacement video', 'bricks-static'),
-            'useThisVideo'       => __('Use this video', 'bricks-static'),
-            'phReplUrlOrId'      => __('Replacement URL or video ID…', 'bricks-static'),
-            'noVideosMatch'      => __('No videos match the current filter.', 'bricks-static'),
+            'nVideos'            => __('%d videos', 'shipstatic'),
+            'phSearchUrlTitle'   => __('Search URL or title…', 'shipstatic'),
+            'videosHint'         => __('Local videos swap via the media library; embeds (YouTube, Vimeo, …) take a URL <em>or</em> a video ID (like Bricks). An embed’s <code>origin=</code> is rewritten to this destination automatically when a Destination URL is set.', 'shipstatic'),
+            'loadingVideos'      => __('Loading videos…', 'shipstatic'),
+            'noVideosYet'        => __('No videos found yet — run a Check or Sync first so the pages are rendered.', 'shipstatic'),
+            'localFile'          => __('local file', 'shipstatic'),
+            'chooseReplacementVideo' => __('Choose a replacement video', 'shipstatic'),
+            'useThisVideo'       => __('Use this video', 'shipstatic'),
+            'phReplUrlOrId'      => __('Replacement URL or video ID…', 'shipstatic'),
+            'noVideosMatch'      => __('No videos match the current filter.', 'shipstatic'),
         ];
     }
 
@@ -505,14 +521,14 @@ final class I18n {
      */
     private static function catalog(): array {
         return [
-            'catText'       => __('Text', 'bricks-static'),
-            'catMedia'      => __('Images', 'bricks-static'),
-            'catLinks'      => __('Links', 'bricks-static'),
-            'catVideos'     => __('Videos', 'bricks-static'),
-            'catTextDesc'   => __('Find and replace visible text on this destination only.', 'bricks-static'),
-            'catMediaDesc'  => __('Pick a page, then swap any of its images for another library item — responsive variants are rebuilt automatically.', 'bricks-static'),
-            'catLinksDesc'  => __('Rewrite link and button targets per destination, without touching body text.', 'bricks-static'),
-            'catVideosDesc' => __('Swap local or embedded videos and fix embed origins for the destination domain.', 'bricks-static'),
+            'catText'       => __('Text', 'shipstatic'),
+            'catMedia'      => __('Images', 'shipstatic'),
+            'catLinks'      => __('Links', 'shipstatic'),
+            'catVideos'     => __('Videos', 'shipstatic'),
+            'catTextDesc'   => __('Find and replace visible text on this destination only.', 'shipstatic'),
+            'catMediaDesc'  => __('Pick a page, then swap any of its images for another library item — responsive variants are rebuilt automatically.', 'shipstatic'),
+            'catLinksDesc'  => __('Rewrite link and button targets per destination, without touching body text.', 'shipstatic'),
+            'catVideosDesc' => __('Swap local or embedded videos and fix embed origins for the destination domain.', 'shipstatic'),
         ];
     }
 
@@ -523,15 +539,15 @@ final class I18n {
      */
     private static function allDestinations(): array {
         return [
-            'allDestHeading' => __('All destinations', 'bricks-static'),
-            'allDestLead'    => __('Render once, then push to every enabled destination in turn.', 'bricks-static'),
-            'stDisabled'     => __('disabled', 'bricks-static'),
-            'stOutOfDate'    => __('Out of date', 'bricks-static'),
-            'stNotPushed'    => __('Not pushed', 'bricks-static'),
-            'pruneOption'    => __('Remove deleted files from each destination (prune)', 'bricks-static'),
-            'btnWorking'     => __('Working…', 'bricks-static'),
+            'allDestHeading' => __('All destinations', 'shipstatic'),
+            'allDestLead'    => __('Render once, then push to every enabled destination in turn.', 'shipstatic'),
+            'stDisabled'     => __('disabled', 'shipstatic'),
+            'stOutOfDate'    => __('Out of date', 'shipstatic'),
+            'stNotPushed'    => __('Not pushed', 'shipstatic'),
+            'pruneOption'    => __('Remove deleted files from each destination (prune)', 'shipstatic'),
+            'btnWorking'     => __('Working…', 'shipstatic'),
             /* translators: %d is the number of enabled destinations. */
-            'syncAllN'       => __('Sync all (%d enabled)', 'bricks-static'),
+            'syncAllN'       => __('Sync all (%d enabled)', 'shipstatic'),
         ];
     }
 
@@ -542,64 +558,64 @@ final class I18n {
      */
     private static function progress(): array {
         return [
-            'progress'      => __('Progress', 'bricks-static'),
-            'phCollect'     => __('Collecting URLs', 'bricks-static'),
-            'phRender'      => __('Rendering pages', 'bricks-static'),
-            'phAssets'      => __('Processing assets', 'bricks-static'),
-            'phFinalize'    => __('Finalising', 'bricks-static'),
-            'phPackage'     => __('Packaging & deploying', 'bricks-static'),
-            'phUpload'      => __('Uploading', 'bricks-static'),
-            'phDeploy'      => __('Deploying', 'bricks-static'),
-            'phPrune'       => __('Removing old files', 'bricks-static'),
-            'phDone'        => __('Done', 'bricks-static'),
-            'tgt_done'      => __('Done', 'bricks-static'),
-            'tgt_error'     => __('Failed', 'bricks-static'),
-            'tgt_cancelled' => __('Cancelled', 'bricks-static'),
-            'tgt_active'    => __('Uploading…', 'bricks-static'),
-            'tgtPackaging'  => __('Packaging…', 'bricks-static'),
-            'zipFallbackNotice' => __('Uploaded file-by-file: the PHP runtime running this sync has no Zip (ZipArchive) extension, so the faster single-package deploy wasn’t available. The result is identical, just slower. This is common with Local’s bundled WP-CLI PHP — most production hosts include Zip and will package automatically.', 'bricks-static'),
+            'progress'      => __('Progress', 'shipstatic'),
+            'phCollect'     => __('Collecting URLs', 'shipstatic'),
+            'phRender'      => __('Rendering pages', 'shipstatic'),
+            'phAssets'      => __('Processing assets', 'shipstatic'),
+            'phFinalize'    => __('Finalising', 'shipstatic'),
+            'phPackage'     => __('Packaging & deploying', 'shipstatic'),
+            'phUpload'      => __('Uploading', 'shipstatic'),
+            'phDeploy'      => __('Deploying', 'shipstatic'),
+            'phPrune'       => __('Removing old files', 'shipstatic'),
+            'phDone'        => __('Done', 'shipstatic'),
+            'tgt_done'      => __('Done', 'shipstatic'),
+            'tgt_error'     => __('Failed', 'shipstatic'),
+            'tgt_cancelled' => __('Cancelled', 'shipstatic'),
+            'tgt_active'    => __('Uploading…', 'shipstatic'),
+            'tgtPackaging'  => __('Packaging…', 'shipstatic'),
+            'zipFallbackNotice' => __('Uploaded file-by-file: the PHP runtime running this sync has no Zip (ZipArchive) extension, so the faster single-package deploy wasn’t available. The result is identical, just slower. This is common with Local’s bundled WP-CLI PHP — most production hosts include Zip and will package automatically.', 'shipstatic'),
             /* translators: %s is the reason package deploy failed. */
-            'pkgFallbackNotice' => __('The faster one-shot package deploy didn’t complete — %s. Files were uploaded individually instead: same result, just slower.', 'bricks-static'),
-            'phError'       => __('Error', 'bricks-static'),
-            'phCancelled'   => __('Cancelled', 'bricks-static'),
-            'btnViewErrorDetails' => __('View error details', 'bricks-static'),
-            'errorDetailsTitle'   => __('Sync error details', 'bricks-static'),
-            'noErrorDetail'       => __('No further detail was recorded for this destination.', 'bricks-static'),
-            'lblPages'      => __('Pages', 'bricks-static'),
-            'lblAssets'     => __('Assets', 'bricks-static'),
-            'lblDeploy'     => __('Deploy', 'bricks-static'),
-            'lblUploads'    => __('Uploads', 'bricks-static'),
+            'pkgFallbackNotice' => __('The faster one-shot package deploy didn’t complete — %s. Files were uploaded individually instead: same result, just slower.', 'shipstatic'),
+            'phError'       => __('Error', 'shipstatic'),
+            'phCancelled'   => __('Cancelled', 'shipstatic'),
+            'btnViewErrorDetails' => __('View error details', 'shipstatic'),
+            'errorDetailsTitle'   => __('Sync error details', 'shipstatic'),
+            'noErrorDetail'       => __('No further detail was recorded for this destination.', 'shipstatic'),
+            'lblPages'      => __('Pages', 'shipstatic'),
+            'lblAssets'     => __('Assets', 'shipstatic'),
+            'lblDeploy'     => __('Deploy', 'shipstatic'),
+            'lblUploads'    => __('Uploads', 'shipstatic'),
             /* translators: %d is a file count. */
-            'nFiles'        => __('%d files', 'bricks-static'),
+            'nFiles'        => __('%d files', 'shipstatic'),
             /* translators: %1$d is a file count, %2$s a human size (e.g. "1.2 MB"). */
-            'statsSite'     => __('Site: %1$d files · %2$s', 'bricks-static'),
+            'statsSite'     => __('Site: %1$d files · %2$s', 'shipstatic'),
             /* translators: %d is a count of removed files. */
-            'nRemoved'      => __('%d removed', 'bricks-static'),
+            'nRemoved'      => __('%d removed', 'shipstatic'),
             /* translators: %d is a count of skipped pages. */
-            'nSkipped'      => __('%d skipped', 'bricks-static'),
+            'nSkipped'      => __('%d skipped', 'shipstatic'),
             /* translators: %d is a count of pages flagged as not static-friendly. */
-            'nNotStatic'    => __('%d not static-friendly', 'bricks-static'),
+            'nNotStatic'    => __('%d not static-friendly', 'shipstatic'),
             /* translators: %d is a count of errors. */
-            'nErrors'       => __('%d errors', 'bricks-static'),
+            'nErrors'       => __('%d errors', 'shipstatic'),
             /* translators: %d is a count of failed uploads (singular). */
-            'nFailedUpload' => __('%d failed upload', 'bricks-static'),
+            'nFailedUpload' => __('%d failed upload', 'shipstatic'),
             /* translators: %d is a count of failed uploads (plural). */
-            'nFailedUploads'=> __('%d failed uploads', 'bricks-static'),
+            'nFailedUploads'=> __('%d failed uploads', 'shipstatic'),
             /* translators: %d is a count of failed files (singular). */
-            'nFileFailed'   => __('%d file failed to upload.', 'bricks-static'),
+            'nFileFailed'   => __('%d file failed to upload.', 'shipstatic'),
             /* translators: %d is a count of failed files (plural). */
-            'nFilesFailed'  => __('%d files failed to upload.', 'bricks-static'),
-            'btnRetrying'   => __('Retrying…', 'bricks-static'),
+            'nFilesFailed'  => __('%d files failed to upload.', 'shipstatic'),
+            'btnRetrying'   => __('Retrying…', 'shipstatic'),
             /* translators: %d is a count of uploads to retry (singular). */
-            'btnRetryUpload'  => __('Retry %d upload', 'bricks-static'),
+            'btnRetryUpload'  => __('Retry %d upload', 'shipstatic'),
             /* translators: %d is a count of uploads to retry (plural). */
-            'btnRetryUploads' => __('Retry %d uploads', 'bricks-static'),
+            'btnRetryUploads' => __('Retry %d uploads', 'shipstatic'),
             /* translators: %d is the error count. */
-            'summaryErrors'   => __('Errors (%d)', 'bricks-static'),
+            'summaryErrors'   => __('Errors (%d)', 'shipstatic'),
             /* translators: %d is the skipped count. */
-            'summarySkipped'  => __('Skipped (%d)', 'bricks-static'),
+            'summarySkipped'  => __('Skipped (%d)', 'shipstatic'),
             /* translators: %d is the count of pages that won't work on static. */
-            'summaryCompat'   => __('Won\'t work on static (%d) — forms / dynamic endpoints (notice only; pages are still uploaded)', 'bricks-static'),
+            'summaryCompat'   => __('Won\'t work on static (%d) — forms / dynamic endpoints (notice only; pages are still uploaded)', 'shipstatic'),
         ];
     }
 
@@ -610,9 +626,9 @@ final class I18n {
      */
     private static function manualRun(): array {
         return [
-            'manualRunTitle' => __('Run this in your terminal to render & sync', 'bricks-static'),
-            'manualRunBody'  => __('This host serves only a couple of PHP requests at once, so the browser can\'t render reliably here. WP-CLI does it without that limit. In Local, right-click the site → <em>Open site shell</em>, then run:', 'bricks-static'),
-            'manualRunHint'  => __('Add <code>--check</code> for a dry run, or <code>--prune</code> to remove deleted files. Progress will appear here automatically once it starts.', 'bricks-static'),
+            'manualRunTitle' => __('Run this in your terminal to render & sync', 'shipstatic'),
+            'manualRunBody'  => __('This host serves only a couple of PHP requests at once, so the browser can\'t render reliably here. WP-CLI does it without that limit. In Local, right-click the site → <em>Open site shell</em>, then run:', 'shipstatic'),
+            'manualRunHint'  => __('Add <code>--check</code> for a dry run, or <code>--prune</code> to remove deleted files. Progress will appear here automatically once it starts.', 'shipstatic'),
         ];
     }
 
@@ -623,35 +639,35 @@ final class I18n {
      */
     private static function serverConfig(): array {
         return [
-            'serverConfig'     => __('Server config', 'bricks-static'),
-            'btnHide'          => __('Hide', 'bricks-static'),
-            'btnView'          => __('View', 'bricks-static'),
-            'serverConfigLead' => __('The <code>.htaccess</code> is uploaded to the destination automatically (Apache/LiteSpeed). nginx serves the static site as-is; its snippet below is an <em>optional</em> tuning (cache policy + pre-compressed serving) to paste into your server block. Use <strong>Check server</strong> to see what the destination is actually doing.', 'bricks-static'),
-            'serverCheckTitle' => __('Server check', 'bricks-static'),
-            'serverCheckLead'  => __('Fetches the destination’s home page and one asset, and reports the web server and whether the cache rules are in effect.', 'bricks-static'),
-            'btnCheckServer'   => __('Check server', 'bricks-static'),
-            'btnRecheck'       => __('Check again', 'bricks-static'),
-            'checkingServer'   => __('Checking…', 'bricks-static'),
-            'lblDestination'   => __('Destination', 'bricks-static'),
-            'noDestUrl'        => __('No destination has a Destination URL yet — set one on the destination to enable the check.', 'bricks-static'),
-            'lblServer'        => __('Server', 'bricks-static'),
-            'lblCachePolicy'   => __('Cache policy', 'bricks-static'),
-            'lblCompression'   => __('Compression', 'bricks-static'),
-            'lblHtmlHeaders'   => __('HTML', 'bricks-static'),
-            'lblAssetHeaders'  => __('Asset', 'bricks-static'),
-            'cacheApplied'     => __('Applied', 'bricks-static'),
-            'cachePartial'     => __('Partial', 'bricks-static'),
-            'cacheNotApplied'  => __('Not applied', 'bricks-static'),
-            'cacheUnknown'     => __('Unknown', 'bricks-static'),
-            'gzipYes'          => __('gzip', 'bricks-static'),
-            'gzipNo'           => __('none', 'bricks-static'),
-            'noCacheControl'   => __('(no Cache-Control header)', 'bricks-static'),
-            'urlGuessedHint'   => __('No Destination URL is set, so the host was guessed from the connection — set the URL for an accurate check.', 'bricks-static'),
+            'serverConfig'     => __('Server config', 'shipstatic'),
+            'btnHide'          => __('Hide', 'shipstatic'),
+            'btnView'          => __('View', 'shipstatic'),
+            'serverConfigLead' => __('The <code>.htaccess</code> is uploaded to the destination automatically (Apache/LiteSpeed). nginx serves the static site as-is; its snippet below is an <em>optional</em> tuning (cache policy + pre-compressed serving) to paste into your server block. Use <strong>Check server</strong> to see what the destination is actually doing.', 'shipstatic'),
+            'serverCheckTitle' => __('Server check', 'shipstatic'),
+            'serverCheckLead'  => __('Fetches the destination’s home page and one asset, and reports the web server and whether the cache rules are in effect.', 'shipstatic'),
+            'btnCheckServer'   => __('Check server', 'shipstatic'),
+            'btnRecheck'       => __('Check again', 'shipstatic'),
+            'checkingServer'   => __('Checking…', 'shipstatic'),
+            'lblDestination'   => __('Destination', 'shipstatic'),
+            'noDestUrl'        => __('No destination has a Destination URL yet — set one on the destination to enable the check.', 'shipstatic'),
+            'lblServer'        => __('Server', 'shipstatic'),
+            'lblCachePolicy'   => __('Cache policy', 'shipstatic'),
+            'lblCompression'   => __('Compression', 'shipstatic'),
+            'lblHtmlHeaders'   => __('HTML', 'shipstatic'),
+            'lblAssetHeaders'  => __('Asset', 'shipstatic'),
+            'cacheApplied'     => __('Applied', 'shipstatic'),
+            'cachePartial'     => __('Partial', 'shipstatic'),
+            'cacheNotApplied'  => __('Not applied', 'shipstatic'),
+            'cacheUnknown'     => __('Unknown', 'shipstatic'),
+            'gzipYes'          => __('gzip', 'shipstatic'),
+            'gzipNo'           => __('none', 'shipstatic'),
+            'noCacheControl'   => __('(no Cache-Control header)', 'shipstatic'),
+            'urlGuessedHint'   => __('No Destination URL is set, so the host was guessed from the connection — set the URL for an accurate check.', 'shipstatic'),
             /* translators: %s: time the check ran */
-            'checkedAt'        => __('Checked %s', 'bricks-static'),
-            'serverUnknown'    => __('unknown', 'bricks-static'),
-            'serverProxied'    => __('CDN / proxy', 'bricks-static'),
-            'cfHeadersNote'    => __('Sent automatically with every Cloudflare deploy — nothing to paste.', 'bricks-static'),
+            'checkedAt'        => __('Checked %s', 'shipstatic'),
+            'serverUnknown'    => __('unknown', 'shipstatic'),
+            'serverProxied'    => __('CDN / proxy', 'shipstatic'),
+            'cfHeadersNote'    => __('Sent automatically with every Cloudflare deploy — nothing to paste.', 'shipstatic'),
         ];
     }
 
@@ -662,28 +678,28 @@ final class I18n {
      */
     private static function textReplacements(): array {
         return [
-            'textReplTitle'  => __('Text replacements', 'bricks-static'),
-            'optional'       => __('(optional)', 'bricks-static'),
-            'btnAdd'         => __('+ Add', 'bricks-static'),
-            'textReplWarn'   => __('Literal find/replace, applied only to visible text content between tags — never attributes, scripts or markup. Be specific to avoid unintended matches.', 'bricks-static'),
-            'noTextRepl'     => __('No text replacements yet.', 'bricks-static'),
-            'lblFind'        => __('Find', 'bricks-static'),
-            'lblReplace'     => __('Replace', 'bricks-static'),
-            'valEmpty'       => __('(empty)', 'bricks-static'),
-            'richEmpty'      => '<em>' . esc_html__('(empty)', 'bricks-static') . '</em>',
-            'confirmDelete'  => __('Confirm delete', 'bricks-static'),
-            'keep'           => __('Keep', 'bricks-static'),
-            'edit'           => __('Edit', 'bricks-static'),
-            'delete'         => __('Delete', 'bricks-static'),
-            'modalAddText'   => __('Add text replacement', 'bricks-static'),
-            'modalEditText'  => __('Edit text replacement', 'bricks-static'),
-            'phTextToFind'   => __('Text to find', 'bricks-static'),
-            'lblReplaceWith' => __('Replace with', 'bricks-static'),
-            'replFormatAria' => __('Replacement format', 'bricks-static'),
-            'formatPlain'    => __('Plain', 'bricks-static'),
-            'formatRich'     => __('Rich', 'bricks-static'),
-            'phReplaceWith'  => __('Replace with', 'bricks-static'),
-            'btnAddShort'    => __('Add', 'bricks-static'),
+            'textReplTitle'  => __('Text replacements', 'shipstatic'),
+            'optional'       => __('(optional)', 'shipstatic'),
+            'btnAdd'         => __('+ Add', 'shipstatic'),
+            'textReplWarn'   => __('Literal find/replace, applied only to visible text content between tags — never attributes, scripts or markup. Be specific to avoid unintended matches.', 'shipstatic'),
+            'noTextRepl'     => __('No text replacements yet.', 'shipstatic'),
+            'lblFind'        => __('Find', 'shipstatic'),
+            'lblReplace'     => __('Replace', 'shipstatic'),
+            'valEmpty'       => __('(empty)', 'shipstatic'),
+            'richEmpty'      => '<em>' . esc_html__('(empty)', 'shipstatic') . '</em>',
+            'confirmDelete'  => __('Confirm delete', 'shipstatic'),
+            'keep'           => __('Keep', 'shipstatic'),
+            'edit'           => __('Edit', 'shipstatic'),
+            'delete'         => __('Delete', 'shipstatic'),
+            'modalAddText'   => __('Add text replacement', 'shipstatic'),
+            'modalEditText'  => __('Edit text replacement', 'shipstatic'),
+            'phTextToFind'   => __('Text to find', 'shipstatic'),
+            'lblReplaceWith' => __('Replace with', 'shipstatic'),
+            'replFormatAria' => __('Replacement format', 'shipstatic'),
+            'formatPlain'    => __('Plain', 'shipstatic'),
+            'formatRich'     => __('Rich', 'shipstatic'),
+            'phReplaceWith'  => __('Replace with', 'shipstatic'),
+            'btnAddShort'    => __('Add', 'shipstatic'),
         ];
     }
 
@@ -694,23 +710,23 @@ final class I18n {
      */
     private static function richText(): array {
         return [
-            'rtParagraph'    => __('Paragraph', 'bricks-static'),
-            'rtH1'           => __('Heading 1', 'bricks-static'),
-            'rtH2'           => __('Heading 2', 'bricks-static'),
-            'rtH3'           => __('Heading 3', 'bricks-static'),
-            'rtBold'         => __('Bold', 'bricks-static'),
-            'rtItalic'       => __('Italic', 'bricks-static'),
-            'rtUnderline'    => __('Underline', 'bricks-static'),
-            'rtBullet'       => __('Bullet list', 'bricks-static'),
-            'rtNumbered'     => __('Numbered list', 'bricks-static'),
-            'rtLink'         => __('Link', 'bricks-static'),
-            'rtClearFormat'  => __('Clear formatting', 'bricks-static'),
-            'rtHtmlSource'   => __('HTML source', 'bricks-static'),
-            'rtVisualEditor' => __('Visual editor', 'bricks-static'),
-            'rtEditHtml'     => __('Edit HTML', 'bricks-static'),
-            'rtLinkPrompt'   => __('Link URL', 'bricks-static'),
-            'rtPlaceholder'  => __('Replace with…', 'bricks-static'),
-            'rtFormatting'   => __('Formatting', 'bricks-static'),
+            'rtParagraph'    => __('Paragraph', 'shipstatic'),
+            'rtH1'           => __('Heading 1', 'shipstatic'),
+            'rtH2'           => __('Heading 2', 'shipstatic'),
+            'rtH3'           => __('Heading 3', 'shipstatic'),
+            'rtBold'         => __('Bold', 'shipstatic'),
+            'rtItalic'       => __('Italic', 'shipstatic'),
+            'rtUnderline'    => __('Underline', 'shipstatic'),
+            'rtBullet'       => __('Bullet list', 'shipstatic'),
+            'rtNumbered'     => __('Numbered list', 'shipstatic'),
+            'rtLink'         => __('Link', 'shipstatic'),
+            'rtClearFormat'  => __('Clear formatting', 'shipstatic'),
+            'rtHtmlSource'   => __('HTML source', 'shipstatic'),
+            'rtVisualEditor' => __('Visual editor', 'shipstatic'),
+            'rtEditHtml'     => __('Edit HTML', 'shipstatic'),
+            'rtLinkPrompt'   => __('Link URL', 'shipstatic'),
+            'rtPlaceholder'  => __('Replace with…', 'shipstatic'),
+            'rtFormatting'   => __('Formatting', 'shipstatic'),
         ];
     }
 
@@ -721,15 +737,15 @@ final class I18n {
      */
     private static function common(): array {
         return [
-            'loading'       => __('Loading…', 'bricks-static'),
-            'btnCancel'     => __('Cancel', 'bricks-static'),
-            'btnSave'       => __('Save', 'bricks-static'),
-            'btnSaving'     => __('Saving…', 'bricks-static'),
-            'btnTesting'    => __('Testing…', 'bricks-static'),
-            'btnCopy'       => __('Copy', 'bricks-static'),
-            'btnCopied'     => __('Copied', 'bricks-static'),
-            'btnDismiss'    => __('Dismiss', 'bricks-static'),
-            'close'         => __('Close', 'bricks-static'),
+            'loading'       => __('Loading…', 'shipstatic'),
+            'btnCancel'     => __('Cancel', 'shipstatic'),
+            'btnSave'       => __('Save', 'shipstatic'),
+            'btnSaving'     => __('Saving…', 'shipstatic'),
+            'btnTesting'    => __('Testing…', 'shipstatic'),
+            'btnCopy'       => __('Copy', 'shipstatic'),
+            'btnCopied'     => __('Copied', 'shipstatic'),
+            'btnDismiss'    => __('Dismiss', 'shipstatic'),
+            'close'         => __('Close', 'shipstatic'),
         ];
     }
 }

@@ -2,13 +2,13 @@
 /**
  * SFTP transport (phpseclib).
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Transport;
+namespace WPEasy\ShipStatic\Transport;
 
 use phpseclib3\Net\SFTP;
 
@@ -29,7 +29,7 @@ final class SftpTransport implements TransportInterface {
     /**
      * Option holding trusted server host keys, keyed by "host:port".
      */
-    private const KNOWN_HOSTS_OPTION = 'bricks_static_sftp_known_hosts';
+    private const KNOWN_HOSTS_OPTION = 'shipstatic_sftp_known_hosts';
 
     /**
      * Connection config: host, port, username, password, remotePath.
@@ -100,7 +100,7 @@ final class SftpTransport implements TransportInterface {
      */
     private static function verify_host_key(SFTP $sftp, string $host, int $port): void {
         /** Filters whether SFTP host-key verification is enforced. */
-        if (!apply_filters('bricks_static_sftp_verify_host_key', true, $host, $port)) {
+        if (!apply_filters('shipstatic_sftp_verify_host_key', true, $host, $port)) {
             return;
         }
 

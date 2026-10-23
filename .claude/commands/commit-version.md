@@ -1,8 +1,8 @@
 ---
-description: Version bump + changelog + zip build, then commit & sync (Bricks Static)
+description: Version bump + changelog + zip build, then commit & sync (ShipStatic)
 ---
 
-Bricks Static ships as a single free plugin (`bricks-static.php`, `BRICKS_STATIC_VERSION`), wp.org. Changelog: `CHANGELOG.md`.
+ShipStatic ships as a single free plugin (`shipstatic.php`, `SHIPSTATIC_VERSION`), wp.org. Changelog: `CHANGELOG.md`.
 
 Do the following:
 
@@ -11,10 +11,10 @@ Run `git status --porcelain` and `git diff --name-only HEAD` to see what changed
 
 Build output (`assets/dist/**`), `node_modules/`, `dist/`, `vendor/`, and `.md` changelog files do NOT by themselves trigger a bump.
 
-If nothing in the shipped surfaces (`bricks-static.php`, `src/**`, `src-svelte/**`, `uninstall.php`, `README.md`) changed, say so and skip the bump.
+If nothing in the shipped surfaces (`shipstatic.php`, `src/**`, `src-svelte/**`, `uninstall.php`, `README.md`) changed, say so and skip the bump.
 
 ### 2. Bump the version by 0.0.1 (preserve any `-beta`/pre-release suffix)
-Increment `Version:` in the `bricks-static.php` header AND the `BRICKS_STATIC_VERSION` define to match. If `package.json` exists, set its `version` to match (drop the `-beta` suffix if package.json uses bare semver).
+Increment `Version:` in the `shipstatic.php` header AND the `SHIPSTATIC_VERSION` define to match. If `package.json` exists, set its `version` to match (drop the `-beta` suffix if package.json uses bare semver).
 
 ### 3. Update the changelog
 - Add the new version to `CHANGELOG.md` with notes on what changed.
@@ -24,7 +24,7 @@ Increment `Version:` in the `bricks-static.php` header AND the `BRICKS_STATIC_VE
 If the change introduces a new pattern/convention worth recording, add a short note to `CLAUDE.md`.
 
 ### 5. Build the distributable zip
-Run `npm run zip` (this runs `npm run build`, then stages the allowlisted files and writes the version-stamped zip `dist/bricks-static-<ver>.zip`). Do NOT use the old single `/zip-plugin`. If the build fails, STOP and report — do not commit a broken build.
+Run `npm run zip` (this runs `npm run build`, then stages the allowlisted files and writes the version-stamped zip `dist/shipstatic-<ver>.zip`). Do NOT use the old single `/zip-plugin`. If the build fails, STOP and report — do not commit a broken build.
 
 ### 6. Commit & sync
 - Stage and commit with a short, meaningful message naming the new version, e.g. `2.0.1: fix single-page modal styling`.

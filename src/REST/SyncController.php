@@ -2,26 +2,26 @@
 /**
  * Sync REST controller (start / tick / status / cancel).
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\REST;
+namespace WPEasy\ShipStatic\REST;
 
 use WP_REST_Request;
 use WP_REST_Response;
-use WPEasy\BricksStatic\CLI\Background;
-use WPEasy\BricksStatic\Render\PageRenderer;
-use WPEasy\BricksStatic\Settings\Destinations;
-use WPEasy\BricksStatic\Sync\HtaccessBuilder;
-use WPEasy\BricksStatic\Sync\ServerProbe;
-use WPEasy\BricksStatic\Sync\Job;
-use WPEasy\BricksStatic\Sync\ChangeTracker;
-use WPEasy\BricksStatic\Sync\Manifest;
-use WPEasy\BricksStatic\Sync\Runner;
-use WPEasy\BricksStatic\Support\Url;
+use WPEasy\ShipStatic\CLI\Background;
+use WPEasy\ShipStatic\Render\PageRenderer;
+use WPEasy\ShipStatic\Settings\Destinations;
+use WPEasy\ShipStatic\Sync\HtaccessBuilder;
+use WPEasy\ShipStatic\Sync\ServerProbe;
+use WPEasy\ShipStatic\Sync\Job;
+use WPEasy\ShipStatic\Sync\ChangeTracker;
+use WPEasy\ShipStatic\Sync\Manifest;
+use WPEasy\ShipStatic\Sync\Runner;
+use WPEasy\ShipStatic\Support\Url;
 
 defined('ABSPATH') || exit;
 
@@ -35,7 +35,7 @@ final class SyncController {
     /**
      * REST namespace.
      */
-    private const NS = 'bricks-static/v1';
+    private const NS = 'shipstatic/v1';
 
     /**
      * Register routes.
@@ -355,16 +355,16 @@ final class SyncController {
         foreach (Destinations::all() as $dest) {
             $id = (string) ($dest['id'] ?? '');
             delete_option(Destinations::pushed_option($id));
-            delete_option('bricks_static_pkg_off_' . $id);
+            delete_option('shipstatic_pkg_off_' . $id);
             delete_option(Runner::SYNC_SIG . $id);
         }
 
         delete_option(Manifest::RENDER_OPTION);
-        \WPEasy\BricksStatic\Sync\ChangeTracker::forget();
+        \WPEasy\ShipStatic\Sync\ChangeTracker::forget();
 
         // Escape hatch for a legitimate host-key change (server rebuild/migration):
         // clearing trusted SFTP host keys lets the next connection re-establish trust.
-        \WPEasy\BricksStatic\Transport\SftpTransport::forget_host_key();
+        \WPEasy\ShipStatic\Transport\SftpTransport::forget_host_key();
 
         return new WP_REST_Response(['ok' => true]);
     }
@@ -405,7 +405,7 @@ final class SyncController {
             'htaccess' => HtaccessBuilder::htaccess(),
             'nginx'    => HtaccessBuilder::nginx(),
             // Published automatically with every Cloudflare deploy (shown for reference).
-            'cloudflareHeaders' => \WPEasy\BricksStatic\Deploy\CloudflareHeaders::headers(),
+            'cloudflareHeaders' => \WPEasy\ShipStatic\Deploy\CloudflareHeaders::headers(),
             'checks'   => (object) ServerProbe::all_last(),
         ]);
     }

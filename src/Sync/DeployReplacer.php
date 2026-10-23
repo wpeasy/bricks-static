@@ -12,15 +12,15 @@
  * tables, collect any extra files to upload), then {@see apply()} runs per HTML
  * file using the prepared context.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.4
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Sync;
+namespace WPEasy\ShipStatic\Sync;
 
-use WPEasy\BricksStatic\Settings\Destination;
+use WPEasy\ShipStatic\Settings\Destination;
 
 defined('ABSPATH') || exit;
 

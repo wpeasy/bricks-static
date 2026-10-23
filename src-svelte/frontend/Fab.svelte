@@ -22,7 +22,7 @@
     includedCount?: number;
   } = $props();
 
-  const POS_KEY = 'bricks_static_fab_pos';
+  const POS_KEY = 'shipstatic_fab_pos';
   const SIZE = 56; // px — button footprint, for viewport clamping.
 
   let pos = $state<{ x: number; y: number }>(loadPos());

@@ -2,19 +2,19 @@
 /**
  * Destination web-server probe: detect the server and verify our rules took effect.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   2.1.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Sync;
+namespace WPEasy\ShipStatic\Sync;
 
-use WPEasy\BricksStatic\Deploy\ConnectorClient;
-use WPEasy\BricksStatic\Deploy\PackageDeployer;
-use WPEasy\BricksStatic\Settings\Destination;
-use WPEasy\BricksStatic\Settings\Destinations;
-use WPEasy\BricksStatic\Support\UrlSafety;
+use WPEasy\ShipStatic\Deploy\ConnectorClient;
+use WPEasy\ShipStatic\Deploy\PackageDeployer;
+use WPEasy\ShipStatic\Settings\Destination;
+use WPEasy\ShipStatic\Settings\Destinations;
+use WPEasy\ShipStatic\Support\UrlSafety;
 
 defined('ABSPATH') || exit;
 
@@ -40,7 +40,7 @@ final class ServerProbe {
     /**
      * Option prefix for the last result, per destination id.
      */
-    private const OPTION_PREFIX = 'bricks_static_server_check_';
+    private const OPTION_PREFIX = 'shipstatic_server_check_';
 
     /**
      * Per-request timeout (seconds).
@@ -69,13 +69,13 @@ final class ServerProbe {
         $result = self::empty_result($dest_id);
 
         if ($dest === null) {
-            $result['error'] = __('Unknown destination.', 'bricks-static');
+            $result['error'] = __('Unknown destination.', 'shipstatic');
             return $result;
         }
 
         $base = rtrim(PackageDeployer::base_url($dest), '/');
         if ($base === '') {
-            $result['error'] = __('Set a Destination URL for this destination first, so the probe knows where the site is served from.', 'bricks-static');
+            $result['error'] = __('Set a Destination URL for this destination first, so the probe knows where the site is served from.', 'shipstatic');
             return self::remember($dest_id, $result);
         }
 
@@ -113,6 +113,10 @@ final class ServerProbe {
         // so report it as Cloudflare rather than "a CDN hiding the origin".
         if ($dest->is_cloudflare()) {
             $result['server'] = 'cloudflare';
+        }
+        // GitHub Pages likewise: its own servers, its own fixed cache policy.
+        if ($dest->is_github()) {
+            $result['server'] = 'github';
         }
 
         $cc = self::header($html, 'cache-control');
@@ -293,7 +297,7 @@ final class ServerProbe {
      *
      * @param string $header Raw Server header.
      * @return string apache|litespeed|nginx|proxied|other|unknown (`cloudflare`
-     *                is set by run() for Cloudflare destinations, never here)
+     *                / `github` are set by run() for those destinations, never here)
      */
     private static function classify(string $header): string {
         $h = strtolower($header);
@@ -409,51 +413,58 @@ final class ServerProbe {
             'litespeed' => 'LiteSpeed',
             'nginx'     => 'nginx',
             'cloudflare'=> 'Cloudflare',
+            'github'    => 'GitHub Pages',
             'proxied'   => $r['serverHeader'],
             'other'     => $r['serverHeader'],
-            'unknown'   => __('an unidentified server', 'bricks-static'),
+            'unknown'   => __('an unidentified server', 'shipstatic'),
         ];
         $server = (string) ($labels[$r['server']] ?? $r['serverHeader']);
         $code   = is_array($r['html']) ? (int) $r['html']['code'] : 0;
 
         if ($code !== 200) {
             /* translators: %d: HTTP status code */
-            return sprintf(__('The destination URL answered HTTP %d, so the rules could not be verified. Check the Destination URL and remote path point at the deployed site.', 'bricks-static'), $code);
+            return sprintf(__('The destination URL answered HTTP %d, so the rules could not be verified. Check the Destination URL and remote path point at the deployed site.', 'shipstatic'), $code);
         }
 
         if (!$r['synced']) {
             /* translators: %s: web server name */
-            return sprintf(__('%s is answering, but nothing has been synced to this destination yet — run a Sync, then check again.', 'bricks-static'), $server);
+            return sprintf(__('%s is answering, but nothing has been synced to this destination yet — run a Sync, then check again.', 'shipstatic'), $server);
+        }
+
+        if ($r['server'] === 'github') {
+            // GitHub Pages serves everything with its own short cache
+            // (max-age=600) and offers no way to set headers — nothing to fix.
+            return __('GitHub Pages — the site is being served. GitHub sets its own cache headers (about 10 minutes for every file) and compresses files itself; custom cache rules can’t be applied there.', 'shipstatic');
         }
 
         switch ($r['applied']) {
             case 'yes':
                 /* translators: %s: web server name */
-                return sprintf(__('%s — cache policy in effect (assets long-cached, HTML revalidated).', 'bricks-static'), $server);
+                return sprintf(__('%s — cache policy in effect (assets long-cached, HTML revalidated).', 'shipstatic'), $server);
 
             case 'partial':
                 /* translators: %s: web server name */
-                return sprintf(__('%s — the cache policy is only partly in effect. Compare the headers below with the rules.', 'bricks-static'), $server);
+                return sprintf(__('%s — the cache policy is only partly in effect. Compare the headers below with the rules.', 'shipstatic'), $server);
         }
 
         switch ($r['server']) {
             case 'cloudflare':
-                return __('Cloudflare — the cache rules are not in effect yet. They are published with every Cloudflare deploy, so run a Sync, then check again.', 'bricks-static');
+                return __('Cloudflare — the cache rules are not in effect yet. They are published with every Cloudflare deploy, so run a Sync, then check again.', 'shipstatic');
 
             case 'nginx':
-                return __('nginx detected. The site is being served, but the optional cache tuning is not applied — paste the nginx snippet into your server block and reload nginx, then check again.', 'bricks-static');
+                return __('nginx detected. The site is being served, but the optional cache tuning is not applied — paste the nginx snippet into your server block and reload nginx, then check again.', 'shipstatic');
 
             case 'apache':
             case 'litespeed':
                 /* translators: %s: web server name */
-                return sprintf(__('%s detected, but the .htaccess cache headers are not in effect. Check that mod_headers is enabled and that .htaccess overrides are allowed (AllowOverride) for the destination directory.', 'bricks-static'), $server);
+                return sprintf(__('%s detected, but the .htaccess cache headers are not in effect. Check that mod_headers is enabled and that .htaccess overrides are allowed (AllowOverride) for the destination directory.', 'shipstatic'), $server);
 
             case 'proxied':
                 /* translators: %s: proxy/CDN name */
-                return sprintf(__('A CDN/proxy (%s) is in front of the destination, which hides the origin server and may rewrite cache headers. The cache policy is not visible at the edge.', 'bricks-static'), $server);
+                return sprintf(__('A CDN/proxy (%s) is in front of the destination, which hides the origin server and may rewrite cache headers. The cache policy is not visible at the edge.', 'shipstatic'), $server);
         }
 
         /* translators: %s: web server name */
-        return sprintf(__('%s detected — the cache policy is not in effect. On Apache/LiteSpeed the .htaccess is uploaded automatically; on nginx, apply the snippet below.', 'bricks-static'), $server);
+        return sprintf(__('%s detected — the cache policy is not in effect. On Apache/LiteSpeed the .htaccess is uploaded automatically; on nginx, apply the snippet below.', 'shipstatic'), $server);
     }
 }

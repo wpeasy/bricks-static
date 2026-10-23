@@ -2,13 +2,13 @@
 /**
  * Credential encryption.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Support;
+namespace WPEasy\ShipStatic\Support;
 
 defined('ABSPATH') || exit;
 
@@ -114,6 +114,6 @@ final class Crypto {
             $material = wp_salt('auth');
         }
 
-        return hash('sha256', 'bricks-static|' . $material, true);
+        return hash('sha256', 'shipstatic|' . $material, true);
     }
 }

@@ -29,7 +29,7 @@ export interface UiPrefs {
   duration: number;
 }
 
-const KEY = 'bricks_static_ui_prefs';
+const KEY = 'shipstatic_ui_prefs';
 
 // Defaults mirror ab-ui's ThemeCustomizer / token defaults.
 const DEFAULTS: UiPrefs = {

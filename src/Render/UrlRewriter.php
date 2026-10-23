@@ -2,15 +2,15 @@
 /**
  * Rewrites absolute source-origin URLs to root-relative.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Render;
+namespace WPEasy\ShipStatic\Render;
 
-use WPEasy\BricksStatic\Support\Url;
+use WPEasy\ShipStatic\Support\Url;
 
 defined('ABSPATH') || exit;
 
@@ -33,23 +33,29 @@ final class UrlRewriter {
      * @return string Rewritten content.
      */
     public static function rewrite(string $content): string {
-        $search = [];
+        // WordPress at the domain root has no home sub-path to remap, so a
+        // "served from" base must be ADDED — it goes where the origin was:
+        // "https://host/about" → "/blog/about". (With a home sub-path,
+        // apply_base_path() swaps that sub-path for the base instead.)
+        $prefix  = Url::home_base() === '' ? Url::base_path() : '';
+        $escaped = str_replace('/', '\/', $prefix);
+
+        $search  = [];
+        $replace = [];
 
         foreach (self::source_hosts() as $host) {
             // Order matters: scheme-qualified forms before bare "//host", so the
             // latter can't chew the slashes out of the former. Both plain and
             // JSON-escaped (\/\/) slash forms are covered.
-            $search[] = 'https://' . $host;
-            $search[] = 'http://' . $host;
-            $search[] = '//' . $host;
-            $search[] = 'https:\/\/' . $host;
-            $search[] = 'http:\/\/' . $host;
-            $search[] = '\/\/' . $host;
+            array_push($search, 'https://' . $host, 'http://' . $host, '//' . $host);
+            array_push($replace, $prefix, $prefix, $prefix);
+            array_push($search, 'https:\/\/' . $host, 'http:\/\/' . $host, '\/\/' . $host);
+            array_push($replace, $escaped, $escaped, $escaped);
         }
 
-        // Replacing the origin with '' leaves the following path (escaped or not):
-        // "https://host/about" → "/about", "https:\/\/host\/x" → "\/x".
-        $content = str_replace($search, '', $content);
+        // Replacing the origin with '' (or the base) leaves the following path
+        // (escaped or not): "https://host/about" → "/about", "https:\/\/host\/x" → "\/x".
+        $content = str_replace($search, $replace, $content);
 
         // Now remap the source home sub-path to the configured "served from" base
         // path, so e.g. "/test-for-vid/about/" becomes "/about/" (default base "/").
@@ -134,6 +140,9 @@ final class UrlRewriter {
         $authority = $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
         $origin    = $scheme . '://' . $authority;
 
+        // Unlike rewrite(), no base prefix is added here for a root install:
+        // sitemap/robots entries are built from the already-remapped paths,
+        // so they carry the base themselves.
         $search  = [];
         $replace = [];
         foreach (self::source_hosts() as $host) {

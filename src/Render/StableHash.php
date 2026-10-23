@@ -2,13 +2,13 @@
 /**
  * Render-stable content hashing.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Render;
+namespace WPEasy\ShipStatic\Render;
 
 defined('ABSPATH') || exit;
 
@@ -50,7 +50,7 @@ final class StableHash {
          *
          * @param array<string,string> $map Pattern => replacement.
          */
-        return (array) apply_filters('bricks_static_stable_hash_patterns', $map);
+        return (array) apply_filters('shipstatic_stable_hash_patterns', $map);
     }
 
     /**

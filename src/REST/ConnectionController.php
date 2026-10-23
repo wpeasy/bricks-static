@@ -2,18 +2,18 @@
 /**
  * Connection + settings REST controller.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\REST;
+namespace WPEasy\ShipStatic\REST;
 
 use WP_REST_Request;
 use WP_REST_Response;
-use WPEasy\BricksStatic\Settings\Settings;
-use WPEasy\BricksStatic\Transport\TransportFactory;
+use WPEasy\ShipStatic\Settings\Settings;
+use WPEasy\ShipStatic\Transport\TransportFactory;
 
 defined('ABSPATH') || exit;
 
@@ -25,7 +25,7 @@ final class ConnectionController {
     /**
      * REST namespace.
      */
-    private const NS = 'bricks-static/v1';
+    private const NS = 'shipstatic/v1';
 
     /**
      * Register routes.
@@ -78,7 +78,7 @@ final class ConnectionController {
         $saved = Settings::save($input);
 
         // Credentials/host may have changed — invalidate the cached test result.
-        delete_option('bricks_static_connection_state');
+        delete_option('shipstatic_connection_state');
 
         return new WP_REST_Response([
             'settings'     => $saved,
@@ -112,7 +112,7 @@ final class ConnectionController {
             $transport->disconnect();
         }
 
-        update_option('bricks_static_connection_state', [
+        update_option('shipstatic_connection_state', [
             'ok'      => $ok,
             'time'    => time(),
             'message' => $message,

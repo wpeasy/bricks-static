@@ -4,19 +4,19 @@
  * time, PER PAGE, and queues the replacement files (full + responsive variants)
  * for upload.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Render;
+namespace WPEasy\ShipStatic\Render;
 
-use WPEasy\BricksStatic\Media\MediaCollector;
-use WPEasy\BricksStatic\Settings\Destination;
-use WPEasy\BricksStatic\Support\Paths;
-use WPEasy\BricksStatic\Support\Url;
-use WPEasy\BricksStatic\Sync\DeployReplacer;
+use WPEasy\ShipStatic\Media\MediaCollector;
+use WPEasy\ShipStatic\Settings\Destination;
+use WPEasy\ShipStatic\Support\Paths;
+use WPEasy\ShipStatic\Support\Url;
+use WPEasy\ShipStatic\Sync\DeployReplacer;
 
 defined('ABSPATH') || exit;
 

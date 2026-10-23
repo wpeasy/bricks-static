@@ -2,13 +2,13 @@
 /**
  * Export ZIP download endpoint.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Export;
+namespace WPEasy\ShipStatic\Export;
 
 use WP_REST_Request;
 use WP_REST_Response;
@@ -18,7 +18,7 @@ defined('ABSPATH') || exit;
 /**
  * Streams a finished export zip and exits — the one deliberate departure from
  * "every REST controller returns JSON" in this codebase (see
- * SECURITY_PATTERNS.md §0). Stays a normal `bricks-static/v1` REST route rather than a
+ * SECURITY_PATTERNS.md §0). Stays a normal `shipstatic/v1` REST route rather than a
  * new `admin_post_*`/`wp_ajax_*` handler, so that invariant stays accurate:
  * auth is the same `manage_options` + `wp_rest` nonce every other route uses
  * (WP core's REST cookie auth accepts `?_wpnonce=` as a query-param fallback
@@ -35,7 +35,7 @@ final class ExportDownload {
     /**
      * REST namespace.
      */
-    private const NS = 'bricks-static/v1';
+    private const NS = 'shipstatic/v1';
 
     /**
      * Register the download route.
@@ -64,17 +64,17 @@ final class ExportDownload {
     public static function handle(WP_REST_Request $request) {
         $token = sanitize_text_field((string) $request->get_param('token'));
         if ($token === '') {
-            return new WP_REST_Response(['message' => __('Missing download token.', 'bricks-static')], 400);
+            return new WP_REST_Response(['message' => __('Missing download token.', 'shipstatic')], 400);
         }
 
-        $record = get_transient('bricks_static_export_dl_' . $token);
+        $record = get_transient('shipstatic_export_dl_' . $token);
         if (!is_array($record) || empty($record['path']) || !is_file((string) $record['path'])) {
-            return new WP_REST_Response(['message' => __('This export is no longer available — please export again.', 'bricks-static')], 404);
+            return new WP_REST_Response(['message' => __('This export is no longer available — please export again.', 'shipstatic')], 404);
         }
 
         // Single-use: gone whether the download succeeds or the browser
         // aborts partway through.
-        delete_transient('bricks_static_export_dl_' . $token);
+        delete_transient('shipstatic_export_dl_' . $token);
 
         $path     = (string) $record['path'];
         $filename = (string) ($record['filename'] ?? basename($path));

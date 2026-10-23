@@ -2,13 +2,13 @@
 /**
  * Per-page media swapping in rendered HTML.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Render;
+namespace WPEasy\ShipStatic\Render;
 
 defined('ABSPATH') || exit;
 

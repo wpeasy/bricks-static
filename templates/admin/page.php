@@ -5,7 +5,7 @@
  * Hosts the Svelte dashboard. The `.bs` root container scopes the base
  * framework tokens/styles; the Svelte app mounts into #bs-dashboard.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
@@ -17,10 +17,10 @@ defined('ABSPATH') || exit;
 	<div class="bs">
 		<div id="bs-dashboard">
 			<noscript>
-				<?php echo esc_html__('Bricks Static requires JavaScript.', 'bricks-static'); ?>
+				<?php echo esc_html__('ShipStatic requires JavaScript.', 'shipstatic'); ?>
 			</noscript>
 			<p style="color: var(--bs-color-text--muted);">
-				<?php echo esc_html__('Loading…', 'bricks-static'); ?>
+				<?php echo esc_html__('Loading…', 'shipstatic'); ?>
 			</p>
 		</div>
 	</div>

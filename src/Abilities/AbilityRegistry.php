@@ -15,32 +15,32 @@
  *  - State-changing abilities are registered ONLY when their opt-in toggle is on
  *    (default off), AND re-check the toggle in the permission callback
  *    (defence in depth — registration and execution are both gated):
- *      • `bricks_static_ai_allow_changes` → local config/meta edits (discovery mode, the
+ *      • `shipstatic_ai_allow_changes` → local config/meta edits (discovery mode, the
  *        per-post Include switch, the include cascade).
- *      • `bricks_static_ai_allow_sync`    → anything that runs the engine or touches a
+ *      • `shipstatic_ai_allow_sync`    → anything that runs the engine or touches a
  *        remote (scan, full/single-page sync, reset, cancel).
  *  - No ability returns secrets/credentials/PII (destinations are reported by
  *    name + state only).
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.0.2
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Abilities;
+namespace WPEasy\ShipStatic\Abilities;
 
 use WP_Error;
-use WPEasy\BricksStatic\Discovery\UrlCollector;
-use WPEasy\BricksStatic\Render\AssetExtractor;
-use WPEasy\BricksStatic\Settings\Destinations;
-use WPEasy\BricksStatic\Support\Environment;
-use WPEasy\BricksStatic\Support\Url;
-use WPEasy\BricksStatic\CLI\Background;
-use WPEasy\BricksStatic\Sync\LinkGraph;
-use WPEasy\BricksStatic\Sync\Manifest;
-use WPEasy\BricksStatic\Sync\MethodResolver;
-use WPEasy\BricksStatic\Sync\Runner;
+use WPEasy\ShipStatic\Discovery\UrlCollector;
+use WPEasy\ShipStatic\Render\AssetExtractor;
+use WPEasy\ShipStatic\Settings\Destinations;
+use WPEasy\ShipStatic\Support\Environment;
+use WPEasy\ShipStatic\Support\Url;
+use WPEasy\ShipStatic\CLI\Background;
+use WPEasy\ShipStatic\Sync\LinkGraph;
+use WPEasy\ShipStatic\Sync\Manifest;
+use WPEasy\ShipStatic\Sync\MethodResolver;
+use WPEasy\ShipStatic\Sync\Runner;
 
 defined('ABSPATH') || exit;
 
@@ -54,17 +54,17 @@ final class AbilityRegistry {
     /**
      * Ability namespace prefix (also the category slug).
      */
-    private const NS = 'bricks-static';
+    private const NS = 'shipstatic';
 
     /**
      * Option enabling the local-change abilities (discovery mode, include).
      */
-    public const OPT_CHANGES = 'bricks_static_ai_allow_changes';
+    public const OPT_CHANGES = 'shipstatic_ai_allow_changes';
 
     /**
      * Option enabling the engine/remote abilities (scan, sync, reset, cancel).
      */
-    public const OPT_SYNC = 'bricks_static_ai_allow_sync';
+    public const OPT_SYNC = 'shipstatic_ai_allow_sync';
 
     /**
      * Hook registration. No-op when the Abilities API isn't present, so the
@@ -100,8 +100,8 @@ final class AbilityRegistry {
             return; // Abilities API (WordPress 6.9+) not present.
         }
         wp_register_ability_category(self::NS, [
-            'label'       => __('Bricks Static', 'bricks-static'),
-            'description' => __('Inspect and drive the Bricks Static export/sync engine.', 'bricks-static'),
+            'label'       => __('ShipStatic', 'shipstatic'),
+            'description' => __('Inspect and drive the ShipStatic export/sync engine.', 'shipstatic'),
         ]);
     }
 
@@ -112,55 +112,55 @@ final class AbilityRegistry {
     public static function register_abilities(): void {
         // ---- Read-only (always on) -----------------------------------------
         self::register('get-status', [
-            'label'           => __('Get sync status', 'bricks-static'),
-            'description'     => __('Returns whether a destination is connected, whether anything has been pushed, and whether the static copy is in sync, plus the resolved sync method and discovery mode.', 'bricks-static'),
+            'label'           => __('Get sync status', 'shipstatic'),
+            'description'     => __('Returns whether a destination is connected, whether anything has been pushed, and whether the static copy is in sync, plus the resolved sync method and discovery mode.', 'shipstatic'),
             'execute_callback' => [self::class, 'get_status'],
             'readonly'        => true,
         ]);
         self::register('get-method', [
-            'label'           => __('Get sync method', 'bricks-static'),
-            'description'     => __('Returns how a sync will run: discovery mode, transport, compression, server target and link style.', 'bricks-static'),
+            'label'           => __('Get sync method', 'shipstatic'),
+            'description'     => __('Returns how a sync will run: discovery mode, transport, compression, server target and link style.', 'shipstatic'),
             'execute_callback' => [self::class, 'get_method'],
             'readonly'        => true,
         ]);
         self::register('list-pages', [
-            'label'           => __('List exportable pages', 'bricks-static'),
-            'description'     => __('Lists published, public posts/pages with their static-export state: whether each is included, whether it will actually export under the current plan, and whether it is currently synced.', 'bricks-static'),
+            'label'           => __('List exportable pages', 'shipstatic'),
+            'description'     => __('Lists published, public posts/pages with their static-export state: whether each is included, whether it will actually export under the current plan, and whether it is currently synced.', 'shipstatic'),
             'execute_callback' => [self::class, 'list_pages'],
             'readonly'        => true,
         ]);
         self::register('get-page-status', [
-            'label'           => __('Get page sync status', 'bricks-static'),
-            'description'     => __('For one post, returns its include/effective/synced state and per-destination push state.', 'bricks-static'),
+            'label'           => __('Get page sync status', 'shipstatic'),
+            'description'     => __('For one post, returns its include/effective/synced state and per-destination push state.', 'shipstatic'),
             'execute_callback' => [self::class, 'get_page_status'],
             'input_schema'    => self::post_id_schema(),
             'readonly'        => true,
         ]);
         self::register('check-page-links', [
-            'label'           => __('Check page link integrity', 'bricks-static'),
-            'description'     => __('For one post, reports internal links that point to pages NOT in the export (outbound) and currently-included pages that link TO it (inbound) — the data behind the manual-mode link-integrity warnings.', 'bricks-static'),
+            'label'           => __('Check page link integrity', 'shipstatic'),
+            'description'     => __('For one post, reports internal links that point to pages NOT in the export (outbound) and currently-included pages that link TO it (inbound) — the data behind the manual-mode link-integrity warnings.', 'shipstatic'),
             'execute_callback' => [self::class, 'check_page_links'],
             'input_schema'    => self::post_id_schema(),
             'readonly'        => true,
         ]);
         self::register('list-destinations', [
-            'label'           => __('List destinations', 'bricks-static'),
-            'description'     => __('Lists the configured deploy destinations by name, transport type and enabled state. Never returns credentials.', 'bricks-static'),
+            'label'           => __('List destinations', 'shipstatic'),
+            'description'     => __('Lists the configured deploy destinations by name, transport type and enabled state. Never returns credentials.', 'shipstatic'),
             'execute_callback' => [self::class, 'list_destinations'],
             'readonly'        => true,
         ]);
         self::register('get-sync-progress', [
-            'label'           => __('Get sync progress', 'bricks-static'),
-            'description'     => __('Returns the current sync job snapshot (phase, counts, totals, recent errors) — useful for polling a run started elsewhere.', 'bricks-static'),
+            'label'           => __('Get sync progress', 'shipstatic'),
+            'description'     => __('Returns the current sync job snapshot (phase, counts, totals, recent errors) — useful for polling a run started elsewhere.', 'shipstatic'),
             'execute_callback' => [self::class, 'get_sync_progress'],
             'readonly'        => true,
         ]);
 
-        // ---- Local changes (opt-in: bricks_static_ai_allow_changes) -------------------
+        // ---- Local changes (opt-in: shipstatic_ai_allow_changes) -------------------
         if (self::changes_enabled()) {
             self::register('set-discovery-mode', [
-                'label'           => __('Set discovery mode', 'bricks-static'),
-                'description'     => __('Sets how pages are discovered for export: "linked", "all" or "manual".', 'bricks-static'),
+                'label'           => __('Set discovery mode', 'shipstatic'),
+                'description'     => __('Sets how pages are discovered for export: "linked", "all" or "manual".', 'shipstatic'),
                 'execute_callback' => [self::class, 'set_discovery_mode'],
                 'permission'      => 'changes',
                 'input_schema'    => [
@@ -169,7 +169,7 @@ final class AbilityRegistry {
                         'mode' => [
                             'type'        => 'string',
                             'enum'        => ['linked', 'all', 'manual'],
-                            'description' => __('The discovery mode to set.', 'bricks-static'),
+                            'description' => __('The discovery mode to set.', 'shipstatic'),
                         ],
                     ],
                     'required'   => ['mode'],
@@ -177,23 +177,23 @@ final class AbilityRegistry {
                 'idempotent'      => true,
             ]);
             self::register('set-page-include', [
-                'label'           => __('Include or exclude a page', 'bricks-static'),
-                'description'     => __('In manual discovery mode, sets whether a single post is included in the static export.', 'bricks-static'),
+                'label'           => __('Include or exclude a page', 'shipstatic'),
+                'description'     => __('In manual discovery mode, sets whether a single post is included in the static export.', 'shipstatic'),
                 'execute_callback' => [self::class, 'set_page_include'],
                 'permission'      => 'changes',
                 'input_schema'    => [
                     'type'       => 'object',
                     'properties' => [
-                        'postId'  => ['type' => 'integer', 'description' => __('The post ID.', 'bricks-static')],
-                        'include' => ['type' => 'boolean', 'description' => __('True to include, false to exclude.', 'bricks-static')],
+                        'postId'  => ['type' => 'integer', 'description' => __('The post ID.', 'shipstatic')],
+                        'include' => ['type' => 'boolean', 'description' => __('True to include, false to exclude.', 'shipstatic')],
                     ],
                     'required'   => ['postId', 'include'],
                 ],
                 'idempotent'      => true,
             ]);
             self::register('include-pages', [
-                'label'           => __('Include multiple pages', 'bricks-static'),
-                'description'     => __('In manual discovery mode, includes a batch of posts (e.g. the cascade when enabling a page that links to others).', 'bricks-static'),
+                'label'           => __('Include multiple pages', 'shipstatic'),
+                'description'     => __('In manual discovery mode, includes a batch of posts (e.g. the cascade when enabling a page that links to others).', 'shipstatic'),
                 'execute_callback' => [self::class, 'include_pages'],
                 'permission'      => 'changes',
                 'input_schema'    => [
@@ -202,7 +202,7 @@ final class AbilityRegistry {
                         'postIds' => [
                             'type'        => 'array',
                             'items'       => ['type' => 'integer'],
-                            'description' => __('The post IDs to include.', 'bricks-static'),
+                            'description' => __('The post IDs to include.', 'shipstatic'),
                         ],
                     ],
                     'required'   => ['postIds'],
@@ -211,44 +211,44 @@ final class AbilityRegistry {
             ]);
         }
 
-        // ---- Engine / remote (opt-in: bricks_static_ai_allow_sync) --------------------
+        // ---- Engine / remote (opt-in: shipstatic_ai_allow_sync) --------------------
         if (self::sync_enabled()) {
             self::register('scan', [
-                'label'           => __('Scan (dry run)', 'bricks-static'),
-                'description'     => __('Starts a check run: renders the pages and reports what would change, without pushing anything to a destination.', 'bricks-static'),
+                'label'           => __('Scan (dry run)', 'shipstatic'),
+                'description'     => __('Starts a check run: renders the pages and reports what would change, without pushing anything to a destination.', 'shipstatic'),
                 'execute_callback' => [self::class, 'scan'],
                 'permission'      => 'sync',
                 'idempotent'      => true,
             ]);
             self::register('sync', [
-                'label'           => __('Sync', 'bricks-static'),
-                'description'     => __('Starts a full sync: renders the pages and pushes the static copy to the destination(s).', 'bricks-static'),
+                'label'           => __('Sync', 'shipstatic'),
+                'description'     => __('Starts a full sync: renders the pages and pushes the static copy to the destination(s).', 'shipstatic'),
                 'execute_callback' => [self::class, 'sync'],
                 'permission'      => 'sync',
             ]);
             self::register('sync-page', [
-                'label'           => __('Sync a single page', 'bricks-static'),
-                'description'     => __('Renders one page (and any new internal pages it links to) and pushes only the changed files to destinations opted into single-page sync.', 'bricks-static'),
+                'label'           => __('Sync a single page', 'shipstatic'),
+                'description'     => __('Renders one page (and any new internal pages it links to) and pushes only the changed files to destinations opted into single-page sync.', 'shipstatic'),
                 'execute_callback' => [self::class, 'sync_page'],
                 'permission'      => 'sync',
                 'input_schema'    => [
                     'type'       => 'object',
                     'properties' => [
-                        'url' => ['type' => 'string', 'description' => __('The internal page URL to sync.', 'bricks-static')],
+                        'url' => ['type' => 'string', 'description' => __('The internal page URL to sync.', 'shipstatic')],
                     ],
                     'required'   => ['url'],
                 ],
             ]);
             self::register('cancel-sync', [
-                'label'           => __('Cancel sync', 'bricks-static'),
-                'description'     => __('Requests cancellation of the running sync job.', 'bricks-static'),
+                'label'           => __('Cancel sync', 'shipstatic'),
+                'description'     => __('Requests cancellation of the running sync job.', 'shipstatic'),
                 'execute_callback' => [self::class, 'cancel_sync'],
                 'permission'      => 'sync',
                 'idempotent'      => true,
             ]);
             self::register('reset-sync-state', [
-                'label'           => __('Reset sync state', 'bricks-static'),
-                'description'     => __('Clears the local record of what has been pushed so the next sync re-uploads everything. Destructive: does not delete remote files but forces a full re-upload.', 'bricks-static'),
+                'label'           => __('Reset sync state', 'shipstatic'),
+                'description'     => __('Clears the local record of what has been pushed so the next sync re-uploads everything. Destructive: does not delete remote files but forces a full re-upload.', 'shipstatic'),
                 'execute_callback' => [self::class, 'reset_sync_state'],
                 'permission'      => 'sync',
                 'destructive'     => true,
@@ -324,7 +324,7 @@ final class AbilityRegistry {
         return [
             'type'       => 'object',
             'properties' => [
-                'postId' => ['type' => 'integer', 'description' => __('The post ID.', 'bricks-static')],
+                'postId' => ['type' => 'integer', 'description' => __('The post ID.', 'shipstatic')],
             ],
             'required'   => ['postId'],
         ];
@@ -338,7 +338,7 @@ final class AbilityRegistry {
      * @return array<string,mixed>
      */
     public static function get_status(): array {
-        $state   = get_option('bricks_static_connection_state', []);
+        $state   = get_option('shipstatic_connection_state', []);
         $primary = Destinations::primary();
         $pushed  = Manifest::load(Destinations::pushed_option($primary->id()));
 
@@ -424,7 +424,7 @@ final class AbilityRegistry {
         $post_id = (int) (is_array($input) ? ($input['postId'] ?? 0) : 0);
         $post    = $post_id > 0 ? get_post($post_id) : null;
         if ($post === null) {
-            return new WP_Error('bricks_static_invalid_post', __('A valid post ID is required.', 'bricks-static'));
+            return new WP_Error('shipstatic_invalid_post', __('A valid post ID is required.', 'shipstatic'));
         }
 
         $rel     = Url::to_relative_path((string) get_permalink($post_id));
@@ -459,7 +459,7 @@ final class AbilityRegistry {
     public static function check_page_links($input) {
         $post_id = (int) (is_array($input) ? ($input['postId'] ?? 0) : 0);
         if ($post_id <= 0 || get_post($post_id) === null) {
-            return new WP_Error('bricks_static_invalid_post', __('A valid post ID is required.', 'bricks-static'));
+            return new WP_Error('shipstatic_invalid_post', __('A valid post ID is required.', 'shipstatic'));
         }
 
         // Outbound: links from this page to pages not in the export.
@@ -510,7 +510,7 @@ final class AbilityRegistry {
             'outboundExcluded' => $outbound,
             'inboundIncluded'  => $inbound,
             'outboundBusy'     => $busy,
-            'inboundNote'      => __('Inbound links reflect the most recent scan/sync.', 'bricks-static'),
+            'inboundNote'      => __('Inbound links reflect the most recent scan/sync.', 'shipstatic'),
         ];
     }
 
@@ -543,7 +543,7 @@ final class AbilityRegistry {
     }
 
     // ====================================================================
-    // Local-change execute callbacks (bricks_static_ai_allow_changes)
+    // Local-change execute callbacks (shipstatic_ai_allow_changes)
     // ====================================================================
 
     /**
@@ -566,10 +566,10 @@ final class AbilityRegistry {
         $include = is_array($input) ? !empty($input['include']) : false;
 
         if ($post_id <= 0 || get_post($post_id) === null) {
-            return new WP_Error('bricks_static_invalid_post', __('A valid post ID is required.', 'bricks-static'));
+            return new WP_Error('shipstatic_invalid_post', __('A valid post ID is required.', 'shipstatic'));
         }
         if (!current_user_can('edit_post', $post_id)) {
-            return new WP_Error('bricks_static_forbidden', __('You cannot edit this post.', 'bricks-static'));
+            return new WP_Error('shipstatic_forbidden', __('You cannot edit this post.', 'shipstatic'));
         }
 
         update_post_meta($post_id, UrlCollector::INCLUDE_META, $include ? '1' : '0');
@@ -601,7 +601,7 @@ final class AbilityRegistry {
     }
 
     // ====================================================================
-    // Engine / remote execute callbacks (bricks_static_ai_allow_sync)
+    // Engine / remote execute callbacks (shipstatic_ai_allow_sync)
     // ====================================================================
 
     /**
@@ -631,10 +631,10 @@ final class AbilityRegistry {
     public static function sync_page($input) {
         $url = is_array($input) ? esc_url_raw((string) ($input['url'] ?? '')) : '';
         if ($url === '' || !Url::is_internal($url)) {
-            return new WP_Error('bricks_static_invalid_url', __('A valid internal page URL is required.', 'bricks-static'));
+            return new WP_Error('shipstatic_invalid_url', __('A valid internal page URL is required.', 'shipstatic'));
         }
         if (empty(Destinations::single_page_ids())) {
-            return new WP_Error('bricks_static_no_targets', __('No destinations are enabled for single-page sync.', 'bricks-static'));
+            return new WP_Error('shipstatic_no_targets', __('No destinations are enabled for single-page sync.', 'shipstatic'));
         }
 
         return self::start_run('sync', ['only' => $url]);
@@ -653,15 +653,15 @@ final class AbilityRegistry {
      * @return array<string,mixed>
      */
     public static function reset_sync_state(): array {
-        \WPEasy\BricksStatic\Sync\Job::clear();
+        \WPEasy\ShipStatic\Sync\Job::clear();
         foreach (Destinations::all() as $dest) {
             $id = (string) ($dest['id'] ?? '');
             delete_option(Destinations::pushed_option($id));
-            delete_option('bricks_static_pkg_off_' . $id);
+            delete_option('shipstatic_pkg_off_' . $id);
             delete_option(Runner::SYNC_SIG . $id);
         }
         delete_option(Manifest::RENDER_OPTION);
-        \WPEasy\BricksStatic\Transport\SftpTransport::forget_host_key();
+        \WPEasy\ShipStatic\Transport\SftpTransport::forget_host_key();
 
         return ['ok' => true];
     }
@@ -726,7 +726,7 @@ final class AbilityRegistry {
         }
 
         try {
-            $result = \WPEasy\BricksStatic\Render\PageRenderer::render($url);
+            $result = \WPEasy\ShipStatic\Render\PageRenderer::render($url);
             if ($result['code'] === 200 && stripos((string) $result['contentType'], 'html') !== false) {
                 return (string) $result['body'];
             }

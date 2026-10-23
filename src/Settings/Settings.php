@@ -2,13 +2,13 @@
 /**
  * Settings read/write — compatibility shim over the primary destination.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Settings;
+namespace WPEasy\ShipStatic\Settings;
 
 defined('ABSPATH') || exit;
 

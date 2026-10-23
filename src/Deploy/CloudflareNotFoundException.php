@@ -2,13 +2,13 @@
 /**
  * Cloudflare: the requested resource does not exist.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   2.1.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Deploy;
+namespace WPEasy\ShipStatic\Deploy;
 
 defined('ABSPATH') || exit;
 

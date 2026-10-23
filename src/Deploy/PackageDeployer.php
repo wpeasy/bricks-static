@@ -3,19 +3,19 @@
  * Package (zip) deploy: one upload + server-side extract, instead of one slow
  * FTP transfer per file.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Deploy;
+namespace WPEasy\ShipStatic\Deploy;
 
-use WPEasy\BricksStatic\Sync\Compressor;
-use WPEasy\BricksStatic\Support\Paths;
-use WPEasy\BricksStatic\Support\UrlSafety;
-use WPEasy\BricksStatic\Transport\PackageCapableTransport;
-use WPEasy\BricksStatic\Transport\TransportInterface;
+use WPEasy\ShipStatic\Sync\Compressor;
+use WPEasy\ShipStatic\Support\Paths;
+use WPEasy\ShipStatic\Support\UrlSafety;
+use WPEasy\ShipStatic\Transport\PackageCapableTransport;
+use WPEasy\ShipStatic\Transport\TransportInterface;
 
 defined('ABSPATH') || exit;
 
@@ -35,7 +35,7 @@ final class PackageDeployer {
      * Option-name prefix flagging a destination where package deploy failed, so
      * we stop retrying it (cleared when the connection changes or on reset).
      */
-    public const OFF_PREFIX = 'bricks_static_pkg_off_';
+    public const OFF_PREFIX = 'shipstatic_pkg_off_';
 
     /**
      * Whether this server can build a package locally.
@@ -57,14 +57,14 @@ final class PackageDeployer {
         $local = UrlSafety::is_dev_host((string) wp_parse_url($url, PHP_URL_HOST));
 
         /** Filters TLS verification for the package-deploy helper call. */
-        return (bool) apply_filters('bricks_static_package_sslverify', !$local, $url);
+        return (bool) apply_filters('shipstatic_package_sslverify', !$local, $url);
     }
 
     /**
      * Public URL a destination is served from (used to call the helper): its
      * configured Destination URL, else a best-effort guess from the host.
      *
-     * @param \WPEasy\BricksStatic\Settings\Destination|null $dest Destination.
+     * @param \WPEasy\ShipStatic\Settings\Destination|null $dest Destination.
      */
     public static function base_url($dest): string {
         if ($dest === null) {
@@ -85,7 +85,7 @@ final class PackageDeployer {
      * failed there.
      *
      * @param string                                          $dest_id Destination id.
-     * @param \WPEasy\BricksStatic\Settings\Destination|null  $dest    Destination.
+     * @param \WPEasy\ShipStatic\Settings\Destination|null  $dest    Destination.
      */
     public static function available_for(string $dest_id, $dest): bool {
         return self::can_build() && self::would_package($dest_id, $dest);
@@ -99,7 +99,7 @@ final class PackageDeployer {
      * file-by-file anyway".
      *
      * @param string                                          $dest_id Destination id.
-     * @param \WPEasy\BricksStatic\Settings\Destination|null  $dest    Destination.
+     * @param \WPEasy\ShipStatic\Settings\Destination|null  $dest    Destination.
      */
     public static function would_package(string $dest_id, $dest): bool {
         // A snapshot destination (Cloudflare) has no filesystem to extract a
@@ -120,7 +120,7 @@ final class PackageDeployer {
      * transient one — callers use this to stop retrying instead of re-guessing
      * (and re-erroring) on every sync.
      *
-     * @param \WPEasy\BricksStatic\Settings\Destination|null $dest Destination.
+     * @param \WPEasy\ShipStatic\Settings\Destination|null $dest Destination.
      */
     public static function url_is_guess($dest): bool {
         return $dest === null || trim((string) $dest->get('destinationUrl')) === '';
@@ -245,7 +245,7 @@ final class PackageDeployer {
              *
              * @param int $timeout Seconds.
              */
-            'timeout'   => max(10, (int) apply_filters('bricks_static_package_timeout', 120)),
+            'timeout'   => max(10, (int) apply_filters('shipstatic_package_timeout', 120)),
             'sslverify' => $sslverify,
             'body'      => ['token' => $token, 'deletes' => wp_json_encode(array_values($deletes))],
         ]);

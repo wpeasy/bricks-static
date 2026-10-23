@@ -3,13 +3,13 @@
  * Strips WordPress head cruft from captured static HTML and rebrands the
  * generator meta.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.0.2
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Render;
+namespace WPEasy\ShipStatic\Render;
 
 defined('ABSPATH') || exit;
 
@@ -57,7 +57,7 @@ final class HeadCleaner {
      */
     public static function clean(string $html): string {
         /** Filters whether redundant WordPress head links are stripped from the static output. */
-        if (!apply_filters('bricks_static_clean_head', true)) {
+        if (!apply_filters('shipstatic_clean_head', true)) {
             return $html;
         }
 
@@ -71,7 +71,7 @@ final class HeadCleaner {
         // matches here.)
         $html = (string) preg_replace('#[ \t]*<meta\b[^>]*\bname=([\'"])generator\1[^>]*>[ \t]*\R?#i', '', $html);
 
-        $tag = '<meta name="generator" content="' . esc_attr('Bricks Static ' . BRICKS_STATIC_VERSION . ' by BRXProd') . '" />';
+        $tag = '<meta name="generator" content="' . esc_attr('ShipStatic ' . SHIPSTATIC_VERSION . ' by BRXProd') . '" />';
         if (stripos($html, '</head>') !== false) {
             return (string) preg_replace('#</head>#i', $tag . "\n</head>", $html, 1);
         }

@@ -3,20 +3,20 @@
  * The Text deploy replacer — the one replacer shipped in Free.
  *
  * Wraps {@see TextReplacer} in the {@see DeployReplacer} contract so it plugs
- * into the {@see \WPEasy\BricksStatic\Sync\Pipeline} the same way the Pro
+ * into the {@see \WPEasy\ShipStatic\Sync\Pipeline} the same way the Pro
  * replacers do. Keeping Free on the same seam means the pipeline path is always
  * exercised, not just when Pro is present.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.4
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Render;
+namespace WPEasy\ShipStatic\Render;
 
-use WPEasy\BricksStatic\Settings\Destination;
-use WPEasy\BricksStatic\Sync\DeployReplacer;
+use WPEasy\ShipStatic\Settings\Destination;
+use WPEasy\ShipStatic\Sync\DeployReplacer;
 
 defined('ABSPATH') || exit;
 

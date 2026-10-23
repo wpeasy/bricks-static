@@ -2,17 +2,17 @@
 /**
  * Videos (iframe embeds) REST controller.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\REST;
+namespace WPEasy\ShipStatic\REST;
 
 use WP_REST_Request;
 use WP_REST_Response;
-use WPEasy\BricksStatic\Media\VideoCollector;
+use WPEasy\ShipStatic\Media\VideoCollector;
 
 defined('ABSPATH') || exit;
 
@@ -24,7 +24,7 @@ final class VideosController {
     /**
      * REST namespace.
      */
-    private const NS = 'bricks-static/v1';
+    private const NS = 'shipstatic/v1';
 
     /**
      * Register routes.

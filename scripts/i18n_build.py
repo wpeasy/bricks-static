@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-i18n build helper for Bricks Static.
+i18n build helper for ShipStatic.
 
 Two modes:
 
@@ -28,7 +28,7 @@ JSON_DIR = Path(__file__).resolve().parent / "i18n"
 
 # (pot path, output .po/.mo dir, textdomain)
 DOMAINS = [
-    (ROOT / "languages" / "bricks-static.pot", ROOT / "languages", "bricks-static"),
+    (ROOT / "languages" / "shipstatic.pot", ROOT / "languages", "shipstatic"),
 ]
 
 LOCALES = {
@@ -52,7 +52,7 @@ def is_translatable(entry) -> bool:
         return False
     if "@" in m and " " in m and "." in m.split("@")[-1]:  # author "Name <email>"
         return False
-    if m in ("bricks-static",):
+    if m in ("shipstatic",):
         return False
     return True
 

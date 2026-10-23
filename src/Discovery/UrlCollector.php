@@ -2,15 +2,15 @@
 /**
  * Seeds the crawl.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Discovery;
+namespace WPEasy\ShipStatic\Discovery;
 
-use WPEasy\BricksStatic\Support\Url;
+use WPEasy\ShipStatic\Support\Url;
 
 defined('ABSPATH') || exit;
 
@@ -27,7 +27,7 @@ defined('ABSPATH') || exit;
  *  - `manual`: render an authoritative set — only the published public posts whose
  *    per-post "Include" switch ({@see INCLUDE_META} meta) is on. The switch is OFF
  *    by default for every post EXCEPT the site's static front page (which defaults
- *    on). The {@see \WPEasy\BricksStatic\Sync\Runner} locks crawl expansion to the
+ *    on). The {@see \WPEasy\ShipStatic\Sync\Runner} locks crawl expansion to the
  *    effective set so an unincluded page can't return via a link.
  */
 final class UrlCollector {
@@ -35,14 +35,14 @@ final class UrlCollector {
     /**
      * Option storing the discovery mode (`linked` | `all` | `manual`).
      */
-    public const MODE_OPTION = 'bricks_static_discovery_mode';
+    public const MODE_OPTION = 'shipstatic_discovery_mode';
 
     /**
      * Per-post meta flag for `manual` mode. '1' includes, '0' excludes. When the
      * meta is absent the post is excluded by default — except the static front
      * page, which defaults to included (see {@see is_included()}).
      */
-    public const INCLUDE_META = '_bricks_static_manual_include';
+    public const INCLUDE_META = '_shipstatic_manual_include';
 
     /**
      * Current discovery mode, defaulting to link-driven crawling.
@@ -88,7 +88,7 @@ final class UrlCollector {
          *
          * @param array<int,string> $urls Seed URLs.
          */
-        $urls = (array) apply_filters('bricks_static_seed_urls', $urls);
+        $urls = (array) apply_filters('shipstatic_seed_urls', $urls);
 
         return array_values(array_unique(array_filter($urls)));
     }
@@ -123,7 +123,7 @@ final class UrlCollector {
          *
          * @param array<int,string> $types Post type names to skip.
          */
-        return (array) apply_filters('bricks_static_excluded_post_types', ['attachment', 'bricks_template']);
+        return (array) apply_filters('shipstatic_excluded_post_types', ['attachment', 'bricks_template']);
     }
 
     /**

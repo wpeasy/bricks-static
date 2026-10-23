@@ -2,13 +2,13 @@
 /**
  * SSRF guard for server-side fetches of user-supplied URLs.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Support;
+namespace WPEasy\ShipStatic\Support;
 
 use WP_Error;
 
@@ -112,8 +112,8 @@ final class UrlSafety {
     private static function guarded_request(string $url, array $args) {
         if (!self::is_safe_url($url)) {
             return new WP_Error(
-                'bricks_static_unsafe_url',
-                __('That URL resolves to a private or reserved network address (cloud metadata, LAN, loopback proxy, etc.) and cannot be used. Use a public HTTP(S) URL.', 'bricks-static')
+                'shipstatic_unsafe_url',
+                __('That URL resolves to a private or reserved network address (cloud metadata, LAN, loopback proxy, etc.) and cannot be used. Use a public HTTP(S) URL.', 'shipstatic')
             );
         }
 
@@ -130,8 +130,8 @@ final class UrlSafety {
         $code = (int) wp_remote_retrieve_response_code($response);
         if ($code >= 300 && $code < 400) {
             return new WP_Error(
-                'bricks_static_redirect',
-                __('The destination URL returned a redirect, which is not followed for safety.', 'bricks-static')
+                'shipstatic_redirect',
+                __('The destination URL returned a redirect, which is not followed for safety.', 'shipstatic')
             );
         }
 

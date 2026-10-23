@@ -2,15 +2,15 @@
 /**
  * Collects the link targets (href) referenced by the rendered site.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Media;
+namespace WPEasy\ShipStatic\Media;
 
-use WPEasy\BricksStatic\Sync\Manifest;
+use WPEasy\ShipStatic\Sync\Manifest;
 
 defined('ABSPATH') || exit;
 

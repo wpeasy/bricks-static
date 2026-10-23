@@ -20,7 +20,7 @@
   import { uiPrefs, themeAttr, accentAttr } from '../shared/uiPrefs.svelte';
   import { Alert, Badge, Button, ConfirmButton, Tabs, Tooltip, fadeUp, autoContrast } from '@wpeasy/ab-ui';
 
-  const freeVersion = (window as unknown as { bricksStaticData?: { version?: string } }).bricksStaticData?.version ?? '';
+  const freeVersion = (window as unknown as { shipStaticData?: { version?: string } }).shipStaticData?.version ?? '';
 
   let dests = $state<DestinationsResponse | null>(null);
   let status = $state<Status | null>(null);
@@ -194,7 +194,7 @@
   // The exact CLI command for this run, shown if the auto-spawn doesn't start so
   // the user can run it by hand — targeting the same destination(s) they chose.
   function buildRunCommand(type: 'check' | 'sync', dest: string, prune: boolean): string {
-    let cmd = status?.cli ?? 'wp bricks-static sync';
+    let cmd = status?.cli ?? 'wp shipstatic sync';
     if (type === 'check') cmd += ' --check';
     if (dest === 'all') cmd += ' --all';
     else if (dest) cmd += ` --dest=${dest}`;
@@ -360,8 +360,8 @@
       // immediately (not on Finish) so closing early or reloading mid-wizard
       // never re-triggers it. wp_localize_script booleans arrive as '1'/'' —
       // truthy check, never `=== true`.
-      const bricksStaticData = (window as unknown as { bricksStaticData?: { isFirstRun?: unknown } }).bricksStaticData;
-      if (bricksStaticData?.isFirstRun) {
+      const shipStaticData = (window as unknown as { shipStaticData?: { isFirstRun?: unknown } }).shipStaticData;
+      if (shipStaticData?.isFirstRun) {
         wizardOpen = true;
         try {
           await api.setWizardSeen();
@@ -388,7 +388,7 @@
   <div class="bs-dash__top">
     <header class="bs-stack bs-stack--xs">
       <h1>
-        Bricks Static
+        ShipStatic
         <Badge class="bs-verbadge" variant="soft">v{freeVersion}</Badge>
         <span class="bs-dash__by">{__('byPrefix')} <a href="https://brxprod.com" target="_blank" rel="noopener noreferrer">BRXProd</a></span>
       </h1>

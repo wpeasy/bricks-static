@@ -2,13 +2,13 @@
 /**
  * Destination server config (.htaccess + nginx snippet).
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Sync;
+namespace WPEasy\ShipStatic\Sync;
 
 defined('ABSPATH') || exit;
 
@@ -28,7 +28,7 @@ final class HtaccessBuilder {
     /**
      * Marker name for our managed block.
      */
-    private const MARKER = 'Bricks Static';
+    private const MARKER = 'ShipStatic';
 
     /**
      * Merge our rules into an existing .htaccess: strip any previous Bricks

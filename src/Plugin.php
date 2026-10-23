@@ -2,37 +2,37 @@
 /**
  * Plugin bootstrap.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic;
+namespace WPEasy\ShipStatic;
 
-use WPEasy\BricksStatic\Abilities\AbilityRegistry;
-use WPEasy\BricksStatic\Admin\Editor;
-use WPEasy\BricksStatic\Admin\Menu;
-use WPEasy\BricksStatic\Export\ExportDownload;
-use WPEasy\BricksStatic\Frontend\Fab;
-use WPEasy\BricksStatic\Render\LinkDeployReplacer;
-use WPEasy\BricksStatic\Render\MediaDeployReplacer;
-use WPEasy\BricksStatic\Render\PageRenderer;
-use WPEasy\BricksStatic\Render\TextDeployReplacer;
-use WPEasy\BricksStatic\Render\VideoDeployReplacer;
-use WPEasy\BricksStatic\Settings\Destinations;
-use WPEasy\BricksStatic\Sitemap\SitemapGenerator;
-use WPEasy\BricksStatic\Sync\Pipeline;
-use WPEasy\BricksStatic\REST\ConnectionController;
-use WPEasy\BricksStatic\REST\DestinationsController;
-use WPEasy\BricksStatic\REST\EditorController;
-use WPEasy\BricksStatic\REST\ExportController;
-use WPEasy\BricksStatic\REST\LinksController;
-use WPEasy\BricksStatic\REST\MediaController;
-use WPEasy\BricksStatic\REST\SitemapController;
-use WPEasy\BricksStatic\REST\StatusController;
-use WPEasy\BricksStatic\REST\SyncController;
-use WPEasy\BricksStatic\REST\VideosController;
+use WPEasy\ShipStatic\Abilities\AbilityRegistry;
+use WPEasy\ShipStatic\Admin\Editor;
+use WPEasy\ShipStatic\Admin\Menu;
+use WPEasy\ShipStatic\Export\ExportDownload;
+use WPEasy\ShipStatic\Frontend\Fab;
+use WPEasy\ShipStatic\Render\LinkDeployReplacer;
+use WPEasy\ShipStatic\Render\MediaDeployReplacer;
+use WPEasy\ShipStatic\Render\PageRenderer;
+use WPEasy\ShipStatic\Render\TextDeployReplacer;
+use WPEasy\ShipStatic\Render\VideoDeployReplacer;
+use WPEasy\ShipStatic\Settings\Destinations;
+use WPEasy\ShipStatic\Sitemap\SitemapGenerator;
+use WPEasy\ShipStatic\Sync\Pipeline;
+use WPEasy\ShipStatic\REST\ConnectionController;
+use WPEasy\ShipStatic\REST\DestinationsController;
+use WPEasy\ShipStatic\REST\EditorController;
+use WPEasy\ShipStatic\REST\ExportController;
+use WPEasy\ShipStatic\REST\LinksController;
+use WPEasy\ShipStatic\REST\MediaController;
+use WPEasy\ShipStatic\REST\SitemapController;
+use WPEasy\ShipStatic\REST\StatusController;
+use WPEasy\ShipStatic\REST\SyncController;
+use WPEasy\ShipStatic\REST\VideosController;
 
 defined('ABSPATH') || exit;
 
@@ -42,13 +42,13 @@ defined('ABSPATH') || exit;
 final class Plugin {
 
     /**
-     * Runs on plugin activation (`register_activation_hook`, `bricks-static.php`).
+     * Runs on plugin activation (`register_activation_hook`, `shipstatic.php`).
      * Resets the first-run setup-wizard flag so deactivating and reactivating
      * the plugin always shows it again — e.g. re-testing onboarding, or a fresh
      * clone of a site that already has the option set.
      */
     public static function activate(): void {
-        delete_option('bricks_static_wizard_seen');
+        delete_option('shipstatic_wizard_seen');
     }
 
     /**
@@ -70,7 +70,7 @@ final class Plugin {
         Fab::init();
 
         // Watch content edits so the dashboard can flag the render stale.
-        \WPEasy\BricksStatic\Sync\ChangeTracker::init();
+        \WPEasy\ShipStatic\Sync\ChangeTracker::init();
 
         // Expose abilities to the WordPress Abilities API for MCP/AI discovery
         // (no-op on WP < 6.9; read-only always, actions behind opt-in toggles).
@@ -91,7 +91,7 @@ final class Plugin {
         add_filter('bricks/maintenance/should_apply', [self::class, 'allow_render_through_maintenance']);
 
         if (defined('WP_CLI') && \WP_CLI) {
-            \WP_CLI::add_command('bricks-static', new \WPEasy\BricksStatic\CLI\SyncCommand());
+            \WP_CLI::add_command('shipstatic', new \WPEasy\ShipStatic\CLI\SyncCommand());
         }
     }
 
@@ -106,7 +106,7 @@ final class Plugin {
         Pipeline::register_replacer(new VideoDeployReplacer());
 
         Pipeline::register_extra_files(static function (array $page_urls): array {
-            if (!apply_filters('bricks_static_generate_sitemaps', true)) {
+            if (!apply_filters('shipstatic_generate_sitemaps', true)) {
                 return [];
             }
 
@@ -139,7 +139,7 @@ final class Plugin {
          *
          * @param bool $bypass Whether to bypass.
          */
-        return apply_filters('bricks_static_bypass_maintenance', true) ? false : (bool) $apply;
+        return apply_filters('shipstatic_bypass_maintenance', true) ? false : (bool) $apply;
     }
 
     /**
@@ -148,11 +148,11 @@ final class Plugin {
      * `wp-emoji-release.min.js` is referenced only from inline JS (so it can't be
      * mirrored and 404s on the static host), and modern browsers render emoji
      * natively without it. Applies to our render requests only — never the live
-     * front end. Disable with the `bricks_static_strip_emoji` filter.
+     * front end. Disable with the `shipstatic_strip_emoji` filter.
      */
     public static function prepare_render_output(): void {
         /** Filters whether the WordPress emoji loader is stripped from the static output. */
-        if (!apply_filters('bricks_static_strip_emoji', true)) {
+        if (!apply_filters('shipstatic_strip_emoji', true)) {
             return;
         }
 

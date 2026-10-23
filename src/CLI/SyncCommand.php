@@ -2,20 +2,21 @@
 /**
  * WP-CLI command for rendering and syncing the static site.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\CLI;
+namespace WPEasy\ShipStatic\CLI;
 
-use WPEasy\BricksStatic\Deploy\ConnectorScript;
-use WPEasy\BricksStatic\Settings\Destinations;
-use WPEasy\BricksStatic\Sync\Runner;
-use WPEasy\BricksStatic\Transport\CloudflareTransport;
-use WPEasy\BricksStatic\Transport\ConnectorTransport;
-use WPEasy\BricksStatic\Transport\TransportFactory;
+use WPEasy\ShipStatic\Deploy\ConnectorScript;
+use WPEasy\ShipStatic\Settings\Destinations;
+use WPEasy\ShipStatic\Sync\Runner;
+use WPEasy\ShipStatic\Transport\CloudflareTransport;
+use WPEasy\ShipStatic\Transport\GitHubTransport;
+use WPEasy\ShipStatic\Transport\ConnectorTransport;
+use WPEasy\ShipStatic\Transport\TransportFactory;
 
 defined('ABSPATH') || exit;
 
@@ -47,10 +48,10 @@ final class SyncCommand {
      *
      * ## EXAMPLES
      *
-     *     wp bricks-static sync                      # all enabled destinations
-     *     wp bricks-static sync --check
-     *     wp bricks-static sync --all --prune
-     *     wp bricks-static sync --dest=ab12cd34ef56  # one destination
+     *     wp shipstatic sync                      # all enabled destinations
+     *     wp shipstatic sync --check
+     *     wp shipstatic sync --all --prune
+     *     wp shipstatic sync --dest=ab12cd34ef56  # one destination
      *
      * @param array<int,string>    $args       Positional args (unused).
      * @param array<string,string> $assoc_args Flags.
@@ -186,9 +187,9 @@ final class SyncCommand {
      *
      * ## EXAMPLES
      *
-     *     wp bricks-static cloudflare status
-     *     CLOUDFLARE_API_TOKEN=… wp bricks-static cloudflare set ab12cd34ef56 --account=0123…cdef --worker=my-site --token-from-env
-     *     wp bricks-static cloudflare test ab12cd34ef56
+     *     wp shipstatic cloudflare status
+     *     CLOUDFLARE_API_TOKEN=… wp shipstatic cloudflare set ab12cd34ef56 --account=0123…cdef --worker=my-site --token-from-env
+     *     wp shipstatic cloudflare test ab12cd34ef56
      *
      * @param array<int,string>    $args       [action, dest].
      * @param array<string,string> $assoc_args Flags.
@@ -239,7 +240,7 @@ final class SyncCommand {
                     $input['cfApiToken'] = $token;
                 }
                 Destinations::update($dest_id, $input);
-                \WP_CLI::success('Saved. Run `wp bricks-static cloudflare test ' . $dest_id . '` next.');
+                \WP_CLI::success('Saved. Run `wp shipstatic cloudflare test ' . $dest_id . '` next.');
                 return;
 
             case 'test':
@@ -250,16 +251,138 @@ final class SyncCommand {
                 try {
                     $transport->connect();
                 } catch (\Throwable $e) {
-                    update_option('bricks_static_conn_' . $dest_id, ['ok' => false, 'time' => time(), 'message' => $e->getMessage()], false);
+                    update_option('shipstatic_conn_' . $dest_id, ['ok' => false, 'time' => time(), 'message' => $e->getMessage()], false);
                     \WP_CLI::error($e->getMessage());
                 }
                 if (!$transport instanceof CloudflareTransport) {
                     \WP_CLI::error('Not a Cloudflare transport.');
                 }
-                update_option('bricks_static_conn_' . $dest_id, ['ok' => true, 'time' => time(), 'message' => $transport->describe()], false);
+                update_option('shipstatic_conn_' . $dest_id, ['ok' => true, 'time' => time(), 'message' => $transport->describe()], false);
                 \WP_CLI::success('Cloudflare token accepted — ' . $transport->describe() . '.');
                 if (trim((string) $dest->get('destinationUrl')) === '' && $transport->workers_dev_url() !== '') {
                     \WP_CLI::log('Tip: set the Destination URL with `cloudflare set ' . $dest_id . ' --dest-url=' . $transport->workers_dev_url() . '`.');
+                }
+                return;
+        }
+
+        \WP_CLI::error('Unknown action: ' . $action);
+    }
+
+    /**
+     * Set up or test a destination's GitHub Pages connection without the
+     * dashboard. See docs/GITHUB_PAGES_PLAN.md.
+     *
+     * ## OPTIONS
+     *
+     * <action>
+     * : What to do.
+     * ---
+     * options:
+     *   - set
+     *   - test
+     *   - status
+     * ---
+     *
+     * [<dest>]
+     * : Destination id (see `status`). Defaults to the primary destination.
+     *
+     * [--owner=<owner>]
+     * : For `set`: the account or organisation that owns the repository.
+     *
+     * [--repo=<repo>]
+     * : For `set`: the repository name.
+     *
+     * [--branch=<branch>]
+     * : For `set`: the branch to publish to (default gh-pages).
+     *
+     * [--folder=<folder>]
+     * : For `set`: `/` (the whole branch) or `/docs`.
+     *
+     * [--token-from-env]
+     * : For `set`: read the access token from the GITHUB_TOKEN environment variable (keeps it out of shell history).
+     *
+     * [--dest-url=<url>]
+     * : For `set`: the Destination URL (the Pages address or your custom domain). (`--url` is WP-CLI's own flag, hence the name.)
+     *
+     * ## EXAMPLES
+     *
+     *     wp shipstatic github status
+     *     GITHUB_TOKEN=… wp shipstatic github set ab12cd34ef56 --owner=my-account --repo=my-site --token-from-env
+     *     wp shipstatic github test ab12cd34ef56
+     *
+     * @param array<int,string>    $args       [action, dest].
+     * @param array<string,string> $assoc_args Flags.
+     * @when after_wp_load
+     */
+    public function github(array $args, array $assoc_args): void {
+        $action  = (string) ($args[0] ?? 'status');
+        $dest_id = (string) ($args[1] ?? Destinations::primary()->id());
+        $dest    = Destinations::get($dest_id);
+        if ($dest === null) {
+            \WP_CLI::error('Unknown destination: ' . $dest_id);
+        }
+
+        switch ($action) {
+            case 'status':
+                foreach (Destinations::visible_objects() as $d) {
+                    if (!$d->is_github()) {
+                        continue;
+                    }
+                    \WP_CLI::log(sprintf(
+                        '%s  %-24s repo=%s/%s branch=%s folder=%s token=%s url=%s',
+                        $d->id(),
+                        (string) $d->get('name'),
+                        (string) $d->get('ghOwner'),
+                        (string) $d->get('ghRepo'),
+                        (string) $d->get('ghBranch'),
+                        (string) $d->get('ghFolder'),
+                        (string) $d->get('ghToken') !== '' ? 'set' : 'missing',
+                        (string) $d->get('destinationUrl')
+                    ));
+                }
+                return;
+
+            case 'set':
+                $input = ['transport' => 'github'];
+                foreach (['owner' => 'ghOwner', 'repo' => 'ghRepo', 'branch' => 'ghBranch', 'folder' => 'ghFolder', 'dest-url' => 'destinationUrl'] as $flag => $key) {
+                    if (isset($assoc_args[$flag])) {
+                        $input[$key] = (string) $assoc_args[$flag];
+                    }
+                }
+                if (!empty($assoc_args['token-from-env'])) {
+                    $token = (string) getenv('GITHUB_TOKEN');
+                    if ($token === '') {
+                        \WP_CLI::error('GITHUB_TOKEN is not set.');
+                    }
+                    $input['ghToken'] = $token;
+                }
+                Destinations::update($dest_id, $input);
+                \WP_CLI::success('Saved. Run `wp shipstatic github test ' . $dest_id . '` next.');
+                return;
+
+            case 'test':
+                if (!$dest->is_github()) {
+                    \WP_CLI::error('That destination does not use the GitHub Pages transport (`github set` switches it).');
+                }
+                $transport = TransportFactory::make($dest->connection_config());
+                if (!$transport instanceof GitHubTransport) {
+                    \WP_CLI::error('Not a GitHub Pages transport.');
+                }
+                try {
+                    $check = $transport->check();
+                } catch (\Throwable $e) {
+                    $check = ['ok' => false, 'message' => $e->getMessage(), 'suggestedUrl' => '', 'warnings' => []];
+                }
+                update_option('shipstatic_conn_' . $dest_id, ['ok' => $check['ok'], 'time' => time(), 'message' => $check['message']], false);
+                foreach ($check['warnings'] as $warning) {
+                    \WP_CLI::warning($warning);
+                }
+                if (!$check['ok']) {
+                    \WP_CLI::error($check['message']);
+                }
+                \WP_CLI::success($check['message'] . '.');
+                if (trim((string) $dest->get('destinationUrl')) === '' && $check['suggestedUrl'] !== '') {
+                    \WP_CLI::log('Tip: set the Destination URL with `github set ' . $dest_id . ' --dest-url=' . $check['suggestedUrl'] . '`.');
                 }
                 return;
         }
@@ -294,11 +417,11 @@ final class SyncCommand {
      *
      * ## EXAMPLES
      *
-     *     wp bricks-static connector status
-     *     wp bricks-static connector pair ab12cd34ef56 --dest-url=https://example.com --to=/tmp
-     *     wp bricks-static connector test ab12cd34ef56
-     *     wp bricks-static connector rebuild ab12cd34ef56
-     *     wp bricks-static connector revoke ab12cd34ef56
+     *     wp shipstatic connector status
+     *     wp shipstatic connector pair ab12cd34ef56 --dest-url=https://example.com --to=/tmp
+     *     wp shipstatic connector test ab12cd34ef56
+     *     wp shipstatic connector rebuild ab12cd34ef56
+     *     wp shipstatic connector revoke ab12cd34ef56
      *
      * @param array<int,string>    $args       [action, dest].
      * @param array<string,string> $assoc_args Flags.
@@ -369,12 +492,12 @@ final class SyncCommand {
                     \WP_CLI::error('Not a connector transport.');
                 }
                 if ($action === 'test') {
-                    update_option('bricks_static_conn_' . $dest_id, ['ok' => true, 'time' => time(), 'message' => $transport->describe()], false);
+                    update_option('shipstatic_conn_' . $dest_id, ['ok' => true, 'time' => time(), 'message' => $transport->describe()], false);
                     \WP_CLI::success('Connector reached — ' . $transport->describe());
                     return;
                 }
                 if (!Runner::render_is_current()) {
-                    \WP_CLI::error('Process the pages first (`wp bricks-static sync --check`) — the push record is rebuilt against the current render.');
+                    \WP_CLI::error('Process the pages first (`wp shipstatic sync --check`) — the push record is rebuilt against the current render.');
                 }
                 $r = Runner::rebuild_pushed_record($dest_id, $transport->manifest());
                 \WP_CLI::success(sprintf('Push record rebuilt: %d match, %d will upload, %d unmanaged files left alone. %s', $r['matched'], $r['total'] - $r['matched'], $r['unmanaged'], $r['inSync'] ? 'In sync.' : 'Run Sync to finish.'));

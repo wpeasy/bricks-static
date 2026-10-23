@@ -2,15 +2,15 @@
 /**
  * Loopback page/asset renderer.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Render;
+namespace WPEasy\ShipStatic\Render;
 
-use WPEasy\BricksStatic\Support\UrlSafety;
+use WPEasy\ShipStatic\Support\UrlSafety;
 
 defined('ABSPATH') || exit;
 
@@ -22,7 +22,7 @@ defined('ABSPATH') || exit;
  * Builder-agnostic: it captures whatever the site outputs (Bricks, Gutenberg,
  * etc.). SSL verification is relaxed for local/dev hosts (self-signed certs) so
  * loopback requests to *.local / *.test / localhost succeed; override via the
- * `bricks_static_render_sslverify` and `bricks_static_render_request_args` filters.
+ * `shipstatic_render_sslverify` and `shipstatic_render_request_args` filters.
  */
 final class PageRenderer {
 
@@ -30,7 +30,7 @@ final class PageRenderer {
      * User-agent prefix sent on every loopback request, so the site can tell a
      * static-render request from a real visitor (see is_render_request()).
      */
-    public const USER_AGENT_PREFIX = 'BricksStatic/';
+    public const USER_AGENT_PREFIX = 'ShipStatic/';
 
     /**
      * Header carrying the per-site shared secret on loopback render requests.
@@ -41,7 +41,7 @@ final class PageRenderer {
     /**
      * Option holding that shared secret (not autoloaded).
      */
-    private const TOKEN_OPTION = 'bricks_static_render_token';
+    private const TOKEN_OPTION = 'shipstatic_render_token';
 
     /**
      * Whether the CURRENT request is one of our loopback render requests.
@@ -127,12 +127,12 @@ final class PageRenderer {
         /**
          * Filters the per-asset fetch timeout (seconds). Raise it on slow hosts
          * that serve large/generated assets; keep it below the sync watchdog
-         * window ({@see bricks_static_stale_seconds}) so an in-flight fetch isn't reaped.
+         * window ({@see shipstatic_stale_seconds}) so an in-flight fetch isn't reaped.
          *
          * @param int    $timeout Seconds.
          * @param string $url     Asset URL.
          */
-        $args['timeout'] = max(5, (int) apply_filters('bricks_static_asset_timeout', 60, $url));
+        $args['timeout'] = max(5, (int) apply_filters('shipstatic_asset_timeout', 60, $url));
 
         $response = wp_remote_get($url, $args);
 
@@ -158,15 +158,15 @@ final class PageRenderer {
             /**
              * Filters the per-page loopback render timeout (seconds). Raise it for
              * heavy pages; keep it below the sync watchdog window
-             * ({@see bricks_static_stale_seconds}) so an in-flight render isn't reaped.
+             * ({@see shipstatic_stale_seconds}) so an in-flight render isn't reaped.
              *
              * @param int    $timeout Seconds.
              * @param string $url     Page URL.
              */
-            'timeout'     => max(5, (int) apply_filters('bricks_static_render_timeout', 60, $url)),
+            'timeout'     => max(5, (int) apply_filters('shipstatic_render_timeout', 60, $url)),
             'redirection' => 5,
             'sslverify'   => self::should_verify_ssl(),
-            'user-agent'  => self::USER_AGENT_PREFIX . BRICKS_STATIC_VERSION,
+            'user-agent'  => self::USER_AGENT_PREFIX . SHIPSTATIC_VERSION,
             // Proves the request originated here, so it may pass gates the site
             // owner put up for visitors (see is_trusted_render_request()).
             'headers'     => [self::TOKEN_HEADER => self::token()],
@@ -178,7 +178,7 @@ final class PageRenderer {
          * @param array<string,mixed> $args Request args.
          * @param string              $url  Requested URL.
          */
-        return (array) apply_filters('bricks_static_render_request_args', $args, $url);
+        return (array) apply_filters('shipstatic_render_request_args', $args, $url);
     }
 
     /**
@@ -207,6 +207,6 @@ final class PageRenderer {
          *
          * @param bool $verify Whether to verify.
          */
-        return (bool) apply_filters('bricks_static_render_sslverify', $verify);
+        return (bool) apply_filters('shipstatic_render_sslverify', $verify);
     }
 }

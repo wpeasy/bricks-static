@@ -2,13 +2,15 @@
 /**
  * Settings field schema.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Settings;
+namespace WPEasy\ShipStatic\Settings;
+
+use WPEasy\ShipStatic\Deploy\GitHubClient;
 
 defined('ABSPATH') || exit;
 
@@ -24,7 +26,7 @@ final class Schema {
     /**
      * Option key holding the settings array.
      */
-    public const OPTION = 'bricks_static_settings';
+    public const OPTION = 'shipstatic_settings';
 
     /**
      * Field definitions keyed by setting name.
@@ -36,22 +38,28 @@ final class Schema {
      */
     public static function fields(): array {
         return [
-            'transport'      => ['type' => 'enum',   'default' => 'ftps',          'constant' => 'BRICKS_STATIC_TRANSPORT',       'options' => ['sftp', 'ftps', 'ftp', 'connector', 'cloudflare']],
-            'host'           => ['type' => 'string', 'default' => '',              'constant' => 'BRICKS_STATIC_HOST'],
-            'port'           => ['type' => 'int',    'default' => 0,               'constant' => 'BRICKS_STATIC_PORT'],
-            'username'       => ['type' => 'string', 'default' => '',              'constant' => 'BRICKS_STATIC_USERNAME'],
-            'password'       => ['type' => 'string', 'default' => '',              'constant' => 'BRICKS_STATIC_PASSWORD', 'secret' => true],
-            'remotePath'     => ['type' => 'path',   'default' => '',              'constant' => 'BRICKS_STATIC_REMOTE_PATH'],
-            'basePath'       => ['type' => 'path',   'default' => '/',             'constant' => 'BRICKS_STATIC_BASE_PATH'],
-            'destinationUrl' => ['type' => 'url',    'default' => '',              'constant' => 'BRICKS_STATIC_DESTINATION_URL'],
+            'transport'      => ['type' => 'enum',   'default' => 'ftps',          'constant' => 'SHIPSTATIC_TRANSPORT',       'options' => ['sftp', 'ftps', 'ftp', 'connector', 'cloudflare', 'github']],
+            'host'           => ['type' => 'string', 'default' => '',              'constant' => 'SHIPSTATIC_HOST'],
+            'port'           => ['type' => 'int',    'default' => 0,               'constant' => 'SHIPSTATIC_PORT'],
+            'username'       => ['type' => 'string', 'default' => '',              'constant' => 'SHIPSTATIC_USERNAME'],
+            'password'       => ['type' => 'string', 'default' => '',              'constant' => 'SHIPSTATIC_PASSWORD', 'secret' => true],
+            'remotePath'     => ['type' => 'path',   'default' => '',              'constant' => 'SHIPSTATIC_REMOTE_PATH'],
+            'basePath'       => ['type' => 'path',   'default' => '/',             'constant' => 'SHIPSTATIC_BASE_PATH'],
+            'destinationUrl' => ['type' => 'url',    'default' => '',              'constant' => 'SHIPSTATIC_DESTINATION_URL'],
             // Connector (HTTPS) pairing — set by Destinations::pair_connector(), never by REST input.
-            'connectorId'     => ['type' => 'string', 'default' => '',             'constant' => 'BRICKS_STATIC_CONNECTOR_ID',     'internal' => true],
-            'connectorSecret' => ['type' => 'string', 'default' => '',             'constant' => 'BRICKS_STATIC_CONNECTOR_SECRET', 'internal' => true, 'secret' => true],
+            'connectorId'     => ['type' => 'string', 'default' => '',             'constant' => 'SHIPSTATIC_CONNECTOR_ID',     'internal' => true],
+            'connectorSecret' => ['type' => 'string', 'default' => '',             'constant' => 'SHIPSTATIC_CONNECTOR_SECRET', 'internal' => true, 'secret' => true],
             'connectorVersion'=> ['type' => 'int',    'default' => 0,              'constant' => '',                    'internal' => true],
             // Cloudflare (Workers static assets) — see docs/CLOUDFLARE_PLAN.md.
-            'cfAccountId'    => ['type' => 'cf_account', 'default' => '',          'constant' => 'BRICKS_STATIC_CF_ACCOUNT_ID'],
-            'cfWorker'       => ['type' => 'cf_worker',  'default' => '',          'constant' => 'BRICKS_STATIC_CF_WORKER'],
-            'cfApiToken'     => ['type' => 'string',     'default' => '',          'constant' => 'BRICKS_STATIC_CF_API_TOKEN', 'secret' => true],
+            'cfAccountId'    => ['type' => 'cf_account', 'default' => '',          'constant' => 'SHIPSTATIC_CF_ACCOUNT_ID'],
+            'cfWorker'       => ['type' => 'cf_worker',  'default' => '',          'constant' => 'SHIPSTATIC_CF_WORKER'],
+            'cfApiToken'     => ['type' => 'string',     'default' => '',          'constant' => 'SHIPSTATIC_CF_API_TOKEN', 'secret' => true],
+            // GitHub Pages (commits to a branch) — see docs/GITHUB_PAGES_PLAN.md.
+            'ghOwner'        => ['type' => 'gh_owner',   'default' => '',          'constant' => 'SHIPSTATIC_GH_OWNER'],
+            'ghRepo'         => ['type' => 'gh_repo',    'default' => '',          'constant' => 'SHIPSTATIC_GH_REPO'],
+            'ghBranch'       => ['type' => 'gh_branch',  'default' => 'gh-pages',  'constant' => 'SHIPSTATIC_GH_BRANCH'],
+            'ghFolder'       => ['type' => 'enum',       'default' => '/',         'constant' => 'SHIPSTATIC_GH_FOLDER', 'options' => ['/', '/docs']],
+            'ghToken'        => ['type' => 'string',     'default' => '',          'constant' => 'SHIPSTATIC_GH_TOKEN', 'secret' => true],
         ];
     }
 
@@ -107,6 +115,22 @@ final class Schema {
 
             case 'cf_worker':
                 return self::sanitize_worker((string) $value);
+
+            // GitHub owner / repo / branch — strict, because each is placed
+            // in an API path. Invalid → empty (owner/repo) or the default
+            // branch, so a bad value can never reach a request.
+            case 'gh_owner':
+                $value = trim((string) $value);
+                return GitHubClient::valid_owner($value) ? $value : '';
+
+            case 'gh_repo':
+                $value = trim((string) $value);
+                $value = (string) preg_replace('/\.git$/i', '', $value);
+                return GitHubClient::valid_repo($value) ? $value : '';
+
+            case 'gh_branch':
+                $value = trim((string) $value);
+                return GitHubClient::valid_branch($value) ? $value : $field['default'];
 
             case 'string':
             default:

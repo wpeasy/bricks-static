@@ -1,7 +1,7 @@
 // Editor entry: drives two surfaces (both enqueued by src/Admin/Editor.php).
-// On a post-edit screen it mounts the "Bricks Static" metabox (manual mode) from
-// window.bricksStaticEditorData. On a Pages/Posts list screen it mounts the "Static"
-// column controller from window.bricksStaticListData, which wires the server-rendered
+// On a post-edit screen it mounts the "ShipStatic" metabox (manual mode) from
+// window.shipStaticEditorData. On a Pages/Posts list screen it mounts the "Static"
+// column controller from window.shipStaticListData, which wires the server-rendered
 // cells to the shared sync modal.
 import '@wpeasy/ab-ui/styles';
 import '@wpeasy/ab-ui/styles/wp-admin.css';
@@ -29,10 +29,10 @@ interface ListData {
   includedCount?: number;
 }
 
-const win = window as unknown as { bricksStaticEditorData?: EditorData; bricksStaticListData?: ListData };
+const win = window as unknown as { shipStaticEditorData?: EditorData; shipStaticListData?: ListData };
 
 // --- Pages/Posts list-table "Static" column -------------------------------
-const list = win.bricksStaticListData;
+const list = win.shipStaticListData;
 if (list && list.restUrl) {
   const host = document.createElement('div');
   document.body.appendChild(host);
@@ -49,12 +49,12 @@ if (list && list.restUrl) {
 }
 
 // --- Single-post metabox --------------------------------------------------
-const data = win.bricksStaticEditorData;
+const data = win.shipStaticEditorData;
 if (data && data.restUrl) {
-  // shared/i18n.ts reads window.bricksStaticData.i18n — seed it from the editor payload.
-  const w = window as unknown as { bricksStaticData?: { i18n?: Record<string, string> } };
-  if (!w.bricksStaticData) {
-    w.bricksStaticData = { i18n: data.i18n ?? {} };
+  // shared/i18n.ts reads window.shipStaticData.i18n — seed it from the editor payload.
+  const w = window as unknown as { shipStaticData?: { i18n?: Record<string, string> } };
+  if (!w.shipStaticData) {
+    w.shipStaticData = { i18n: data.i18n ?? {} };
   }
 
   const target = document.getElementById('bs-editor-root');

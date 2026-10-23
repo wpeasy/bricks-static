@@ -3,20 +3,20 @@
  * Export ZIP state machine — packages the current render into a downloadable
  * zip for one destination, without uploading anywhere.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Export;
+namespace WPEasy\ShipStatic\Export;
 
-use WPEasy\BricksStatic\Settings\Destinations;
-use WPEasy\BricksStatic\Sync\Compressor;
-use WPEasy\BricksStatic\Sync\HtaccessBuilder;
-use WPEasy\BricksStatic\Sync\Manifest;
-use WPEasy\BricksStatic\Sync\Runner;
-use WPEasy\BricksStatic\Support\Paths;
+use WPEasy\ShipStatic\Settings\Destinations;
+use WPEasy\ShipStatic\Sync\Compressor;
+use WPEasy\ShipStatic\Sync\HtaccessBuilder;
+use WPEasy\ShipStatic\Sync\Manifest;
+use WPEasy\ShipStatic\Sync\Runner;
+use WPEasy\ShipStatic\Support\Paths;
 
 defined('ABSPATH') || exit;
 
@@ -67,15 +67,15 @@ final class ExportRunner {
      */
     public static function start(string $dest_id): array {
         if (!empty(Runner::status()['running'])) {
-            throw new \RuntimeException(__('A Sync/Check is currently running — wait for it to finish, then try again.', 'bricks-static'));
+            throw new \RuntimeException(__('A Sync/Check is currently running — wait for it to finish, then try again.', 'shipstatic'));
         }
         if (self::is_running()) {
-            throw new \RuntimeException(__('An Export ZIP is already running — wait for it to finish, then try again.', 'bricks-static'));
+            throw new \RuntimeException(__('An Export ZIP is already running — wait for it to finish, then try again.', 'shipstatic'));
         }
 
         $dest = $dest_id !== '' ? Destinations::get($dest_id) : Destinations::primary();
         if ($dest === null) {
-            throw new \RuntimeException(__('That destination could not be found.', 'bricks-static'));
+            throw new \RuntimeException(__('That destination could not be found.', 'shipstatic'));
         }
 
         $has_rendered = !empty(Manifest::load(Manifest::RENDER_OPTION));
@@ -86,14 +86,14 @@ final class ExportRunner {
                 'destId'       => $dest->id(),
                 'destName'     => (string) $dest->get('name'),
                 'message'      => $has_rendered
-                    ? __('The page list has changed since the last render. Click Process to refresh it, then Export again.', 'bricks-static')
-                    : __('Nothing has been rendered yet. Click Process first, then Export.', 'bricks-static'),
+                    ? __('The page list has changed since the last render. Click Process to refresh it, then Export again.', 'shipstatic')
+                    : __('Nothing has been rendered yet. Click Process first, then Export.', 'shipstatic'),
                 'running'      => false,
             ];
         }
 
         if (!wp_mkdir_p(Paths::export_dir())) {
-            throw new \RuntimeException(__('The export directory is not writable: ', 'bricks-static') . Paths::export_dir());
+            throw new \RuntimeException(__('The export directory is not writable: ', 'shipstatic') . Paths::export_dir());
         }
 
         ExportJob::clear();
@@ -116,7 +116,7 @@ final class ExportRunner {
         if (!empty($job->data['cancel'])) {
             self::cleanup_tmp($job);
             $job->data['phase']   = 'cancelled';
-            $job->data['message'] = __('Export cancelled.', 'bricks-static');
+            $job->data['message'] = __('Export cancelled.', 'shipstatic');
             $job->save();
 
             return self::snapshot($job);
@@ -198,7 +198,7 @@ final class ExportRunner {
 
         $dest = Destinations::get((string) $job->data['destId']);
         if ($dest === null) {
-            throw new \RuntimeException(__('That destination no longer exists.', 'bricks-static'));
+            throw new \RuntimeException(__('That destination no longer exists.', 'shipstatic'));
         }
 
         $base     = Manifest::load(Manifest::RENDER_OPTION);
@@ -223,7 +223,7 @@ final class ExportRunner {
         $job->data['phase']   = $gzip_total > 0 ? 'gzip' : 'packaging';
         $job->data['message'] = sprintf(
             /* translators: %d: number of files. */
-            __('Preparing export… %d files.', 'bricks-static'),
+            __('Preparing export… %d files.', 'shipstatic'),
             count($files)
         );
     }
@@ -237,7 +237,7 @@ final class ExportRunner {
      */
     private static function tick_gzip(ExportJob $job): void {
         if (!Compressor::available()) {
-            $job->data['gzipNotice'] = __('Gzip is not available on this server (the PHP zlib extension is missing) — the export will not include .gz files.', 'bricks-static');
+            $job->data['gzipNotice'] = __('Gzip is not available on this server (the PHP zlib extension is missing) — the export will not include .gz files.', 'shipstatic');
             $job->data['gzipTotal']  = 0;
             $job->data['phase']      = 'packaging';
 
@@ -264,7 +264,7 @@ final class ExportRunner {
             $job->data['phase']   = 'packaging';
             $job->data['message'] = sprintf(
                 /* translators: 1: files packaged so far, 2: total files. */
-                __('Packaging… %1$d/%2$d files.', 'bricks-static'),
+                __('Packaging… %1$d/%2$d files.', 'shipstatic'),
                 $job->data['packDone'],
                 $job->data['packTotal']
             );
@@ -274,7 +274,7 @@ final class ExportRunner {
 
         $job->data['message'] = sprintf(
             /* translators: 1: files gzipped so far, 2: total files to gzip. */
-            __('Creating gzip files… %1$d/%2$d.', 'bricks-static'),
+            __('Creating gzip files… %1$d/%2$d.', 'shipstatic'),
             $job->data['gzipDone'],
             $job->data['gzipTotal']
         );
@@ -290,7 +290,7 @@ final class ExportRunner {
     private static function tick_packaging(ExportJob $job): void {
         $zip = new \ZipArchive();
         if ($zip->open($job->data['zipTmpPath'], \ZipArchive::CREATE) !== true) {
-            throw new \RuntimeException(__('Could not create the export archive.', 'bricks-static'));
+            throw new \RuntimeException(__('Could not create the export archive.', 'shipstatic'));
         }
 
         if ($job->data['packIndex'] === 0) {
@@ -326,7 +326,7 @@ final class ExportRunner {
 
         $job->data['message'] = sprintf(
             /* translators: 1: files packaged so far, 2: total files. */
-            __('Packaging… %1$d/%2$d files.', 'bricks-static'),
+            __('Packaging… %1$d/%2$d files.', 'shipstatic'),
             $job->data['packDone'],
             $job->data['packTotal']
         );
@@ -341,13 +341,13 @@ final class ExportRunner {
     private static function tick_saving(ExportJob $job): void {
         $tmp = (string) $job->data['zipTmpPath'];
         if (!is_file($tmp) || filesize($tmp) === 0) {
-            throw new \RuntimeException(__('The export archive was not created.', 'bricks-static'));
+            throw new \RuntimeException(__('The export archive was not created.', 'shipstatic'));
         }
 
         $final = Paths::export_dir() . '/' . $job->data['finalName'];
         // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- atomic move between two dirs under uploads/; WP_Filesystem::move() would copy+delete a large zip.
         if (!@rename($tmp, $final)) {
-            throw new \RuntimeException(__('Could not save the export archive.', 'bricks-static'));
+            throw new \RuntimeException(__('Could not save the export archive.', 'shipstatic'));
         }
 
         $job->data['finalPath'] = $final;
@@ -356,7 +356,7 @@ final class ExportRunner {
         self::cleanup_stale_exports();
 
         $token = bin2hex(random_bytes(24));
-        set_transient('bricks_static_export_dl_' . $token, [
+        set_transient('shipstatic_export_dl_' . $token, [
             'path'     => $final,
             'filename' => $job->data['finalName'],
         ], 30 * MINUTE_IN_SECONDS);
@@ -365,7 +365,7 @@ final class ExportRunner {
         $job->data['phase']         = 'done';
         $job->data['message']       = sprintf(
             /* translators: 1: number of files, 2: human-readable size. */
-            __('Export ready — %1$d files, %2$s.', 'bricks-static'),
+            __('Export ready — %1$d files, %2$s.', 'shipstatic'),
             $job->data['fileCount'],
             size_format($job->data['bytes'])
         );
@@ -453,7 +453,7 @@ final class ExportRunner {
 
     /**
      * No-progress window (seconds) before a running export is treated as
-     * abandoned. Filter `bricks_static_export_stale_seconds`.
+     * abandoned. Filter `shipstatic_export_stale_seconds`.
      */
     private static function stale_seconds(): int {
         /**
@@ -462,6 +462,6 @@ final class ExportRunner {
          *
          * @param int $seconds Window in seconds.
          */
-        return (int) apply_filters('bricks_static_export_stale_seconds', 90);
+        return (int) apply_filters('shipstatic_export_stale_seconds', 90);
     }
 }

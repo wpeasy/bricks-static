@@ -1,6 +1,6 @@
 <?php
 /**
- * "Bricks Static" post-editor metabox + list-table column.
+ * "ShipStatic" post-editor metabox + list-table column.
  *
  * Only active when the discovery mode is `manual`. Adds an "Include in static
  * export" switch (per-post meta) plus a sync button + status to every public
@@ -8,20 +8,20 @@
  * Pages/Posts list table. Mirrors Frontend\Fab for the manifest read + ES-module
  * enqueue.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   1.0.2
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\Admin;
+namespace WPEasy\ShipStatic\Admin;
 
-use WPEasy\BricksStatic\Discovery\UrlCollector;
-use WPEasy\BricksStatic\Settings\Destinations;
-use WPEasy\BricksStatic\Support\Assets;
-use WPEasy\BricksStatic\Support\I18n;
-use WPEasy\BricksStatic\Support\Url;
-use WPEasy\BricksStatic\Sync\Manifest;
+use WPEasy\ShipStatic\Discovery\UrlCollector;
+use WPEasy\ShipStatic\Settings\Destinations;
+use WPEasy\ShipStatic\Support\Assets;
+use WPEasy\ShipStatic\Support\I18n;
+use WPEasy\ShipStatic\Support\Url;
+use WPEasy\ShipStatic\Sync\Manifest;
 
 defined('ABSPATH') || exit;
 
@@ -33,7 +33,7 @@ final class Editor {
     /**
      * Script handle for the editor bundle (ES module).
      */
-    private const SCRIPT_HANDLE = 'bricks-static-editor';
+    private const SCRIPT_HANDLE = 'shipstatic-editor';
 
     /**
      * Manifest entry key (Vite input name).
@@ -86,8 +86,8 @@ final class Editor {
         }
         foreach (UrlCollector::public_post_types() as $type) {
             add_meta_box(
-                'bricks-static',
-                __('Bricks Static', 'bricks-static'),
+                'shipstatic',
+                __('ShipStatic', 'shipstatic'),
                 [self::class, 'render'],
                 $type,
                 'side'
@@ -97,7 +97,7 @@ final class Editor {
 
     /**
      * Metabox body — just the Svelte mount target (the app reads its context from
-     * window.bricksStaticEditorData).
+     * window.shipStaticEditorData).
      */
     public static function render(): void {
         echo '<div class="bs"><div id="bs-editor-root"></div></div>';
@@ -123,7 +123,7 @@ final class Editor {
      * @return array<string,string>
      */
     public static function add_column(array $columns): array {
-        $columns['bricks_static_static'] = __('Static', 'bricks-static');
+        $columns['shipstatic_static'] = __('Static', 'shipstatic');
 
         return $columns;
     }
@@ -136,7 +136,7 @@ final class Editor {
      * @param int    $post_id Post id.
      */
     public static function render_column(string $column, int $post_id): void {
-        if ($column !== 'bricks_static_static') {
+        if ($column !== 'shipstatic_static') {
             return;
         }
 
@@ -148,10 +148,10 @@ final class Editor {
 
         $labels = [
             'included' => $st['synced']
-                ? __('In sync — open to re-sync', 'bricks-static')
-                : __('Out of date — open to sync', 'bricks-static'),
-            'excluded' => __('Not in the static export — open to manage', 'bricks-static'),
-            'unknown'  => __('Run a check or sync to see status', 'bricks-static'),
+                ? __('In sync — open to re-sync', 'shipstatic')
+                : __('Out of date — open to sync', 'shipstatic'),
+            'excluded' => __('Not in the static export — open to manage', 'shipstatic'),
+            'unknown'  => __('Run a check or sync to see status', 'shipstatic'),
         ];
 
         $inner = match ($st['state']) {
@@ -303,13 +303,13 @@ final class Editor {
         }
 
         Assets::enqueue_css(self::ENTRY);
-        wp_enqueue_script(self::SCRIPT_HANDLE, BRICKS_STATIC_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BRICKS_STATIC_VERSION, true);
+        wp_enqueue_script(self::SCRIPT_HANDLE, SHIPSTATIC_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], SHIPSTATIC_VERSION, true);
 
         $post_id   = (int) get_the_ID();
         $published = get_post_status($post_id) === 'publish';
 
-        wp_localize_script(self::SCRIPT_HANDLE, 'bricksStaticEditorData', [
-            'restUrl'       => esc_url_raw(rest_url('bricks-static/v1')),
+        wp_localize_script(self::SCRIPT_HANDLE, 'shipStaticEditorData', [
+            'restUrl'       => esc_url_raw(rest_url('shipstatic/v1')),
             'nonce'         => wp_create_nonce('wp_rest'),
             'postId'        => $post_id,
             'pageUrl'       => $published ? (string) get_permalink($post_id) : '',
@@ -339,17 +339,17 @@ final class Editor {
             return;
         }
         Assets::enqueue_css(self::ENTRY);
-        wp_enqueue_script(self::SCRIPT_HANDLE, BRICKS_STATIC_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], BRICKS_STATIC_VERSION, true);
+        wp_enqueue_script(self::SCRIPT_HANDLE, SHIPSTATIC_PLUGIN_URL . 'assets/dist/' . $entry['file'], [], SHIPSTATIC_VERSION, true);
 
         $manual = UrlCollector::mode() === 'manual';
 
-        wp_localize_script(self::SCRIPT_HANDLE, 'bricksStaticListData', [
-            'restUrl'       => esc_url_raw(rest_url('bricks-static/v1')),
+        wp_localize_script(self::SCRIPT_HANDLE, 'shipStaticListData', [
+            'restUrl'       => esc_url_raw(rest_url('shipstatic/v1')),
             'nonce'         => wp_create_nonce('wp_rest'),
             'manualMode'    => $manual,
             // The sync action in the modal mirrors the FAB — gated by the same
             // "Enable sync single button" toggle.
-            'fabEnabled'    => get_option('bricks_static_fab_enabled', '1') !== '0',
+            'fabEnabled'    => get_option('shipstatic_fab_enabled', '1') !== '0',
             'includedCount' => $manual ? UrlCollector::effective_count() : 0,
             'savedCount'    => $manual ? UrlCollector::included_count() : 0,
         ]);

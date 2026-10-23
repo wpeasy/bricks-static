@@ -2,17 +2,17 @@
 /**
  * Sitemap test endpoint: generate the dummy set, then parse it back.
  *
- * @package WPEasy\BricksStatic
+ * @package WPEasy\ShipStatic
  * @since   0.0.1
  */
 
 declare(strict_types=1);
 
-namespace WPEasy\BricksStatic\REST;
+namespace WPEasy\ShipStatic\REST;
 
 use WP_REST_Response;
-use WPEasy\BricksStatic\Sitemap\SitemapGenerator;
-use WPEasy\BricksStatic\Sitemap\SitemapParser;
+use WPEasy\ShipStatic\Sitemap\SitemapGenerator;
+use WPEasy\ShipStatic\Sitemap\SitemapParser;
 
 defined('ABSPATH') || exit;
 
@@ -25,7 +25,7 @@ final class SitemapController {
     /**
      * REST namespace.
      */
-    private const NS = 'bricks-static/v1';
+    private const NS = 'shipstatic/v1';
 
     /**
      * Register routes.
