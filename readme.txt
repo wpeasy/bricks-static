@@ -1,5 +1,5 @@
 === ShipStatic ===
-Contributors: wpeasy
+Contributors: brxprod
 Tags: static site, bricks, performance, static html, deployment
 Requires at least: 6.5
 Tested up to: 7.1
