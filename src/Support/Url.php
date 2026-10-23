@@ -10,7 +10,7 @@ declare(strict_types=1);
 
 namespace WPEasy\ShipStatic\Support;
 
-use WPEasy\ShipStatic\Settings\Settings;
+use WPEasy\ShipStatic\Settings\Destinations;
 
 defined('ABSPATH') || exit;
 
@@ -36,14 +36,37 @@ final class Url {
     }
 
     /**
-     * The configured "Served from sub-path" (basePath) — where the destination
-     * serves the static site from — normalised to "" (domain root) or "/sub"
-     * (leading slash, no trailing slash).
+     * Where the primary destination serves the static site from — its
+     * Destination URL's path, or "Served from sub-path" when it has no URL
+     * (see Destination::served_base_path()) — normalised to "" (domain root)
+     * or "/sub" (leading slash, no trailing slash). Links are rendered for it.
      */
     public static function base_path(): string {
-        $base = '/' . trim((string) Settings::get('basePath'), '/');
+        $base = '/' . trim(Destinations::primary()->served_base_path(), '/');
 
         return $base === '/' ? '' : $base;
+    }
+
+    /**
+     * The reverse of remap_site_path() for a WordPress-root install: map a path
+     * as it appears in the rendered HTML ("/blog/wp-content/x.jpg" with a base
+     * of "/blog") back to where it lives on the source site ("/wp-content/x.jpg"),
+     * so code reading the cached render can find attachments and load
+     * thumbnails. Unchanged when there's no base, the path isn't under it, or
+     * WordPress itself has a home sub-path (render-time remapping already
+     * covers that case).
+     *
+     * @param string $path A leading-slash URL path (no scheme/host).
+     */
+    public static function to_source_path(string $path): string {
+        $base = self::base_path();
+        if ($base === '' || self::home_base() !== '' || !($path === $base || strpos($path, $base . '/') === 0)) {
+            return $path;
+        }
+
+        $rest = substr($path, strlen($base));
+
+        return $rest === '' ? '/' : $rest;
     }
 
     /**

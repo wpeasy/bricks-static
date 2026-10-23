@@ -261,7 +261,7 @@
     "msgid": "Links are built for %1$s, but this destination serves the site from %2$s — pages would load without their styles and images."
   },
   {
-    "msgid": "Set “Served from sub-path” to %s, save, then press Process."
+    "msgid": "Save this Destination URL (the sub-path is taken from it), then press Process."
   },
   {
     "msgid": "Links follow the first destination’s “Served from sub-path”, so use a destination with the same sub-path, or a custom domain."
@@ -756,6 +756,9 @@
     "msgid": "GitHub Pages"
   },
   {
+    "msgid": "Taken from the Destination URL."
+  },
+  {
     "msgid": "Publishes the site to GitHub Pages by committing it to a branch of your repository — no web host, PHP or FTP account needed. Each sync is one commit with only the files that changed."
   },
   {
@@ -792,7 +795,7 @@
     "msgid": "Enter the owner, repository and token here. Keep the branch <code>gh-pages</code> and GitHub turns Pages on by itself at the first sync; for another branch or <code>/docs</code>, choose it afterwards in the repository’s <strong>Settings → Pages → Deploy from a branch</strong>."
   },
   {
-    "msgid": "Press <strong>Test</strong>. An empty Destination URL is filled with the Pages address. A project site lives at <code>https://owner.github.io/repository/</code>, so “Served from sub-path” must be <code>/repository</code> — Test says so if it isn’t. <strong>Save</strong>, then Check / Sync as usual."
+    "msgid": "Press <strong>Test</strong>. An empty Destination URL is filled with the Pages address — for a project site <code>https://owner.github.io/repository/</code>, whose <code>/repository/</code> part becomes the sub-path links are built for. <strong>Save</strong>, press <strong>Process</strong>, then Check / Sync as usual."
   },
   {
     "msgid": "For a custom domain, set it in the repository’s <strong>Settings → Pages</strong> (or enter it as the Destination URL); the plugin keeps the <code>CNAME</code> file GitHub uses."
@@ -846,7 +849,7 @@
     "msgid": "Press <strong>Export ZIP</strong> and download it when it finishes."
   },
   {
-    "msgid": "Extract it into the destination web root — the folder served at the <strong>Destination URL</strong>. If the site lives under a sub-folder, set <strong>Served from sub-path</strong> above <em>before</em> exporting so links are rewritten for it."
+    "msgid": "Extract it into the destination web root — the folder served at the <strong>Destination URL</strong>. If the site lives under a sub-folder, include it in the <strong>Destination URL</strong> (or, with no Destination URL, set <strong>Served from sub-path</strong>) <em>before</em> exporting so links are rewritten for it."
   },
   {
     "msgid": "The zip includes the <code>.htaccess</code> (Apache/LiteSpeed), <code>.gz</code> siblings where supported, <code>sitemap.xml</code> and <code>robots.txt</code>. On nginx, see the <em>Destination Server Configuration</em> tab for the optional snippet and <strong>Check server</strong>."

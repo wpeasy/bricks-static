@@ -39,6 +39,18 @@
   let password = $state('');
   let remotePath = $state(d.remotePath.value);
   let basePath = $state(d.basePath.value);
+  // With a Destination URL, the sub-path IS that URL's path (the server
+  // applies the same rule — Destination::served_base_path()), so the field
+  // just shows it. A wp-config constant still wins.
+  let urlBasePath = $derived.by<string | null>(() => {
+    if (d.basePath.fromConstant) return null;
+    try {
+      const u = new URL(destinationUrl.trim());
+      return '/' + u.pathname.replace(/^\/+|\/+$/g, '') + (u.pathname.replace(/^\/+|\/+$/g, '') ? '/' : '');
+    } catch {
+      return null;
+    }
+  });
   let destinationUrl = $state(d.destinationUrl.value);
   // Cloudflare (Workers static assets). The token is write-only, like the password.
   let cfAccountId = $state(d.cfAccountId.value);
@@ -293,7 +305,11 @@
        for Sync AND Export ZIP. -->
   <div class="bs-grid">
     <Input label={__('fldDestUrl')} type="url" bind:value={destinationUrl} placeholder="https://www.example.com" disabled={d.destinationUrl.fromConstant || busy} />
-    <Input label={__('fldSubPath')} bind:value={basePath} placeholder="/" disabled={d.basePath.fromConstant || busy} />
+    {#if urlBasePath !== null}
+      <Input label={__('fldSubPath')} value={urlBasePath} hint={__('subPathFromUrl')} disabled />
+    {:else}
+      <Input label={__('fldSubPath')} bind:value={basePath} placeholder="/" disabled={d.basePath.fromConstant || busy} />
+    {/if}
   </div>
 
   <Segmented

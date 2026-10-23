@@ -4,7 +4,7 @@ Tags: static site, bricks, performance, static html, deployment
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 2.1.3
+Stable tag: 2.1.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -101,6 +101,10 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 
 == Changelog ==
 
+= 2.1.4 =
+* Changed: the sub-path links are built for is now taken from the Destination URL (e.g. `/my-site/` for `https://owner.github.io/my-site/`), so it no longer has to be entered twice. The "Served from sub-path" field is only used when a destination has no Destination URL.
+* Fixed: with a sub-path, the Images and Videos replacement panels showed every image as "not in library" with a broken thumbnail.
+
 = 2.1.3 =
 * Changed: the plugin is renamed from Bricks Static to ShipStatic (slug and text domain `shipstatic`, WP-CLI `wp shipstatic`). For developers, the prefix is now `shipstatic_` / `SHIPSTATIC_` (was `bricks_static_` / `BRICKS_STATIC_`) and the REST namespace `shipstatic/v1` — rename any `wp-config.php` constants and custom filters.
 * Added: GitHub Pages deploy method — publish the static site to a branch of your GitHub repository with an access token. Each sync is one commit with only the files that changed; removed pages are deleted; an unchanged site makes no commit. A large first sync pauses for GitHub's upload limit and carries on by itself. Also available from WP-CLI (`wp shipstatic github`).
@@ -143,6 +147,9 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 * Text replacements, `.htaccess` + nginx config, favicon, single-page sync, and WP-CLI sync.
 
 == Upgrade Notice ==
+
+= 2.1.4 =
+The sub-path is now taken from the Destination URL, and image replacements work again on sites served from a sub-path.
 
 = 2.1.3 =
 The plugin is now called ShipStatic; developers should rename `BRICKS_STATIC_*` constants and `bricks_static_*` filters to `SHIPSTATIC_*` / `shipstatic_*`. Adds GitHub Pages as a deploy method, and fixes "Served from sub-path" on sites where WordPress is installed at the domain root.

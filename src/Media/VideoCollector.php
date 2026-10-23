@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace WPEasy\ShipStatic\Media;
 
+use WPEasy\ShipStatic\Support\Url;
 use WPEasy\ShipStatic\Sync\Manifest;
 
 defined('ABSPATH') || exit;
@@ -182,7 +183,7 @@ final class VideoCollector {
             return $url;
         }
 
-        return $origin . '/' . ltrim($url, '/');
+        return $origin . '/' . ltrim(Url::to_source_path($url), '/');
     }
 
     /**

@@ -480,8 +480,7 @@ final class DestinationsController {
         $text = sprintf(__('Links are built for %1$s, but this destination serves the site from %2$s — pages would load without their styles and images.', 'shipstatic'), $links === '' ? '/' : $links . '/', $served === '' ? '/' : $served . '/');
 
         return $dest->is_primary()
-            /* translators: %s: sub-path to enter */
-            ? $text . ' ' . sprintf(__('Set “Served from sub-path” to %s, save, then press Process.', 'shipstatic'), $served === '' ? '/' : $served)
+            ? $text . ' ' . __('Save this Destination URL (the sub-path is taken from it), then press Process.', 'shipstatic')
             : $text . ' ' . __('Links follow the first destination’s “Served from sub-path”, so use a destination with the same sub-path, or a custom domain.', 'shipstatic');
     }
 

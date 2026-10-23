@@ -1,18 +1,9 @@
 # Changelog
 
-## v2.1.3 (2026-10-23)
-
-### New
-Publish to GitHub Pages. Choose GitHub Pages under Deploy via, enter your repository and an access token, and each sync becomes one commit with only the pages and files that changed. Removed pages are deleted, an unchanged site makes no commit, and every deploy is in your repository's history. A large first sync pauses for GitHub's upload limit and carries on by itself.
-
-### New
-Test now warns when a destination serves your site from a different sub-path than its links are built for, and tells you how to fix it — before you end up with pages that load without their styles or images.
+## v2.1.4 (2026-10-23)
 
 ### Improved
-The plugin has a new name: ShipStatic (formerly Bricks Static). Everything works the same way. If you set connection details in wp-config.php or added custom filters, rename them from BRICKS_STATIC_ / bricks_static_ to SHIPSTATIC_ / shipstatic_.
+You no longer type the sub-path twice. When a destination has a Destination URL, the folder your site is served from (for example /my-site/ on a GitHub project site) is taken from it automatically, and the settings show it for reference. The separate sub-path field is only used for destinations without a URL.
 
 ### Fixed
-"Served from sub-path" now works when WordPress is installed at the root of its domain. Previously the files moved into the sub-path but the links didn't, so the published site appeared without styling.
-
-### Fixed
-No PHP 8.5 deprecation notice when the plugin creates a favicon.
+On sites served from a sub-path, the Images and Videos replacement panels showed every image as "not in library" with a broken thumbnail. They now find your media library images again.

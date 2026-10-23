@@ -5,6 +5,15 @@ All notable changes to **ShipStatic** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.4] - 2026-10-23
+
+### Changed
+- **The sub-path now comes from the Destination URL.** `Destination::served_base_path()` returns the Destination URL's path whenever a URL is set (`https://owner.github.io/repo/` → `/repo/`); the "Served from sub-path" field applies only to a destination without a Destination URL (or when `SHIPSTATIC_BASE_PATH` pins it). `Support\Url::base_path()` reads it, so rendering, Export ZIP and the GitHub transport all follow. The dashboard shows the derived value read-only ("Taken from the Destination URL."). Before, the same path had to be typed twice, and a mismatch published pages without styles or images. The Test warning for the first destination now says to save the Destination URL; help text (GitHub Pages step 4, Export ZIP step 3, Docs page, README) updated.
+- wordpress.org assets: new banners (ShipStatic, "Publish WordPress as a fast static site — to your host, Cloudflare or GitHub Pages.", current dashboard behind) and three real screenshots (dashboard, Images replacements, "Sync this page") replacing the old Bricks Static / Free-vs-Pro images and placeholders.
+
+### Fixed
+- **Images / Videos replacements with a sub-path:** every image showed "not in library" with a broken thumbnail, because the cached render's URLs carry the sub-path (`/repo/wp-content/…`) that the media library doesn't. New `Support\Url::to_source_path()` maps a rendered path back to the site path for attachment lookup and thumbnails (`Media\MediaCollector`, `Media\VideoCollector`). No change with the default sub-path `/`.
+
 ## [2.1.3] - 2026-10-23
 
 ### Changed — breaking (no installs yet, so no migration)

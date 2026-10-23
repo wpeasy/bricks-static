@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       ShipStatic
  * Description:       Publish your WordPress site as static HTML over SFTP/FTP, HTTPS, Cloudflare or GitHub Pages. Bricks-aware; works with any WordPress content.
- * Version:           2.1.3
+ * Version:           2.1.4
  * Requires at least: 6.5
  * Tested up to:      7.1
  * Requires PHP:      8.0
@@ -25,7 +25,7 @@ defined('ABSPATH') || exit;
 /**
  * Plugin constants.
  */
-define('SHIPSTATIC_VERSION', '2.1.3');
+define('SHIPSTATIC_VERSION', '2.1.4');
 define('SHIPSTATIC_PLUGIN_FILE', __FILE__);
 define('SHIPSTATIC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SHIPSTATIC_PLUGIN_URL', plugin_dir_url(__FILE__));

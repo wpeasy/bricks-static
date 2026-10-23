@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace WPEasy\ShipStatic\Media;
 
 use WPEasy\ShipStatic\Render\UrlRewriter;
+use WPEasy\ShipStatic\Support\Url;
 use WPEasy\ShipStatic\Sync\Manifest;
 
 defined('ABSPATH') || exit;
@@ -95,7 +96,7 @@ final class MediaCollector {
                 'url'   => $url,
                 // Absolute URL so the admin can show the thumbnail (cached HTML
                 // uses root-relative paths after rewriting).
-                'thumb' => self::is_absolute($url) ? $url : $origin . '/' . ltrim($url, '/'),
+                'thumb' => self::is_absolute($url) ? $url : $origin . '/' . ltrim(Url::to_source_path($url), '/'),
                 'alt'   => $g['alt'],
                 'type'  => $g['type'],
                 // True when the original maps to a library attachment, so a swap
@@ -123,7 +124,8 @@ final class MediaCollector {
             return 0;
         }
 
-        $abs  = self::is_absolute($url) ? $url : home_url($url);
+        // The render carries the "served from" base; the library doesn't.
+        $abs  = self::is_absolute($url) ? $url : home_url(Url::to_source_path($url));
         // Drop a "-1024x683" style size suffix to get the full-size URL WP stores.
         $full = (string) preg_replace('#-\d+x\d+(?=\.[a-z0-9]+$)#i', '', $abs);
 

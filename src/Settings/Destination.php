@@ -142,6 +142,23 @@ final class Destination {
     }
 
     /**
+     * Where this destination serves the site from, as a path ("/" = domain
+     * root). Taken from the Destination URL when one is set — the URL already
+     * says it (https://owner.github.io/repo/ → "/repo/"), so asking again
+     * only invites a mismatch. The "Served from sub-path" field applies only
+     * when there is no Destination URL, or when SHIPSTATIC_BASE_PATH pins it.
+     */
+    public function served_base_path(): string {
+        $url = trim((string) $this->get('destinationUrl'));
+        if (!$this->is_from_constant('basePath') && $url !== '' && (string) wp_parse_url($url, PHP_URL_HOST) !== '') {
+            $path = trim((string) wp_parse_url($url, PHP_URL_PATH), '/');
+            return $path === '' ? '/' : '/' . $path . '/';
+        }
+
+        return (string) $this->get('basePath');
+    }
+
+    /**
      * Whether this is the primary (first) destination — the one whose
      * "Served from sub-path" links are rendered for.
      */

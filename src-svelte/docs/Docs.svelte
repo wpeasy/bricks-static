@@ -226,7 +226,7 @@
 
         <h3>Project sites and the sub-path</h3>
         <p class="bs-docs__muted">
-          A repository called <code>my-site</code> is served at <code>https://owner.github.io/my-site/</code> — a sub-path. Set <strong>Served from sub-path</strong> to <code>/my-site</code> (Test tells you if it doesn’t match), save, then press <strong>Process</strong>, so links, images and CSS point inside the site. A repository named <code>owner.github.io</code>, or a custom domain, is served from the root and needs no sub-path. Links are built for the <em>first</em> destination’s sub-path, so a GitHub project site works best as the first destination, or on a custom domain.
+          A repository called <code>my-site</code> is served at <code>https://owner.github.io/my-site/</code> — a sub-path. With that as the <strong>Destination URL</strong> (Test fills it in), the plugin builds links, images and CSS for <code>/my-site/</code> automatically: the sub-path is always taken from the Destination URL. Save, then press <strong>Process</strong>. A repository named <code>owner.github.io</code>, or a custom domain, is served from the root and needs no sub-path. Links are built for the <em>first</em> destination’s sub-path, so a GitHub project site works best as the first destination, or on a custom domain.
         </p>
 
         <h3>How a GitHub Pages sync works</h3>
