@@ -63,7 +63,41 @@ function stage(srcBase, allow, destFolder) {
     if (!existsSync(src)) continue;
     const dest = join(destFolder, rel);
     mkdirSync(dirname(dest), { recursive: true });
-    cpSync(src, dest, { recursive: true });
+    cpSync(src, dest, { recursive: true, filter: (from) => !isDevJunk(from.slice(srcBase.length + 1)) });
+  }
+}
+
+/**
+ * Library development files that ride along in vendor/ but never run:
+ * maintainer build scripts (wordpress.org rejects the upload outright for
+ * e.g. paragonie/random_compat's build-phar.sh), phar signing keys, and
+ * test / static-analysis / CI config. Licences and READMEs stay.
+ */
+const DEV_JUNK = [
+  /\.(sh|bash|bat|cmd|ps1|exe|phar)$/i,
+  /\.pubkey(\.asc)?$/i,
+  /(^|\/)(psalm|phpstan|phpunit|phpcs|infection)\.(xml|neon)(\.dist)?$/i,
+  /(^|\/)\.(github|gitattributes|gitignore|editorconfig|travis\.yml|scrutinizer\.yml)(\/|$)/i,
+];
+function isDevJunk(rel) {
+  const path = rel.split('\\').join('/');
+  return path.startsWith('vendor/') && DEV_JUNK.some((re) => re.test(path));
+}
+
+/**
+ * Last line of defence before zipping: fail on any file type wordpress.org
+ * refuses (its upload check rejects executables and scripts anywhere).
+ */
+const FORBIDDEN = /\.(sh|bash|bat|cmd|ps1|exe|phar|dll|so|dylib|jar|py|rb|pl)$/i;
+function assertNoForbidden(dir, rel = '') {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const childRel = rel ? `${rel}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      assertNoForbidden(join(dir, entry.name), childRel);
+    } else if (FORBIDDEN.test(entry.name)) {
+      console.error(`✗ ${childRel} would be rejected by wordpress.org — exclude it (scripts/make-zips.mjs DEV_JUNK).`);
+      process.exit(1);
+    }
   }
 }
 
@@ -225,6 +259,7 @@ console.log('• Staging…');
 const version = pluginVersion(join(ROOT, 'shipstatic.php'), 'SHIPSTATIC_VERSION');
 const stageDir = join(DIST, '_stage');
 stage(ROOT, PLUGIN.allow, join(stageDir, PLUGIN.zip));
+assertNoForbidden(join(stageDir, PLUGIN.zip));
 zip(stageDir, PLUGIN.zip, `${PLUGIN.zip}-${version}`);
 
 // 3. Clean staging.
