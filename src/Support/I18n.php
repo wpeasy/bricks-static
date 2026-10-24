@@ -548,6 +548,7 @@ final class I18n {
             'allDestLead'    => __('Render once, then push to every enabled destination in turn.', 'shipstatic'),
             'stDisabled'     => __('disabled', 'shipstatic'),
             'stOutOfDate'    => __('Out of date', 'shipstatic'),
+            'stContentChanged' => __('Content changed — Process to check', 'shipstatic'),
             'stNotPushed'    => __('Not pushed', 'shipstatic'),
             'pruneOption'    => __('Remove deleted files from each destination (prune)', 'shipstatic'),
             'btnWorking'     => __('Working…', 'shipstatic'),

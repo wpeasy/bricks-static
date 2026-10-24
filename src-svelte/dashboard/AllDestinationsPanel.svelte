@@ -7,6 +7,7 @@
     destinations,
     running,
     exporting = false,
+    renderCurrent = true,
     onSyncAll,
     onSyncOne,
     onExportOne,
@@ -16,6 +17,8 @@
     running: boolean;
     /** An Export ZIP is in flight (for any destination) — disables row actions here too. */
     exporting?: boolean;
+    /** The render reflects current content — when false (e.g. a page was edited), say so instead of a bare "Out of date". */
+    renderCurrent?: boolean;
     onSyncAll: (prune: boolean) => void;
     onSyncOne: (id: string, prune: boolean) => void;
     onExportOne: (id: string) => void;
@@ -41,7 +44,7 @@
           {d.enabled ? (d.host.value || '—') : __('stDisabled')}
         </span>
         <Badge tone={d.status.inSync ? 'success' : d.status.hasPushed ? 'warning' : 'neutral'} variant="soft">
-          {d.status.inSync ? __('stInSync') : d.status.hasPushed ? __('stOutOfDate') : __('stNotPushed')}
+          {d.status.inSync ? __('stInSync') : !d.status.hasPushed ? __('stNotPushed') : renderCurrent ? __('stOutOfDate') : __('stContentChanged')}
         </Badge>
         <Button variant="secondary" size="sm" onclick={() => onExportOne(d.id)} disabled={busy || !d.enabled}>
           {exporting ? __('btnExporting') : __('btnExport')}

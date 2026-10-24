@@ -1116,6 +1116,9 @@
     "msgid": "Out of date"
   },
   {
+    "msgid": "Content changed — Process to check"
+  },
+  {
     "msgid": "Remove deleted files from each destination (prune)"
   },
   {

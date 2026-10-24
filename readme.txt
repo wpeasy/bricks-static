@@ -107,6 +107,7 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 
 = 2.1.8 =
 * Changed: GitHub Pages branch and folder now sit in a collapsed Advanced section, with a note on when to change them.
+* Changed: after editing a page, destinations say "Content changed — Process to check" instead of "Out of date".
 * Fixed: collapsed help sections no longer show a sliver of their first line.
 
 = 2.1.7 =

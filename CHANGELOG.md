@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **GitHub Pages: Branch and Folder moved into a collapsed "Advanced" section** (`DestinationPanel.svelte`), titled with the current values ("Advanced: branch gh-pages, /") and opened automatically when a destination already uses a non-default branch or `/docs`. The form is now Owner, Repository, Token. Inside, a note on when to change them (`ghAdvancedHelp`): the site next to your code (`main` + `/docs`) or a user/organisation site (`owner.github.io`, usually `main`). The Documentation page gains a "Choosing a branch and folder" section, and the set-up step (`ghStep3`) points to Advanced. Translated for all five shipped locales.
+- **"Content changed — Process to check" instead of "Out of date"** in the All destinations list when the render is stale (a page was edited since the last Process — e.g. after a single-page sync, which doesn't clear the site-wide flag). "Out of date" now only means the content is current and the destination is behind it. (`AllDestinationsPanel.svelte` takes `renderCurrent`; `stContentChanged`.)
 
 ### Fixed
 - **Collapsed sections showed the top pixels of their first line.** ab-ui's `Collapsible` keeps `padding-bottom` on its content, which a closed `0fr` grid row can't shrink below, so the closed region stayed 8px tall. `shared/app.css` moves that space into a spacer inside the clipped content, so a closed region is 0px (open/close animation unchanged). Affects every "How to set it up" / "How it works" section.

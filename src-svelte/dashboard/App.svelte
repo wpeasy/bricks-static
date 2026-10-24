@@ -483,6 +483,7 @@
                       {destinations}
                       running={syncing}
                       exporting={exporting}
+                      renderCurrent={status?.renderCurrent ?? true}
                       onSyncAll={(prune) => startSync('all', prune)}
                       onSyncOne={(id, prune) => startSync(id, prune)}
                       onExportOne={startExport}
