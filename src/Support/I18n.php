@@ -169,6 +169,8 @@ final class I18n {
         return [
             'enableSyncButton' => __('Enable sync single button', 'shipstatic'),
             'syncGroup'        => __('Sync', 'shipstatic'),
+            'siteSearch'       => __('Site search', 'shipstatic'),
+            'siteSearchHelp'   => __('Makes the search boxes on your static site work: each sync adds a search index for that destination, searched in the visitor’s browser. The live WordPress site keeps its own search. Press Process after changing this.', 'shipstatic'),
             'concurrentSyncs'  => __('Concurrent syncs', 'shipstatic'),
             'concurrentSyncsHelp' => __('How many destinations to upload to at the same time during a multi-destination sync. Higher is faster but uses more connections. Requires WP-CLI; otherwise syncs run one at a time.', 'shipstatic'),
             'tabDestinations'  => __('Destinations', 'shipstatic'),
@@ -338,6 +340,7 @@ final class I18n {
             'fldGhFolder'      => __('Folder', 'shipstatic'),
             'optGhRoot'        => __('Whole branch (/)', 'shipstatic'),
             'optGhDocs'        => __('The /docs folder', 'shipstatic'),
+            /* translators: 1: Git branch name (e.g. gh-pages), 2: folder ("/" or "/docs"). */
             'ghAdvanced'       => __('Advanced: branch %1$s, %2$s', 'shipstatic'),
             'ghAdvancedHelp'   => __('Most sites keep <code>gh-pages</code> and the whole branch. Change them when the site should live next to your code — for example <code>main</code> with the <code>/docs</code> folder, so your source files at the root are left alone — or for a user or organisation site (a repository named <code>owner.github.io</code>), which usually publishes from <code>main</code>. Pick the same branch and folder in the repository’s <strong>Settings → Pages</strong>.', 'shipstatic'),
             'fldGhToken'       => __('Access token', 'shipstatic'),

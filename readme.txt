@@ -4,7 +4,7 @@ Tags: static site, bricks, performance, static html, deployment
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 2.1.8
+Stable tag: 2.2.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,6 +32,7 @@ Bricks isn't required. Rendering is builder-agnostic: ShipStatic captures whatev
 * **Gzip pre-compression** (`.gz`) for faster delivery
 * **Remote pruning** — delete files that no longer exist locally
 * **Sitemap.xml + robots.txt** generation
+* **Site search** — search boxes work on the static site: each sync adds a search index for that destination, searched in the visitor's browser (no server or third-party service); includes a fully styleable **ShipStatic Search** Bricks element and a `[shipstatic_search]` shortcode
 * Per-file **and** one-shot package (zip) deploy
 * **Connector (HTTPS)** — no FTP account needed: upload one small PHP receiver to the destination once, then every sync goes up as a single signed, chunked package
 * **Cloudflare** — publish to Cloudflare's global network (as a static Worker) with an account ID, an API token and a Worker name; no web host needed
@@ -73,6 +74,10 @@ In the plugin's support forum on WordPress.org: https://wordpress.org/support/pl
 
 There's no limit — ShipStatic renders and syncs every page in your export.
 
+= Does search work on the static site? =
+
+Yes, once you turn on **Site search** in ShipStatic → Settings, then Process and Sync. Every search box (WordPress, Bricks' Search element, or the ShipStatic Search element) then searches the destination's own index right in the browser, with results as you type. Each destination's index has its own text replacements and addresses. The live WordPress site keeps its normal search.
+
 = Which connections are supported? =
 
 SFTP, FTP and explicit-TLS FTPS; the Connector (signed HTTPS to a small receiver file you upload once); Cloudflare; and GitHub Pages. SFTP uses a bundled pure-PHP library, so no special server extensions are required.
@@ -104,6 +109,11 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 3. The "sync this page" button on the front end.
 
 == Changelog ==
+
+= 2.2.0 =
+* Added: site search for static sites. Turn on Site search in Settings, and search boxes on the static site search an index built for each destination during sync, with results as you type. No server or third-party service needed.
+* Added: ShipStatic Search element for Bricks, with style controls for every part of the box and the results, and a results preview in the builder. Also available as the [shipstatic_search] shortcode.
+* Fixed: missing translator comment on a GitHub Pages setting (wordpress.org Plugin Check).
 
 = 2.1.8 =
 * Changed: GitHub Pages branch and folder now sit in a collapsed Advanced section, with a note on when to change them.
@@ -167,6 +177,9 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 * Text replacements, `.htaccess` + nginx config, favicon, single-page sync, and WP-CLI sync.
 
 == Upgrade Notice ==
+
+= 2.2.0 =
+New: site search for your static site, plus a fully styleable ShipStatic Search element for Bricks.
 
 = 2.1.8 =
 Tidier GitHub Pages settings and a fix for collapsed help sections.

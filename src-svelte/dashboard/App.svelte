@@ -150,6 +150,21 @@
     }
   }
 
+  async function setSearchEnabled(enabled: boolean): Promise<void> {
+    if (!status) return;
+    const previous = status.searchEnabled;
+    status.searchEnabled = enabled; // optimistic
+    try {
+      const r = await api.setSearchEnabled(enabled);
+      status.searchEnabled = r.searchEnabled;
+      // Pages gain/lose the search script, so the render needs Process again.
+      if (r.searchEnabled !== previous) status.renderCurrent = false;
+    } catch (e) {
+      status.searchEnabled = previous;
+      loadError = (e as Error).message;
+    }
+  }
+
   async function setFabEnabled(enabled: boolean): Promise<void> {
     if (!status) return;
     const previous = status.fabEnabled;
@@ -438,6 +453,7 @@
     onSetDiscoveryMode={setDiscoveryMode}
     onProcess={processPages}
     onSetFabEnabled={setFabEnabled}
+    onSetSearchEnabled={setSearchEnabled}
     onSetAiToggles={setAiToggles}
     onSetConcurrentSyncs={setConcurrentSyncs}
     onOpenWizard={openWizard}

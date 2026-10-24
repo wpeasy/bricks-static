@@ -220,6 +220,8 @@ export interface Status {
   /** Published pages not in the current export (orphans in linked mode, etc.). */
   excludedPublished: number;
   fabEnabled: boolean;
+  /** Site search: export a search index + script (Settings → Site search). */
+  searchEnabled: boolean;
   /** Max destinations deployed at once during a multi-destination sync (1–10). */
   concurrentSyncs: number;
   /** Whether the host WordPress exposes the Abilities API (WP 6.9+). */

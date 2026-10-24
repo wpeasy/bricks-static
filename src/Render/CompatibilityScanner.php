@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace WPEasy\ShipStatic\Render;
 
+use WPEasy\ShipStatic\Search\IndexBuilder;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -50,6 +52,10 @@ final class CompatibilityScanner {
                     continue;
                 }
                 $type = preg_match('#\b(role="search"|class="[^"]*\bsearch)#i', $tag) ? 'search-form' : 'form';
+                // With site search on, the export's search script handles it.
+                if ($type === 'search-form' && IndexBuilder::enabled()) {
+                    continue;
+                }
                 self::add($found, $seen, $type, $action);
             }
         }

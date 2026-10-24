@@ -14,6 +14,7 @@
     onSetDiscoveryMode,
     onProcess,
     onSetFabEnabled,
+    onSetSearchEnabled,
     onSetAiToggles,
     onSetConcurrentSyncs,
     onOpenWizard,
@@ -24,6 +25,7 @@
     onSetDiscoveryMode: (mode: DiscoveryMode) => void;
     onProcess: () => void;
     onSetFabEnabled: (enabled: boolean) => void;
+    onSetSearchEnabled: (enabled: boolean) => void;
     onSetAiToggles: (toggles: { aiAllowChanges?: boolean; aiAllowSync?: boolean }) => void;
     onSetConcurrentSyncs: (n: number) => void;
     /** Re-run the first-run setup wizard (closes this drawer). */
@@ -129,6 +131,16 @@
           checked={status.fabEnabled ? 1 : 0}
           onchange={(c) => onSetFabEnabled(c === 1)}
         />
+      </section>
+
+      <!-- Site search (index + script in the export) -->
+      <section class="bs-set__group bs-stack bs-stack--sm">
+        <Switch
+          label={__('siteSearch')}
+          checked={status.searchEnabled ? 1 : 0}
+          onchange={(c) => onSetSearchEnabled(c === 1)}
+        />
+        <p class="bs-set__help">{__('siteSearchHelp')}</p>
       </section>
 
       <!-- Sync (concurrent destination uploads) -->

@@ -156,6 +156,201 @@
     "msgid": "ShipStatic: the admin assets are not built. Run \"npm run build\" in the plugin directory."
   },
   {
+    "msgid": "ShipStatic Search"
+  },
+  {
+    "msgid": "Field"
+  },
+  {
+    "msgid": "Input"
+  },
+  {
+    "msgid": "Leading icon"
+  },
+  {
+    "msgid": "Button"
+  },
+  {
+    "msgid": "Label"
+  },
+  {
+    "msgid": "Results box"
+  },
+  {
+    "msgid": "Results"
+  },
+  {
+    "msgid": "No results"
+  },
+  {
+    "msgid": "On your static site this searches as you type. Turn on Site search in ShipStatic → Settings, then Process and Sync. On the live WordPress site it is a normal search form."
+  },
+  {
+    "msgid": "Site search is currently off in ShipStatic → Settings."
+  },
+  {
+    "msgid": "Placeholder"
+  },
+  {
+    "msgid": "Search…"
+  },
+  {
+    "msgid": "Max results"
+  },
+  {
+    "msgid": "Search after (characters)"
+  },
+  {
+    "msgid": "Hide text snippets"
+  },
+  {
+    "msgid": "Snippet length (characters)"
+  },
+  {
+    "msgid": "No results text"
+  },
+  {
+    "msgid": "No results for “%s”"
+  },
+  {
+    "msgid": "%s is replaced by what was typed."
+  },
+  {
+    "msgid": "Hide results preview in builder"
+  },
+  {
+    "msgid": "The builder shows sample results so you can style them."
+  },
+  {
+    "msgid": "Min height"
+  },
+  {
+    "msgid": "Gap"
+  },
+  {
+    "msgid": "Padding"
+  },
+  {
+    "msgid": "Background"
+  },
+  {
+    "msgid": "Text / icon colour"
+  },
+  {
+    "msgid": "Border"
+  },
+  {
+    "msgid": "Box shadow"
+  },
+  {
+    "msgid": "While typing (focus)"
+  },
+  {
+    "msgid": "Height"
+  },
+  {
+    "msgid": "Typography"
+  },
+  {
+    "msgid": "Placeholder colour"
+  },
+  {
+    "msgid": "Icon"
+  },
+  {
+    "msgid": "Size"
+  },
+  {
+    "msgid": "Colour"
+  },
+  {
+    "msgid": "Hide button"
+  },
+  {
+    "msgid": "Text"
+  },
+  {
+    "msgid": "A magnifying glass is used when there is no text or icon."
+  },
+  {
+    "msgid": "Icon size"
+  },
+  {
+    "msgid": "Min width"
+  },
+  {
+    "msgid": "Hover"
+  },
+  {
+    "msgid": "Search"
+  },
+  {
+    "msgid": "Read by screen readers, and used as the button’s name."
+  },
+  {
+    "msgid": "Show label"
+  },
+  {
+    "msgid": "Gap to field"
+  },
+  {
+    "msgid": "Align"
+  },
+  {
+    "msgid": "Left"
+  },
+  {
+    "msgid": "Right"
+  },
+  {
+    "msgid": "Field width"
+  },
+  {
+    "msgid": "Width"
+  },
+  {
+    "msgid": "Max height"
+  },
+  {
+    "msgid": "Distance from field"
+  },
+  {
+    "msgid": "Text colour"
+  },
+  {
+    "msgid": "Z-index"
+  },
+  {
+    "msgid": "Space between results"
+  },
+  {
+    "msgid": "Result padding"
+  },
+  {
+    "msgid": "Result border"
+  },
+  {
+    "msgid": "Result background"
+  },
+  {
+    "msgid": "Hover / selected with the keyboard"
+  },
+  {
+    "msgid": "Title"
+  },
+  {
+    "msgid": "Snippet"
+  },
+  {
+    "msgid": "Gap below title"
+  },
+  {
+    "msgid": "Highlighted match"
+  },
+  {
+    "msgid": "Border radius"
+  },
+  {
     "msgid": "Missing download token."
   },
   {
@@ -211,6 +406,15 @@
   },
   {
     "msgid": "Export ready — %1$d files, %2$s."
+  },
+  {
+    "msgid": "%d results"
+  },
+  {
+    "msgid": "1 result"
+  },
+  {
+    "msgid": "Search results"
   },
   {
     "msgid": "Enter and save the Destination URL first — the connector is called at that address."
@@ -283,6 +487,30 @@
   },
   {
     "msgid": "Not linked"
+  },
+  {
+    "msgid": "search"
+  },
+  {
+    "msgid": "Getting started"
+  },
+  {
+    "msgid": "Everything you need to know to get your first %s results on the page."
+  },
+  {
+    "msgid": "Pricing"
+  },
+  {
+    "msgid": "Plans for every size of site, with fast %s included."
+  },
+  {
+    "msgid": "Contact us"
+  },
+  {
+    "msgid": "Can’t find what you’re looking for? Try a %s, or get in touch."
+  },
+  {
+    "msgid": "Search results (preview)"
   },
   {
     "msgid": "AI tools (MCP)"
@@ -433,6 +661,12 @@
   },
   {
     "msgid": "Enable sync single button"
+  },
+  {
+    "msgid": "Site search"
+  },
+  {
+    "msgid": "Makes the search boxes on your static site work: each sync adds a search index for that destination, searched in the visitor’s browser. The live WordPress site keeps its own search. Press Process after changing this."
   },
   {
     "msgid": "Concurrent syncs"
@@ -1081,9 +1315,6 @@
   },
   {
     "msgid": "No videos match the current filter."
-  },
-  {
-    "msgid": "Text"
   },
   {
     "msgid": "Images"

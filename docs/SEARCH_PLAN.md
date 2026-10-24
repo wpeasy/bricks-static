@@ -1,6 +1,18 @@
 # Site search for static exports — implementation plan
 
-> Status: **proposed** (2026-10-24). Nothing here is built yet.
+> Status: **phases 1 and 3 implemented** (2026-10-24), verified on the two
+> demo GitHub Pages sites (phase 2 polish still open). Phase 3 = the
+> **ShipStatic Search** Bricks element (`src/Bricks/SearchElement.php`: style
+> controls for every part, builder results preview) + `[shipstatic_search]`,
+> both rendered by `Search\SearchForm`; default look in
+> `src-svelte/search/search.css`, all `:where()` (zero specificity). The
+> `/search/` results page is not built. Differences from the text below:
+> - The script is enqueued **only into the render** (`PageRenderer::is_render_request()`),
+>   not on the live WordPress site, which keeps its own search untouched.
+>   §6 step 3's fallback still applies if the index can't load.
+> - No on-disk record cache yet: a per-request memo keyed by `md5(page)`
+>   suffices (8 pages → 0.07 s per destination). Add the disk cache in phase 2
+>   if large sites need it.
 >
 > Gives every exported site a working search box with no server, no third-party
 > service and no build tools. During each sync the plugin writes a small search

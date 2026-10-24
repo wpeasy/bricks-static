@@ -19,6 +19,8 @@ export default defineConfig({
         frontend: 'src-svelte/frontend/main.ts',
         docs: 'src-svelte/docs/main.ts',
         editor: 'src-svelte/editor/main.ts',
+        search: 'src-svelte/search/main.ts',
+        'search-style': 'src-svelte/search/search.css',
       },
     },
   },

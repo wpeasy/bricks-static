@@ -5,6 +5,19 @@ All notable changes to **ShipStatic** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-10-24
+
+### Added
+- **Site search for static exports** (`docs/SEARCH_PLAN.md`). Setting `shipstatic_search_enabled` (Settings drawer → **Site search**, off by default; toggling marks content dirty because pages gain/lose the script). `Search\IndexBuilder` + `Search\TextExtractor` write `search-index.json` per destination inside `Runner::build_deploy_manifest()`, from each page AFTER its replacers and `Url::rebase()` — so every destination's index has its own wording and sub-path URLs (verified: a text replacement on one GitHub demo site is searchable only there). Main content only (`#brx-content` → `main` → `body`, minus nav/header/footer/forms/scripts/hidden), `noindex` and `404.html` skipped, text capped by `shipstatic_search_text_limit` (3000), `shipstatic_search_include_page` filter; no timestamp, so an unchanged index never re-uploads. Folded into `sync_signature()`.
+- **Search script** `src-svelte/search/main.ts` (Vite entry `search`, standalone, ~2.2 KB gzip), enqueued by `Frontend\Search` **only on render requests**, so the live site is untouched. Upgrades every form with an `s` field: fetches the index on focus with `cache: 'no-cache'` (fresh after a sync despite GitHub Pages' 10-minute cache), accent-insensitive AND matching with title/heading/text scoring, results as you type with `<mark>` highlights (built with DOM APIs, never `innerHTML`), ARIA combobox + listbox, ↑/↓/Enter/Esc, polite live region; Enter opens the selected or best result. Per-form options from `data-bs-*`.
+- **ShipStatic Search Bricks element** (`src/Bricks/SearchElement.php`, category "ShipStatic"): behaviour controls (placeholder, max results, min characters, snippets on/off + length, no-results text) and style controls for the label, field (+ focus), leading icon, input, button (+ hover), results box (align/width/height/offset/colours/border/shadow/z-index), results (spacing, padding, border, background, hover/keyboard-selected state, title, snippet, highlighted match) and the no-results line. Builder shows a sample results dropdown to style (can be hidden). Markup shared with the new `[shipstatic_search]` shortcode via `Search\SearchForm`; defaults in `src-svelte/search/search.css` (Vite entry `search-style`), all `:where()` so Bricks controls always win, px sizes, `color-mix()` fades.
+
+### Changed
+- The compatibility scanner no longer flags search forms as "won't work" when Site search is on.
+
+### Fixed
+- Missing `translators:` comment on the GitHub "Advanced: branch %1$s, %2$s" string (shipped in 2.1.8; Plugin Check error).
+
 ## [2.1.8] - 2026-10-24
 
 ### Changed

@@ -75,6 +75,8 @@ export const api = {
     request<{ discoveryMode: DiscoveryMode }>('/settings', 'POST', { discoveryMode: mode }),
   setFabEnabled: (enabled: boolean) =>
     request<{ fabEnabled: boolean }>('/settings', 'POST', { fabEnabled: enabled }),
+  setSearchEnabled: (enabled: boolean) =>
+    request<{ searchEnabled: boolean; renderCurrent?: boolean }>('/settings', 'POST', { searchEnabled: enabled }),
   setAiToggles: (toggles: { aiAllowChanges?: boolean; aiAllowSync?: boolean }) =>
     request<{ aiAllowChanges: boolean; aiAllowSync: boolean }>('/settings', 'POST', toggles),
   setConcurrentSyncs: (n: number) =>

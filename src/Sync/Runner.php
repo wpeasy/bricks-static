@@ -28,6 +28,7 @@ use WPEasy\ShipStatic\Transport\ResumableSnapshotTransport;
 use WPEasy\ShipStatic\Transport\SnapshotCapableTransport;
 use WPEasy\ShipStatic\Transport\TransportFactory;
 use WPEasy\ShipStatic\Transport\TransportInterface;
+use WPEasy\ShipStatic\Search\IndexBuilder;
 
 defined('ABSPATH') || exit;
 
@@ -1511,6 +1512,12 @@ final class Runner {
         $deploy_dir = Paths::cache_dir() . '/deploy/' . $dest->id();
         self::reset_dir($deploy_dir);
 
+        // Site search: one record per page, read from this destination's FINAL
+        // page (after its replacements and sub-path), so its index has its own
+        // wording and URLs.
+        $search  = IndexBuilder::enabled();
+        $records = [];
+
         // Every page and stylesheet carries the destination-base placeholder,
         // so each destination gets its own copy with its sub-path filled in
         // (and its replacements applied). Other files deploy from the render.
@@ -1545,6 +1552,13 @@ final class Runner {
             // Last, after the replacers (their keys match the render as-is).
             $transformed = Url::rebase($transformed, $served);
 
+            if ($search && $ext === 'html') {
+                $record = IndexBuilder::record($transformed, $relative, $served);
+                if ($record !== null) {
+                    $records[] = $record;
+                }
+            }
+
             // Only write a per-destination copy when the file actually changed;
             // otherwise reference the base render (no extra file, no churn).
             $out[$key] = $transformed === $original
@@ -1557,6 +1571,14 @@ final class Runner {
             $key = self::relocate($rel, $file_prefix);
             if (!isset($out[$key]) && is_file($src)) {
                 $out[$key] = ['size' => (int) filesize($src), 'hash' => StableHash::of_file($src), 'src' => wp_normalize_path($src)];
+            }
+        }
+
+        if ($search) {
+            $key   = self::relocate(IndexBuilder::FILE, $file_prefix);
+            $index = self::write_deploy_file($deploy_dir, $key, IndexBuilder::encode($records));
+            if ($index !== null) {
+                $out[$key] = $index;
             }
         }
 
@@ -2158,6 +2180,8 @@ final class Runner {
         }
         ksort($sig);
         $sig['__base'] = $dest !== null ? PackageDeployer::base_url($dest) : '';
+        // Turning site search on/off (or a new index format) changes what deploys.
+        $sig['__search'] = IndexBuilder::enabled() ? IndexBuilder::VERSION : 0;
 
         $replacements = (string) wp_json_encode($sig);
 

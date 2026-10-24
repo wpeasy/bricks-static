@@ -15,6 +15,7 @@ use WPEasy\ShipStatic\Admin\Editor;
 use WPEasy\ShipStatic\Admin\Menu;
 use WPEasy\ShipStatic\Export\ExportDownload;
 use WPEasy\ShipStatic\Frontend\Fab;
+use WPEasy\ShipStatic\Frontend\Search;
 use WPEasy\ShipStatic\Render\LinkDeployReplacer;
 use WPEasy\ShipStatic\Render\MediaDeployReplacer;
 use WPEasy\ShipStatic\Render\PageRenderer;
@@ -68,6 +69,7 @@ final class Plugin {
 
         // Frontend "Sync this page" FAB (self-gates to admins on public pages).
         Fab::init();
+        Search::init();
 
         // Watch content edits so the dashboard can flag the render stale.
         \WPEasy\ShipStatic\Sync\ChangeTracker::init();
