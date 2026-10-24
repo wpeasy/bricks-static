@@ -1,12 +1,10 @@
 <h1>Changelog</h1>
 <h2>v2.3.0 (2026-10-24)</h2>
 <h3>New</h3>
-<p>A <strong>Schedule</strong> tab: ShipStatic can now Process and Sync automatically every hour, day, week or month. Send it to all your destinations (including ones you add later) or switch on just the ones you want. The tab shows when the next sync will run and how the last one went. It&#39;s off until you turn it on.</p>
-<h3>Fixed</h3>
-<p>A serious security problem: a specially crafted image address in a post, or certain text in an approved comment, could make a sync publish private server files such as <code>wp-config.php</code> to your static site. That can no longer happen. Please update and sync again, and if you published with an earlier version, check your destination for files that shouldn&#39;t be there.</p>
-<h3>Fixed</h3>
-<p>The Connector receiver file now refuses tampered upload packages and more kinds of server scripts. After updating, download the receiver again from the destination&#39;s settings and upload it in place of the old one.</p>
-<h3>Fixed</h3>
-<p>FTP and SFTP uploads can no longer reach outside the folder you set, and a saved password is never sent to a different server when you test or save a connection.</p>
-<h3>Improved</h3>
-<p>The FTP and FTPS options now explain their security limits and point you to SFTP or the Connector when your host offers them.</p>
+<p>ShipStatic&#39;s first public release. It turns your WordPress site, built with Bricks or anything else, into a fast static site and publishes it wherever you like: your own host over SFTP, FTP or FTPS, the Connector (no FTP account needed), Cloudflare, GitHub Pages, or a downloadable ZIP.</p>
+<h3>New</h3>
+<p>Publish one site to as many destinations as you want, each with its own address and its own text, image, link and video changes.</p>
+<h3>New</h3>
+<p>Site search that works on the static site, with a <strong>ShipStatic Search</strong> element for Bricks you can style down to the last detail, and a <code>[shipstatic_search]</code> shortcode for everything else.</p>
+<h3>New</h3>
+<p>Scheduled syncs (hourly, daily, weekly or monthly), and one-click syncing of a single page from the pages list, the front end or the Bricks builder.</p>

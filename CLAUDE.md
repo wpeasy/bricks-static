@@ -17,7 +17,7 @@
 
 ## Single Plugin, All Features Free
 
-**ShipStatic** (`shipstatic.php`, `WPEasy\ShipStatic`, `SHIPSTATIC_*`) ships as one free plugin on wp.org with every feature unlocked — unlimited pages/destinations, all four replacement types (Text, Media, Links, Videos), gzip pre-compression, remote pruning, and sitemap/robots.txt generation. Changelog: `CHANGELOG.md` (includes the pre-2.0.0 history of the former separate Pro add-on, merged in at 2.0.0).
+**ShipStatic** (`shipstatic.php`, `WPEasy\ShipStatic`, `SHIPSTATIC_*`) ships as one free plugin on wp.org with every feature unlocked — unlimited pages/destinations, all four replacement types (Text, Media, Links, Videos), gzip pre-compression, remote pruning, and sitemap/robots.txt generation. Changelog: `CHANGELOG.md` — starts at 2.3.0, the first public (wordpress.org) release; earlier development history (Bricks Static, the former Pro add-on) lives only in git.
 
 There is no license, no edition/capability gating, and no second plugin — `Support\Edition`, `Support\License`, and the `pro/` add-on have all been removed. Never reintroduce a tier check; if a feature needs to be conditionally available, gate it on an actual runtime/server capability (e.g. `Sync\Compressor::available()` for gzip, which checks for `gzencode()`), not a plan/edition concept.
 
