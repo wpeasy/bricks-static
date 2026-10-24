@@ -106,7 +106,9 @@ destination; nonces freeze at render time). Until proper form support exists,
 the render does a **compatibility scan** and warns: any page containing a
 `<form>`, or a same-origin reference to a dynamic endpoint (`admin-ajax.php`,
 `/wp-json/`, `*.php`, search `?s=`, comments, login), is listed in the
-Check/Sync report as "won't work on the static site."
+Check/Sync report as "won't work on the static site." Search is the exception
+once **Site search** is on (`docs/SEARCH_PLAN.md`): the export ships a
+per-destination index + script, and search forms are no longer flagged.
 
 Proper form support (later): keep dynamic endpoints pointing at the live origin
 (rewrite-exclusion allowlist) + CORS on the origin + non-nonce anti-spam
@@ -157,7 +159,7 @@ blast radius; the UI warns to be specific.
 
 - **Loopback may fail** (host blocks self-requests, Cloudflare/page-cache/HTTP-auth/staging password) → internal base URL + auth-header override + preflight check.
 - **Pretty permalinks required** — plain `?p=` URLs have no clean file mapping → detect + warn.
-- **Dynamic features break statically** (forms, search, comments, login, nonces, `/wp-json`, `admin-ajax`) → documented out of scope; surfaced in UI.
+- **Dynamic features break statically** (forms, comments, login, nonces, `/wp-json`, `admin-ajax`) → documented out of scope; surfaced in UI. Search is covered by Site search (`docs/SEARCH_PLAN.md`).
 - **Asset discovery gaps** — JS-constructed URLs are undetectable statically; CSS `url()`/`@import`/`srcset` are parsed → report unresolved references.
 - **Origin strings hide in inline JS/JSON-LD/inline styles/data-attrs** → sweep whole document + CSS, carefully, normalizing scheme + www.
 - **CDN/optimization plugins** push asset URLs off-origin → left as-is + warned (not mirrored).

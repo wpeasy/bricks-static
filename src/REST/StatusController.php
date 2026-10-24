@@ -210,7 +210,7 @@ final class StatusController {
 
         $labels = [
             'form'        => __('Form submit action points to this site (PHP/REST callback won’t work)', 'shipstatic'),
-            'search-form' => __('Search form posts back to this site (won’t work)', 'shipstatic'),
+            'search-form' => __('Search form posts back to this site — turn on Site search in Settings to make it work statically', 'shipstatic'),
             'php-link'    => __('Links to a PHP script on this site', 'shipstatic'),
         ];
 

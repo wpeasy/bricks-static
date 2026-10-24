@@ -711,5 +711,6 @@
   "Plain FTP sends your password and files unencrypted. Use SFTP, FTPS or the Connector if your host offers them.": "Gewoon FTP verstuurt je wachtwoord en bestanden onversleuteld. Gebruik SFTP, FTPS of de Connector als je host die aanbiedt.",
   "Monthly (every 30 days)": "Maandelijks (elke 30 dagen)",
   "No enabled destinations are selected.": "Er is geen ingeschakelde bestemming geselecteerd.",
-  "Another sync was already running.": "Er liep al een andere synchronisatie."
+  "Another sync was already running.": "Er liep al een andere synchronisatie.",
+  "Search form posts back to this site — turn on Site search in Settings to make it work statically": "Het zoekformulier verstuurt naar deze site — zet Zoeken op de site aan in Instellingen om het statisch te laten werken"
 }

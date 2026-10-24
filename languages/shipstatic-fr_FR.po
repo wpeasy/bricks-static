@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: shipstatic\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/shipstatic\n"
-"POT-Creation-Date: 2026-10-24T14:58:15+00:00\n"
+"POT-Creation-Date: 2026-10-24T15:27:11+00:00\n"
 "PO-Revision-Date: 2026-06-22 00:00+0000\n"
 "Last-Translator: Claude Code (machine translation)\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -840,8 +840,12 @@ msgstr ""
 "fonctionnera pas)"
 
 #: src/REST/StatusController.php:213
-msgid "Search form posts back to this site (won’t work)"
-msgstr "Le formulaire de recherche renvoie vers ce site (ne fonctionnera pas)"
+msgid ""
+"Search form posts back to this site — turn on Site search in Settings to "
+"make it work statically"
+msgstr ""
+"Le formulaire de recherche renvoie vers ce site — activez Recherche sur le "
+"site dans les Réglages pour qu’il fonctionne en statique"
 
 #: src/REST/StatusController.php:214
 msgid "Links to a PHP script on this site"

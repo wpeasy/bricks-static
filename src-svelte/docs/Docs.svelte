@@ -5,6 +5,8 @@
     { id: 'why', label: 'Built for Bricks' },
     { id: 'features', label: 'Features' },
     { id: 'how', label: 'How it works' },
+    { id: 'search', label: 'Site search' },
+    { id: 'schedule', label: 'Scheduled sync' },
     { id: 'connector', label: 'Connector' },
     { id: 'cloudflare', label: 'Cloudflare' },
     { id: 'github', label: 'GitHub Pages' },
@@ -49,6 +51,14 @@
     {
       title: 'Sitemaps, robots.txt & favicon',
       body: 'A sitemap index + per-type sitemaps and a robots.txt are generated and uploaded, with their URLs rewritten to each destination’s domain. A /favicon.ico is shipped from your real favicon, the WordPress Site Icon, or a generated default.',
+    },
+    {
+      title: 'Site search',
+      body: 'Search boxes keep working on the static site. Each sync builds a search index for each destination — with that destination’s own text and addresses — and a small script searches it in the visitor’s browser, results as you type. No server, no outside service. Includes a fully styleable ShipStatic Search element for Bricks and a [shipstatic_search] shortcode.',
+    },
+    {
+      title: 'Scheduled sync',
+      body: 'Process and Sync automatically every hour, day, week or month — to all destinations (including ones added later) or the ones you switch on. The Schedule tab shows the next run and how the last one went.',
     },
     {
       title: 'Single-page sync',
@@ -127,6 +137,42 @@
         </p>
       </section>
 
+      <!-- Site search -->
+      <section id="search" class="bs-docs__section bs-stack bs-stack--sm">
+        <h2>Site search</h2>
+        <p class="bs-docs__muted">
+          WordPress search runs on the server, so on a plain static copy a search box just reloads the home page. Site search fixes that: every sync adds a small search index for each destination, and the search box searches it right in the visitor’s browser — results appear as you type, with the matching words highlighted.
+        </p>
+        <ol class="bs-docs__steps">
+          <li>Open <strong>Settings</strong> (the gear, top right) and turn on <strong>Site search</strong>.</li>
+          <li>Press <strong>Process</strong> (pages get the search script), then <strong>Sync</strong>.</li>
+          <li>Any search box on your site now works on the static copy: WordPress’s own, Bricks’ Search element, or the <strong>ShipStatic Search</strong> element.</li>
+        </ol>
+        <h3>The ShipStatic Search element</h3>
+        <p class="bs-docs__muted">
+          Find it in the Bricks elements panel under <strong>ShipStatic</strong>. Besides the placeholder, number of results, snippets and “no results” text, every part can be styled from Bricks — the field (and its focus state), the leading icon, the input, the button (and hover), the label, the results box, each result (and the hovered or keyboard-selected one), titles, snippets, the highlighted words and the “no results” line. While you edit, the builder shows sample results so you can style them in place. On pages not built with Bricks, use the <code>[shipstatic_search]</code> shortcode.
+        </p>
+        <h3>Good to know</h3>
+        <ul class="bs-docs__list">
+          <li><strong>Per destination.</strong> Each destination’s index has its own text replacements and its own addresses, so a site only finds its own wording.</li>
+          <li><strong>Main content only.</strong> Menus, headers, footers and forms aren’t indexed, so every page doesn’t match on its menu. Pages marked <code>noindex</code> are left out.</li>
+          <li><strong>The live WordPress site is unchanged</strong> — its search box keeps using normal WordPress search.</li>
+          <li><strong>Size.</strong> The index is downloaded only when someone clicks into a search box — roughly 120 KB (compressed) for 300 pages. Best for sites up to a few hundred pages.</li>
+          <li><strong>Fresh after every sync.</strong> The browser checks for a new index each time, so new pages show up even on hosts that cache for a while (GitHub Pages caches pages for 10 minutes).</li>
+        </ul>
+      </section>
+
+      <!-- Scheduled sync -->
+      <section id="schedule" class="bs-docs__section bs-stack bs-stack--sm">
+        <h2>Scheduled sync</h2>
+        <p class="bs-docs__muted">
+          On the <strong>Schedule</strong> tab, turn on <strong>Enabled</strong>, choose how often (hourly, daily, weekly or monthly), and pick the destinations — <strong>All destinations</strong> (including ones you add later) or just the ones you switch on. Each scheduled run is the same full Process and Sync as the Sync button. It never starts while another sync is running; the tab shows the next run and how the last one went.
+        </p>
+        <p class="bs-docs__muted">
+          Schedules use WP-Cron, which fires when someone visits the site, so on a quiet site a sync may start a little late. For exact timing, have your host’s cron call <code>wp-cron.php</code> every few minutes. With WP-CLI available the sync runs in the background; otherwise WordPress runs it in short steps until it’s done.
+        </p>
+      </section>
+
       <!-- Connector -->
       <section id="connector" class="bs-docs__section bs-stack bs-stack--sm">
         <h2>Deploying with the Connector</h2>
@@ -198,7 +244,7 @@
         <ul class="bs-docs__list">
           <li><strong>25 MiB per file.</strong> Larger files (usually videos) are left out of the deploy and listed in the result. Host them elsewhere (Cloudflare R2, YouTube, Vimeo) and point to them with a Videos replacement.</li>
           <li><strong>20,000 files</strong> per site on Cloudflare’s Free plan, 100,000 on paid plans.</li>
-          <li><strong>Nothing runs server-side</strong> — forms that post back to WordPress, search and comments don’t work on the static copy (true of every static host).</li>
+          <li><strong>Nothing runs server-side</strong> — forms that post back to WordPress and comments don’t work on the static copy (true of every static host). Search does, with <a href="#search">Site search</a> turned on.</li>
           <li>Cloudflare rate-limits its API; the plugin waits and retries automatically, but a first sync of a very large site can take a few minutes.</li>
         </ul>
 
@@ -253,7 +299,7 @@
           <li><strong>About 500 uploads an hour.</strong> Text files cost almost nothing, but each image or other binary file is one upload, so a first sync of an image-heavy site may pause (“continues at …”) and carry on by itself. Keep the dashboard open, or let the WP-CLI runner carry on. Later syncs send only what changed.</li>
           <li>GitHub rebuilds a Pages site at most <strong>about 10 times an hour</strong> — many single-page syncs in a row can hit that.</li>
           <li>On a project site, <code>robots.txt</code> has no effect (search engines only read it at the domain root).</li>
-          <li><strong>Nothing runs server-side</strong> — forms that post back to WordPress, search and comments don’t work on the static copy.</li>
+          <li><strong>Nothing runs server-side</strong> — forms that post back to WordPress and comments don’t work on the static copy. Search does, with <a href="#search">Site search</a> turned on.</li>
         </ul>
 
         <h3>Security</h3>
@@ -312,8 +358,9 @@
         </details>
 
         <details class="bs-docs__faq">
-          <summary>Forms, search or other dynamic features don’t work on the static site</summary>
+          <summary>Forms or other dynamic features don’t work on the static site</summary>
           <p>Expected — static HTML can’t run PHP. The <strong>Check</strong> run lists pages with forms or dynamic endpoints under “Won’t work on static”. Point forms at a third-party/JS service, or keep those pages dynamic. (Pages are still uploaded; it’s a notice, not an error.)</p>
+          <p><strong>Search is the exception:</strong> turn on <a href="#search">Site search</a> and search boxes work on the static site too.</p>
         </details>
 
         <details class="bs-docs__faq">

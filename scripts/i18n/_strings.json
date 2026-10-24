@@ -471,7 +471,7 @@
     "msgid": "Form submit action points to this site (PHP/REST callback won’t work)"
   },
   {
-    "msgid": "Search form posts back to this site (won’t work)"
+    "msgid": "Search form posts back to this site — turn on Site search in Settings to make it work statically"
   },
   {
     "msgid": "Links to a PHP script on this site"

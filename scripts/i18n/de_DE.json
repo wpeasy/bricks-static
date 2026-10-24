@@ -709,5 +709,6 @@
   "Plain FTP sends your password and files unencrypted. Use SFTP, FTPS or the Connector if your host offers them.": "Einfaches FTP überträgt Passwort und Dateien unverschlüsselt. Nutzen Sie SFTP, FTPS oder den Connector, wenn Ihr Hoster sie anbietet.",
   "Monthly (every 30 days)": "Monatlich (alle 30 Tage)",
   "No enabled destinations are selected.": "Es ist kein aktiviertes Ziel ausgewählt.",
-  "Another sync was already running.": "Es lief bereits eine andere Synchronisierung."
+  "Another sync was already running.": "Es lief bereits eine andere Synchronisierung.",
+  "Search form posts back to this site — turn on Site search in Settings to make it work statically": "Das Suchformular sendet an diese Website — schalten Sie in den Einstellungen die Website-Suche ein, damit es statisch funktioniert"
 }
