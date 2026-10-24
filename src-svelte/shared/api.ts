@@ -9,6 +9,7 @@ import type {
   LinkItem,
   MediaItem,
   PagesOverview,
+  ScheduleSettings,
   Preflight,
   ReplacementPage,
   VideoItem,
@@ -103,6 +104,9 @@ export const api = {
   connectorRevoke: (id: string) => request<TestResult>(`/destinations/${id}/connector/revoke`, 'POST'),
   connectorRebuild: (id: string) => request<TestResult & { needsProcess?: boolean }>(`/destinations/${id}/connector/rebuild`, 'POST'),
   serverConfig: () => request<ServerConfig>('/sync/server-config'),
+  getSchedule: () => request<ScheduleSettings>('/schedule'),
+  saveSchedule: (data: Partial<Pick<ScheduleSettings, 'enabled' | 'period' | 'all' | 'destinations'>>) =>
+    request<ScheduleSettings>('/schedule', 'POST', data),
   serverCheck: (dest: string) => request<ServerCheck>(`/sync/server-check?dest=${encodeURIComponent(dest)}`),
   getMedia: (page = '') =>
     request<{ pages: ReplacementPage[]; page: string; media: MediaItem[] }>(

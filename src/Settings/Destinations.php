@@ -153,7 +153,16 @@ final class Destinations {
                 $before     = self::target_signature(new Destination($data, $i === 0));
                 $dest       = new Destination($data, $i === 0);
                 $url_before = trim((string) $dest->get('destinationUrl'));
+                $host_before = (string) $dest->connection_config()['host'];
                 $list[$i]   = $dest->apply($input);
+
+                // A saved password is never carried to a different server: a
+                // new host needs the password typed again (SECURITY_PATTERNS.md §4).
+                $moved = new Destination($list[$i], $i === 0);
+                if (!self::same_host($host_before, (string) $moved->connection_config()['host'])
+                    && empty($input['password']) && !$moved->is_from_constant('password')) {
+                    $list[$i]['password'] = '';
+                }
                 update_option(self::OPTION, $list, false);
 
                 $after     = new Destination($list[$i], $i === 0);
@@ -186,6 +195,16 @@ final class Destinations {
         }
 
         return null;
+    }
+
+    /**
+     * Whether two FTP/SFTP hosts are the same server (case-insensitive).
+     *
+     * @param string $a Host.
+     * @param string $b Host.
+     */
+    public static function same_host(string $a, string $b): bool {
+        return strtolower(trim($a)) === strtolower(trim($b));
     }
 
     /**

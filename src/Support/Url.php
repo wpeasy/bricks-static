@@ -47,6 +47,65 @@ final class Url {
     public const BASE_TOKEN = '/__shipstatic_base__';
 
     /**
+     * Extensions a web server may run as code. A static export never contains
+     * them, so a URL ending in one is never mapped to an export file
+     * (SECURITY_PATTERNS.md §10).
+     */
+    private const SERVER_SCRIPT_EXTENSIONS = [
+        'php', 'php3', 'php4', 'php5', 'php7', 'php8', 'phtml', 'phar', 'phps', 'pht', 'phpt',
+        'cgi', 'fcgi', 'pl', 'py', 'rb', 'sh', 'bash',
+        'asp', 'aspx', 'ashx', 'asmx', 'axd', 'cshtml', 'vbhtml', 'jsp', 'jspx', 'cfm', 'cfc',
+        'shtml', 'shtm', 'stm', 'ini', 'htaccess', 'htpasswd', 'env', 'log', 'sql', 'bak',
+    ];
+
+    /**
+     * Whether a (decoded) path climbs or hides: a "." or ".." segment, a NUL
+     * byte or a backslash. Such a path must never become a local or remote
+     * file path — page content controls the URLs the crawler follows.
+     *
+     * @param string $path URL path or relative file path, already decoded.
+     */
+    public static function has_traversal(string $path): bool {
+        if (strpos($path, "\0") !== false || strpos($path, '\\') !== false) {
+            return true;
+        }
+        foreach (explode('/', $path) as $segment) {
+            if ($segment === '.' || $segment === '..') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether a crawled URL path must not be exported: traversal, a hidden
+     * (dot) file or folder other than /.well-known/, or a server-side script
+     * or secret file type (x.php, x.php.txt, .env, debug.log…).
+     *
+     * @param string $path Decoded URL path.
+     */
+    public static function is_unsafe_path(string $path): bool {
+        if (self::has_traversal($path)) {
+            return true;
+        }
+        foreach (explode('/', $path) as $segment) {
+            if ($segment !== '' && $segment[0] === '.' && $segment !== '.well-known') {
+                return true;
+            }
+        }
+        $parts = explode('.', strtolower(basename($path)));
+        array_shift($parts); // the name before the first dot
+        foreach ($parts as $ext) {
+            if (in_array($ext, self::SERVER_SCRIPT_EXTENSIONS, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Normalise a served-from path to "" (domain root) or "/sub" (leading
      * slash, no trailing slash) — the form rebase() and file relocation use.
      *
@@ -250,6 +309,11 @@ final class Url {
         $query = wp_parse_url($url, PHP_URL_QUERY);
         $path  = rawurldecode($path);
         $path  = self::remap_site_path($path);
+
+        // Never a path that climbs out of the export or names a script/secret.
+        if (self::is_unsafe_path($path)) {
+            return null;
+        }
 
         $has_query = is_string($query) && $query !== '';
 

@@ -35,8 +35,10 @@ final class ConnectorScript {
      * 409 so the dashboard can say "re-download the connector" precisely.
      *
      * 2: .htaccess allow-list at every depth; junk requests can't hold a lockout.
+     * 3: packages with duplicate entry names are refused (a checked .htaccess
+     *    could be swapped for an unchecked one); IIS/Java/SSI script types denied.
      */
-    public const VERSION = 2;
+    public const VERSION = 3;
 
     /**
      * Basename of the receiver for a connector id.

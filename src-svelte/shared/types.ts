@@ -440,3 +440,25 @@ export interface ConnectionInput {
   linkReplacements?: LinkReplacement[];
   videoReplacements?: VideoReplacement[];
 }
+
+/** Scheduled sync (GET/POST /schedule). */
+export type SchedulePeriod = 'hourly' | 'daily' | 'weekly' | 'monthly';
+
+export interface ScheduleLastRun {
+  at: number;
+  status: 'running' | 'done' | 'error' | 'skipped' | 'cancelled' | 'unknown';
+  message: string;
+  targets: string[];
+}
+
+export interface ScheduleSettings {
+  enabled: boolean;
+  period: SchedulePeriod;
+  /** Every enabled destination (including ones added later). */
+  all: boolean;
+  /** Chosen destinations when `all` is false. */
+  destinations: string[];
+  nextRun: number | null;
+  last: ScheduleLastRun | null;
+  cronDisabled: boolean;
+}

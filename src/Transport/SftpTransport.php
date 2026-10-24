@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace WPEasy\ShipStatic\Transport;
 
 use phpseclib3\Net\SFTP;
+use WPEasy\ShipStatic\Support\Url;
 
 defined('ABSPATH') || exit;
 
@@ -229,6 +230,12 @@ final class SftpTransport implements TransportInterface {
     private function absolute(string $remote_path): string {
         $root = trim((string) ($this->config['remotePath'] ?? ''), '/');
         $rel  = ltrim($remote_path, '/');
+
+        // Upload and delete keys come from crawled URLs: never let one climb
+        // out of the remote root (SECURITY_PATTERNS.md §5).
+        if (Url::has_traversal($rel)) {
+            throw new \RuntimeException('Refused an unsafe remote path: ' . $rel);
+        }
 
         return ($root === '' ? '' : '/' . $root) . '/' . $rel;
     }

@@ -456,6 +456,9 @@
     "msgid": "This destination publishes whole snapshots — package deploy does not apply."
   },
   {
+    "msgid": "This is a different server from the saved one — enter its password to test it."
+  },
+  {
     "msgid": "Connector reached — %s."
   },
   {
@@ -681,6 +684,75 @@
     "msgid": "Destination Server Configuration"
   },
   {
+    "msgid": "Schedule"
+  },
+  {
+    "msgid": "Scheduled sync"
+  },
+  {
+    "msgid": "Process and Sync automatically on a schedule — the same full sync as the Sync button, to the destinations you pick."
+  },
+  {
+    "msgid": "Enabled"
+  },
+  {
+    "msgid": "How often"
+  },
+  {
+    "msgid": "Hourly"
+  },
+  {
+    "msgid": "Daily"
+  },
+  {
+    "msgid": "Weekly"
+  },
+  {
+    "msgid": "Monthly"
+  },
+  {
+    "msgid": "All destinations"
+  },
+  {
+    "msgid": "Every enabled destination, including ones you add later."
+  },
+  {
+    "msgid": "disabled"
+  },
+  {
+    "msgid": "Pick at least one destination, or turn on All destinations."
+  },
+  {
+    "msgid": "Next sync: %s"
+  },
+  {
+    "msgid": "Last scheduled sync: %1$s — %2$s. %3$s"
+  },
+  {
+    "msgid": "In progress"
+  },
+  {
+    "msgid": "Done"
+  },
+  {
+    "msgid": "Failed"
+  },
+  {
+    "msgid": "Skipped"
+  },
+  {
+    "msgid": "Cancelled"
+  },
+  {
+    "msgid": "Finished"
+  },
+  {
+    "msgid": "Schedules run through WP-Cron, which fires when someone visits the site. On a quiet site a sync can start a little late; a real server cron calling wp-cron.php keeps it on time."
+  },
+  {
+    "msgid": "Saved"
+  },
+  {
     "msgid": "Wiped a remote, or want a full re-upload? Reset clears the push record for every destination."
   },
   {
@@ -841,6 +913,12 @@
   },
   {
     "msgid": "FTPS (FTP over TLS)"
+  },
+  {
+    "msgid": "FTPS encrypts the connection but PHP can’t check the server’s certificate, so it doesn’t prove you’re talking to your real server. Prefer SFTP or the Connector when you can."
+  },
+  {
+    "msgid": "Plain FTP sends your password and files unencrypted. Use SFTP, FTPS or the Connector if your host offers them."
   },
   {
     "msgid": "FTP (insecure)"
@@ -1134,9 +1212,6 @@
     "msgid": "In sync"
   },
   {
-    "msgid": "Enabled"
-  },
-  {
     "msgid": "Check"
   },
   {
@@ -1335,13 +1410,7 @@
     "msgid": "Swap local or embedded videos and fix embed origins for the destination domain."
   },
   {
-    "msgid": "All destinations"
-  },
-  {
     "msgid": "Render once, then push to every enabled destination in turn."
-  },
-  {
-    "msgid": "disabled"
   },
   {
     "msgid": "Out of date"
@@ -1390,15 +1459,6 @@
   },
   {
     "msgid": "Removing old files"
-  },
-  {
-    "msgid": "Done"
-  },
-  {
-    "msgid": "Failed"
-  },
-  {
-    "msgid": "Cancelled"
   },
   {
     "msgid": "Uploading…"
@@ -1721,6 +1781,15 @@
   {
     "msgid": "%d published page isn’t in the export — see View list.",
     "msgid_plural": "%d published pages aren’t in the export — see View list."
+  },
+  {
+    "msgid": "Monthly (every 30 days)"
+  },
+  {
+    "msgid": "No enabled destinations are selected."
+  },
+  {
+    "msgid": "Another sync was already running."
   },
   {
     "msgid": "Unknown destination."

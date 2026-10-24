@@ -369,8 +369,9 @@ final class DestinationsController {
             return new WP_REST_Response(['ok' => false, 'message' => 'Unknown destination.'], 200);
         }
 
-        $config = $dest->connection_config();
-        $input  = (array) $request->get_json_params();
+        $config     = $dest->connection_config();
+        $saved_host = (string) $config['host'];
+        $input      = (array) $request->get_json_params();
         foreach (['transport', 'host', 'port', 'username', 'remotePath'] as $key) {
             if (array_key_exists($key, $input) && !$dest->is_from_constant($key)) {
                 $config[$key] = $key === 'port' ? (int) $input[$key] : sanitize_text_field((string) $input[$key]);
@@ -385,6 +386,10 @@ final class DestinationsController {
         }
         if (!empty($input['password']) && !$dest->is_from_constant('password')) {
             $config['password'] = (string) $input['password'];
+        } elseif (TransportFactory::needs_host((string) ($config['transport'] ?? '')) && !Destinations::same_host($saved_host, (string) $config['host'])) {
+            // Never send the saved (or wp-config) password to a server typed
+            // into the form — a different host needs it entered again.
+            return new WP_REST_Response(['ok' => false, 'message' => __('This is a different server from the saved one — enter its password to test it.', 'shipstatic')], 200);
         }
         if (!empty($input['cfApiToken']) && !$dest->is_from_constant('cfApiToken')) {
             $config['cfApiToken'] = trim((string) $input['cfApiToken']);

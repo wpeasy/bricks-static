@@ -561,7 +561,9 @@ final class Runner {
         }
 
         $running = !in_array($job->data['phase'], ['done', 'error', 'cancelled'], true);
-        if ($running && (time() - (int) $job->data['updatedAt']) > self::stale_seconds()) {
+        // A scheduled run driven by WP-Cron slices can pause between page loads.
+        $stale = !empty($job->data['scheduled']) ? max(self::stale_seconds(), 15 * MINUTE_IN_SECONDS) : self::stale_seconds();
+        if ($running && (time() - (int) $job->data['updatedAt']) > $stale) {
             Job::clear();
             delete_option(self::CANCEL_FLAG);
             return ['phase' => 'idle'];

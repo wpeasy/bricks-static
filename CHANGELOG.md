@@ -5,6 +5,17 @@ All notable changes to **ShipStatic** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-10-24
+
+### Security
+- **CRITICAL — crawled paths could publish server files** (CWE-22/CWE-538; 2.2.0 and earlier). `AssetExtractor` matches `src=` anywhere in a page, including text, and `Paths::source_file()` mapped any same-origin path to disk with a string-prefix "traversal guard" over an un-resolved path. So `<img src="/wp-config.php">` from any Author, or the text `src=/wp-config.php` in an approved comment, published `wp-config.php` (DB credentials, salts) to every destination and Export ZIP; `%2e%2e` escaped the mapped folder. Now `Url::to_relative_path()` returns null for `Url::is_unsafe_path()` (`.`/`..` segments, NUL, backslash, dot-files/folders other than `/.well-known/`, server-script/secret types in any extension segment), and `Paths::source_file()` reads from disk only static-extension files whose `realpath()` stays inside the mapped directory. New SECURITY_PATTERNS.md rule 10.
+- **HIGH — Connector `extract` duplicate-entry bypass** (CWE-367/434): entries were checked by index but streamed by name, so a package with two `.htaccess` entries could write the unchecked one. The receiver (and `UnzipScript`) now open with `ZipArchive::CHECKCONS` and refuse duplicate names. Protocol `ConnectorScript::VERSION` 3 — paired sites must re-download the receiver.
+- **MEDIUM — FTP/SFTP remote paths**: `FtpTransport::absolute()` / `SftpTransport::absolute()` throw on any `.`/`..` segment, NUL or backslash (`Url::has_traversal()`).
+- **LOW** — Connector deny-list adds IIS/ASP.NET, Java, ColdFusion, SSI, `fcgi`, `rb`, `config`; Test refuses to send a saved password to a different host and `Destinations::update()` clears a stored password when the host changes without a new one; the FTPS/FTP form states their limits (PHP's FTPS can't verify certificates).
+
+### Added
+- **Scheduled sync** (`Sync\Scheduler`, `REST\ScheduleController` `GET/POST /schedule`, dashboard **Schedule** tab `SchedulePanel.svelte`): enabled (off by default), Hourly/Daily/Weekly/Monthly (30-day `shipstatic_monthly` recurrence), All destinations or chosen ones. A WP-Cron event starts an ordinary full sync (never over a running one; recorded as skipped), driven by WP-CLI when spawnable, else in ~25 s cron slices (`shipstatic_schedule_slice_seconds`) that self-trigger a wp-cron.php loopback. Scheduled jobs get a 15-minute stale window. Shows next run + last outcome. Deactivation clears the events, activation restores them, uninstall removes them.
+
 ## [2.2.0] - 2026-10-24
 
 ### Added

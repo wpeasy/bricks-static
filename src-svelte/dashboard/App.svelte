@@ -16,6 +16,7 @@
   import ProgressPanel from './ProgressPanel.svelte';
   import ExportProgress from './ExportProgress.svelte';
   import ServerConfigPanel from './ServerConfigPanel.svelte';
+  import SchedulePanel from './SchedulePanel.svelte';
   import SettingsDrawer from './SettingsDrawer.svelte';
   import SetupWizard from './SetupWizard.svelte';
   import { uiPrefs, themeAttr, accentAttr } from '../shared/uiPrefs.svelte';
@@ -481,6 +482,7 @@
     items={[
       { value: 'destinations', label: __('tabDestinations') },
       { value: 'server', label: __('tabServerConfig') },
+      { value: 'schedule', label: __('tabSchedule') },
     ]}
   >
     {#snippet panel(tab)}
@@ -553,6 +555,8 @@
             />
             <span class="bs-controls__hint">{__('resetHint')}</span>
           </div>
+        {:else if tab === 'schedule'}
+          <SchedulePanel {destinations} />
         {:else}
           <div class="bs-panels">
             <MethodPanel method={status?.method ?? null} mode={status?.discoveryMode} />

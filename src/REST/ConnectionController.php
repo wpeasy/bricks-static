@@ -12,6 +12,7 @@ namespace WPEasy\ShipStatic\REST;
 
 use WP_REST_Request;
 use WP_REST_Response;
+use WPEasy\ShipStatic\Settings\Destinations;
 use WPEasy\ShipStatic\Settings\Settings;
 use WPEasy\ShipStatic\Transport\TransportFactory;
 
@@ -131,8 +132,9 @@ final class ConnectionController {
      * @return array<string,mixed>
      */
     private static function config_from_request(WP_REST_Request $request): array {
-        $config = Settings::connection_config();
-        $input  = (array) $request->get_json_params();
+        $config     = Settings::connection_config();
+        $saved_host = (string) $config['host'];
+        $input      = (array) $request->get_json_params();
 
         foreach (['transport', 'host', 'port', 'username', 'remotePath'] as $key) {
             if (array_key_exists($key, $input) && !Settings::is_from_constant($key)) {
@@ -142,6 +144,8 @@ final class ConnectionController {
 
         if (!empty($input['password']) && !Settings::is_from_constant('password')) {
             $config['password'] = (string) $input['password'];
+        } elseif (!Destinations::same_host($saved_host, (string) $config['host'])) {
+            $config['password'] = ''; // Never send the saved password to a different server.
         }
 
         return $config;

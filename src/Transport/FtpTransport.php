@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace WPEasy\ShipStatic\Transport;
 
+use WPEasy\ShipStatic\Support\Url;
+
 defined('ABSPATH') || exit;
 
 // phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception messages are plain text for JSON responses (rendered as text by the dashboard) and WP-CLI, never echoed into HTML; esc_html() here would show entities to the user.
@@ -238,6 +240,12 @@ final class FtpTransport implements TransportInterface {
     private function absolute(string $remote_path): string {
         $root = trim((string) ($this->config['remotePath'] ?? ''), '/');
         $rel  = ltrim($remote_path, '/');
+
+        // Upload and delete keys come from crawled URLs: never let one climb
+        // out of the remote root (SECURITY_PATTERNS.md §5).
+        if (Url::has_traversal($rel)) {
+            throw new \RuntimeException('Refused an unsafe remote path: ' . $rel);
+        }
 
         return ($root === '' ? '' : '/' . $root) . '/' . $rel;
     }

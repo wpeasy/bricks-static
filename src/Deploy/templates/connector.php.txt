@@ -198,7 +198,15 @@ function bs_write_allowed(string $base, string $rel, ?string $content_probe): bo
     if ($name === 'web.config' || $name === '.user.ini' || $name === 'php.ini') {
         return false;
     }
-    static $denied = ['php', 'php3', 'php4', 'php5', 'php7', 'php8', 'phtml', 'phar', 'phps', 'pht', 'phpt', 'cgi', 'pl', 'py', 'sh', 'bash', 'ini', 'htpasswd'];
+    // Anything a web server may run as code — PHP, CGI/scripts, IIS/ASP.NET,
+    // Java/ColdFusion and server-side includes (keep in sync with
+    // Support\Url::SERVER_SCRIPT_EXTENSIONS, which keeps them out of exports).
+    static $denied = [
+        'php', 'php3', 'php4', 'php5', 'php7', 'php8', 'phtml', 'phar', 'phps', 'pht', 'phpt',
+        'cgi', 'fcgi', 'pl', 'py', 'rb', 'sh', 'bash',
+        'asp', 'aspx', 'ashx', 'asmx', 'axd', 'cshtml', 'vbhtml', 'jsp', 'jspx', 'cfm', 'cfc',
+        'shtml', 'shtm', 'stm', 'ini', 'htpasswd', 'config',
+    ];
     $parts = explode('.', $name);
     array_shift($parts); // basename before the first dot
     foreach ($parts as $ext) {
@@ -528,9 +536,23 @@ switch ($op) {
             bs_out(500, ['ok' => false, 'error' => 'ZipArchive unavailable']);
         }
         $zip = new ZipArchive();
-        if ($zip->open($zip_path) !== true) {
+        // CHECKCONS refuses an inconsistent archive (e.g. two entries with the
+        // same name). Each name must also be unique: entries are checked by
+        // index but read by name, so a duplicate could swap a checked
+        // .htaccess for an unchecked one.
+        if ($zip->open($zip_path, ZipArchive::CHECKCONS) !== true) {
             @unlink($zip_path);
-            bs_out(500, ['ok' => false, 'error' => 'cannot open package']);
+            bs_out(400, ['ok' => false, 'error' => 'cannot open package']);
+        }
+        $names = [];
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $key = strtolower((string) $zip->getNameIndex($i));
+            if (isset($names[$key])) {
+                $zip->close();
+                @unlink($zip_path);
+                bs_out(400, ['ok' => false, 'error' => 'duplicate entry in package']);
+            }
+            $names[$key] = true;
         }
 
         $out = ['ok' => true, 'extracted' => 0, 'deleted' => 0, 'errors' => []];

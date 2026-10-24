@@ -4,7 +4,7 @@ Tags: static site, bricks, performance, static html, deployment
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 2.2.0
+Stable tag: 2.3.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,6 +41,7 @@ Bricks isn't required. Rendering is builder-agnostic: ShipStatic captures whatev
 * Automatic `.htaccess` generation **plus** a copy-paste nginx snippet
 * Favicon and asset handling
 * "Sync this page" floating button for single-page pushes
+* **Scheduled sync** — Process and Sync automatically every hour, day, week or month, to all destinations or the ones you pick
 * WP-CLI command for reliable syncs on any host
 
 = Credits =
@@ -110,6 +111,13 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 
 == Changelog ==
 
+= 2.3.0 =
+* Security: fixed a critical issue where a crafted image address in a post, or text in an approved comment, could make a sync publish server files such as wp-config.php. Update and sync again; if you published with an earlier version, check your destination for files that shouldn't be there.
+* Security: the Connector receiver now refuses packages with duplicate entries and more server-side script types. Re-download and re-upload the receiver file after updating.
+* Security: FTP/SFTP uploads can no longer reach outside the remote folder; a saved password is never sent to a different server when testing or saving.
+* Added: Schedule tab — sync automatically every hour, day, week or month, to all destinations or the ones you pick.
+* Changed: the FTP and FTPS options now explain their security limits.
+
 = 2.2.0 =
 * Added: site search for static sites. Turn on Site search in Settings, and search boxes on the static site search an index built for each destination during sync, with results as you type. No server or third-party service needed.
 * Added: ShipStatic Search element for Bricks, with style controls for every part of the box and the results, and a results preview in the builder. Also available as the [shipstatic_search] shortcode.
@@ -177,6 +185,9 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 * Text replacements, `.htaccess` + nginx config, favicon, single-page sync, and WP-CLI sync.
 
 == Upgrade Notice ==
+
+= 2.3.0 =
+Security release — update now. Fixes a critical issue that could publish server files such as wp-config.php. Connector users: re-download the receiver file. Also adds scheduled syncs.
 
 = 2.2.0 =
 New: site search for your static site, plus a fully styleable ShipStatic Search element for Bricks.

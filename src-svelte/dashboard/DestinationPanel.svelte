@@ -344,6 +344,11 @@
           <Input label={__('fldPassword')} type="password" bind:value={password} autocomplete="new-password" placeholder={d.password.hasValue ? __('phSavedBlank') : __('fldPassword')} disabled={d.password.fromConstant || busy} />
           <Input label={__('fldRemotePath')} bind:value={remotePath} placeholder={__('phRemoteEmpty')} disabled={d.remotePath.fromConstant || busy} />
         </div>
+        {#if transport === 'ftps'}
+          <p class="bs-lead">{__('ftpsNote')}</p>
+        {:else if transport === 'ftp'}
+          <p class="bs-lead">{__('ftpNote')}</p>
+        {/if}
 
         {#if deployNote}
           <p class="bs-deploy bs-deploy--{deployNote.tone}">

@@ -16,6 +16,8 @@ use WPEasy\ShipStatic\Admin\Menu;
 use WPEasy\ShipStatic\Export\ExportDownload;
 use WPEasy\ShipStatic\Frontend\Fab;
 use WPEasy\ShipStatic\Frontend\Search;
+use WPEasy\ShipStatic\REST\ScheduleController;
+use WPEasy\ShipStatic\Sync\Scheduler;
 use WPEasy\ShipStatic\Render\LinkDeployReplacer;
 use WPEasy\ShipStatic\Render\MediaDeployReplacer;
 use WPEasy\ShipStatic\Render\PageRenderer;
@@ -50,6 +52,16 @@ final class Plugin {
      */
     public static function activate(): void {
         delete_option('shipstatic_wizard_seen');
+        // Restore the scheduled sync's cron event (cleared on deactivation).
+        Scheduler::reschedule();
+    }
+
+    /**
+     * Runs on plugin deactivation: remove the scheduled-sync cron events (the
+     * settings are kept, and activate() puts the event back).
+     */
+    public static function deactivate(): void {
+        Scheduler::unschedule();
     }
 
     /**
@@ -73,6 +85,7 @@ final class Plugin {
 
         // Watch content edits so the dashboard can flag the render stale.
         \WPEasy\ShipStatic\Sync\ChangeTracker::init();
+        Scheduler::init();
 
         // Expose abilities to the WordPress Abilities API for MCP/AI discovery
         // (no-op on WP < 6.9; read-only always, actions behind opt-in toggles).
@@ -182,5 +195,6 @@ final class Plugin {
         LinksController::register();
         VideosController::register();
         SitemapController::register();
+        ScheduleController::register();
     }
 }

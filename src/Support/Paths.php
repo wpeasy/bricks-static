@@ -112,23 +112,46 @@ final class Paths {
         }
         $path = rawurldecode($path);
 
+        // Page content decides which URLs get here, so only plain static files
+        // are ever read from disk (SECURITY_PATTERNS.md §10): no traversal or
+        // dot files, a static-asset extension, and a real path that stays
+        // inside the mapped directory (symlinks included).
+        if (Url::is_unsafe_path($path) || !in_array(strtolower(pathinfo($path, PATHINFO_EXTENSION)), self::STATIC_EXTENSIONS, true)) {
+            return null;
+        }
+
         foreach (self::url_dir_map() as [$url_prefix, $dir]) {
             if ($url_prefix === '' || strpos($path, $url_prefix) !== 0) {
                 continue;
             }
 
             $relative = ltrim(substr($path, strlen($url_prefix)), '/');
-            $file     = wp_normalize_path(trailingslashit($dir) . $relative);
-            $base     = wp_normalize_path(trailingslashit($dir));
+            $file     = realpath(trailingslashit($dir) . $relative);
+            $base     = realpath($dir);
+            if ($file === false || $base === false || !is_file($file)) {
+                continue;
+            }
 
-            // Guard against path traversal escaping the mapped directory.
-            if (strpos($file, $base) === 0 && is_file($file)) {
+            $file = wp_normalize_path($file);
+            if (strpos($file, trailingslashit(wp_normalize_path($base))) === 0) {
                 return $file;
             }
         }
 
         return null;
     }
+
+    /**
+     * File types read straight from disk into the export. Anything else is
+     * fetched over HTTP, so it is published exactly as the web server serves it.
+     */
+    private const STATIC_EXTENSIONS = [
+        'css', 'js', 'mjs', 'map', 'json', 'xml', 'txt', 'webmanifest', 'html', 'htm',
+        'ico', 'svg', 'svgz', 'png', 'jpg', 'jpeg', 'jpe', 'gif', 'webp', 'avif', 'bmp', 'tif', 'tiff', 'heic',
+        'woff', 'woff2', 'ttf', 'otf', 'eot',
+        'mp4', 'm4v', 'webm', 'ogv', 'mov', 'mp3', 'm4a', 'ogg', 'oga', 'wav', 'flac',
+        'pdf', 'csv', 'vtt', 'srt',
+    ];
 
     /**
      * URL-path prefix → filesystem directory map, longest prefix first.

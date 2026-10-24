@@ -1,8 +1,12 @@
 <h1>Changelog</h1>
-<h2>v2.2.0 (2026-10-24)</h2>
+<h2>v2.3.0 (2026-10-24)</h2>
 <h3>New</h3>
-<p>Site search for your static site. Turn on <strong>Site search</strong> in ShipStatic → Settings, then Process and Sync, and the search boxes on your static site start working. Results appear as you type, with the matching words highlighted, and you can move through them with the keyboard. Everything runs in the visitor&#39;s browser, so there&#39;s no server or outside service to set up. Each destination gets its own search, matching its own text changes and address. Your live WordPress site keeps its normal search.</p>
-<h3>New</h3>
-<p>A <strong>ShipStatic Search</strong> element for Bricks that you can style down to the last detail: the box, the input, the button and icons, the label, and the results list, including each result, the selected result, titles, snippets, the highlighted words and the &quot;no results&quot; message. While you edit, the builder shows sample results so you can style them in place. Not using Bricks? Add the same search box with the <code>[shipstatic_search]</code> shortcode.</p>
+<p>A <strong>Schedule</strong> tab: ShipStatic can now Process and Sync automatically every hour, day, week or month. Send it to all your destinations (including ones you add later) or switch on just the ones you want. The tab shows when the next sync will run and how the last one went. It&#39;s off until you turn it on.</p>
+<h3>Fixed</h3>
+<p>A serious security problem: a specially crafted image address in a post, or certain text in an approved comment, could make a sync publish private server files such as <code>wp-config.php</code> to your static site. That can no longer happen. Please update and sync again, and if you published with an earlier version, check your destination for files that shouldn&#39;t be there.</p>
+<h3>Fixed</h3>
+<p>The Connector receiver file now refuses tampered upload packages and more kinds of server scripts. After updating, download the receiver again from the destination&#39;s settings and upload it in place of the old one.</p>
+<h3>Fixed</h3>
+<p>FTP and SFTP uploads can no longer reach outside the folder you set, and a saved password is never sent to a different server when you test or save a connection.</p>
 <h3>Improved</h3>
-<p>Pages with a search box are no longer flagged as having a feature that won&#39;t work on the static site when Site search is on.</p>
+<p>The FTP and FTPS options now explain their security limits and point you to SFTP or the Connector when your host offers them.</p>
