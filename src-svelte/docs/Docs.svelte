@@ -219,10 +219,18 @@
         <ol class="bs-docs__steps">
           <li>Create a repository on GitHub with at least one commit (tick <strong>Add a README</strong>). Make it public: GitHub Pages on a private repository needs a paid GitHub plan.</li>
           <li>Create a fine-grained token: <strong>Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token</strong>. Under <em>Repository access</em> choose <strong>Only select repositories</strong> and pick this repository; under <em>Permissions</em> set <strong>Contents</strong> to <strong>Read and write</strong>. Optionally add <strong>Pages: Read-only</strong> so Test can show the Pages status. Copy the token — GitHub shows it only once.</li>
-          <li>On the destination, choose <strong>GitHub Pages</strong> and enter the owner (your account or organisation), the repository name and the token. Keep the branch <code>gh-pages</code> and the folder <em>Whole branch</em> unless you have a reason not to.</li>
+          <li>On the destination, choose <strong>GitHub Pages</strong> and enter the owner (your account or organisation), the repository name and the token. Branch and folder sit under <strong>Advanced</strong>; the defaults (<code>gh-pages</code>, whole branch) suit most sites — see <em>Choosing a branch and folder</em> below.</li>
           <li>Press <strong>Test</strong>. If the Destination URL is empty it is filled with the Pages address. Press <strong>Save</strong>.</li>
           <li><strong>Check</strong> and <strong>Sync</strong> as usual. With the <code>gh-pages</code> branch, GitHub turns Pages on by itself at the first sync. With another branch or the <code>/docs</code> folder, turn it on afterwards in the repository’s <strong>Settings → Pages → Deploy from a branch</strong>.</li>
         </ol>
+
+        <h3>Choosing a branch and folder</h3>
+        <ul class="bs-docs__list">
+          <li><strong>A repository just for the site</strong> — keep the defaults, <code>gh-pages</code> and <em>Whole branch</em>. GitHub turns Pages on by itself at the first sync.</li>
+          <li><strong>The site next to your code</strong> — choose <code>main</code> (or your code branch) with the <em>/docs folder</em>. Only <code>docs/</code> is replaced on each sync, so your source files at the root are left alone.</li>
+          <li><strong>A user or organisation site</strong> (a repository named <code>owner.github.io</code>) — these usually publish from <code>main</code>; use it with <em>Whole branch</em> if the repository holds only the site.</li>
+          <li>For anything other than <code>gh-pages</code>, pick the same branch and folder in the repository’s <strong>Settings → Pages → Deploy from a branch</strong>.</li>
+        </ul>
 
         <h3>Project sites and the sub-path</h3>
         <p class="bs-docs__muted">

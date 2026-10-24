@@ -771,6 +771,12 @@
     "msgid": "The /docs folder"
   },
   {
+    "msgid": "Advanced: branch %1$s, %2$s"
+  },
+  {
+    "msgid": "Most sites keep <code>gh-pages</code> and the whole branch. Change them when the site should live next to your code — for example <code>main</code> with the <code>/docs</code> folder, so your source files at the root are left alone — or for a user or organisation site (a repository named <code>owner.github.io</code>), which usually publishes from <code>main</code>. Pick the same branch and folder in the repository’s <strong>Settings → Pages</strong>."
+  },
+  {
     "msgid": "Access token"
   },
   {
@@ -783,7 +789,7 @@
     "msgid": "Create a fine-grained token (<strong>Settings → Developer settings → Fine-grained tokens → Generate new token</strong>): <strong>Only select repositories</strong> → this repository, with <strong>Contents: Read and write</strong>. Optionally add <strong>Pages: Read-only</strong> so Test can show the Pages status."
   },
   {
-    "msgid": "Enter the owner, repository and token here. Keep the branch <code>gh-pages</code> and GitHub turns Pages on by itself at the first sync; for another branch or <code>/docs</code>, choose it afterwards in the repository’s <strong>Settings → Pages → Deploy from a branch</strong>."
+    "msgid": "Enter the owner, repository and token here. With the default branch <code>gh-pages</code> GitHub turns Pages on by itself at the first sync; for another branch or <code>/docs</code> (under <strong>Advanced</strong>), choose it afterwards in the repository’s <strong>Settings → Pages → Deploy from a branch</strong>."
   },
   {
     "msgid": "Press <strong>Test</strong>. An empty Destination URL is filled with the Pages address — for a project site <code>https://owner.github.io/repository/</code>, whose <code>/repository/</code> part becomes the sub-path links are built for. <strong>Save</strong>, press <strong>Process</strong>, then Check / Sync as usual."

@@ -86,3 +86,16 @@
 .bs-row--wrap {
   flex-wrap: wrap;
 }
+
+/* ab-ui Collapsible: its content has padding-bottom, which a closed (0fr)
+   grid row can't shrink below, so a closed section still shows the top few
+   pixels of its first line. Move that space inside the clipped content as a
+   spacer, so a closed region is truly 0px; the open/close animation is unchanged. */
+.ab-ui .ab-collapsible__content {
+  padding-bottom: 0;
+}
+.ab-ui .ab-collapsible__content::after {
+  content: '';
+  display: block;
+  height: var(--ab-space-2);
+}

@@ -297,6 +297,8 @@
   let zipHelpOpen = $state(false);
   let cfHelpOpen = $state(!d.cfApiToken.hasValue);
   let ghHelpOpen = $state(!d.ghToken.hasValue);
+  // Branch + folder are rarely changed: collapsed unless already non-default.
+  let ghAdvancedOpen = $state((d.ghBranch.value || 'gh-pages') !== 'gh-pages' || d.ghFolder.value === '/docs');
 </script>
 
 <section class="bs-card bs-stack bs-stack--md">
@@ -376,17 +378,23 @@
         <div class="bs-grid">
           <Input label={__('fldGhOwner')} bind:value={ghOwner} placeholder="my-account" autocomplete="off" disabled={d.ghOwner.fromConstant || busy} />
           <Input label={__('fldGhRepo')} bind:value={ghRepo} placeholder="my-site" autocomplete="off" disabled={d.ghRepo.fromConstant || busy} />
-          <Input label={__('fldGhBranch')} bind:value={ghBranch} placeholder="gh-pages" autocomplete="off" disabled={d.ghBranch.fromConstant || busy} />
-          <Select
-            label={__('fldGhFolder')}
-            id="bs-gh-folder-{d.id}"
-            value={ghFolder}
-            options={ghFolderOptions}
-            disabled={d.ghFolder.fromConstant || busy}
-            onchange={(v) => (ghFolder = String(v) === '/docs' ? '/docs' : '/')}
-          />
         </div>
         <Input label={__('fldGhToken')} type="password" bind:value={ghToken} autocomplete="new-password" placeholder={d.ghToken.hasValue ? __('phSavedBlank') : 'github_pat_…'} disabled={d.ghToken.fromConstant || busy} />
+        <Collapsible title={__f('ghAdvanced', ghBranch || 'gh-pages', ghFolder === '/docs' ? '/docs' : '/')} bind:open={ghAdvancedOpen}>
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -- trusted PHP dictionary -->
+          <p class="bs-lead">{@html __('ghAdvancedHelp')}</p>
+          <div class="bs-grid">
+            <Input label={__('fldGhBranch')} bind:value={ghBranch} placeholder="gh-pages" autocomplete="off" disabled={d.ghBranch.fromConstant || busy} />
+            <Select
+              label={__('fldGhFolder')}
+              id="bs-gh-folder-{d.id}"
+              value={ghFolder}
+              options={ghFolderOptions}
+              disabled={d.ghFolder.fromConstant || busy}
+              onchange={(v) => (ghFolder = String(v) === '/docs' ? '/docs' : '/')}
+            />
+          </div>
+        </Collapsible>
         <p class="bs-lead">{__('ghReplaceNote')}</p>
         <Collapsible title={__('cfHowTo')} bind:open={ghHelpOpen}>
           <!-- eslint-disable svelte/no-at-html-tags -- trusted PHP dictionary -->

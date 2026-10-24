@@ -1,6 +1,9 @@
 # Changelog
 
-## v2.1.7 (2026-10-23)
+## v2.1.8 (2026-10-24)
+
+### Fixed
+Collapsed help sections such as "How to set it up" no longer show a thin sliver of their first line of text.
 
 ### Improved
-It's now easier to see which destination you're working on. The Replacements panel shows the destination's name, the selected destination tab stands out clearly, and once a sync has finished the panel at the top says "Last sync" and which destination it was for.
+GitHub Pages settings are simpler. Branch and Folder now sit in a collapsed **Advanced** section that shows the current values, so the form is just Owner, Repository and Access token. Inside, a short note explains when you'd change them: publishing next to your code (`main` with the `/docs` folder) or a user or organisation site. The Documentation page has a new "Choosing a branch and folder" section.

@@ -4,7 +4,7 @@ Tags: static site, bricks, performance, static html, deployment
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 2.1.7
+Stable tag: 2.1.8
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -105,6 +105,10 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 
 == Changelog ==
 
+= 2.1.8 =
+* Changed: GitHub Pages branch and folder now sit in a collapsed Advanced section, with a note on when to change them.
+* Fixed: collapsed help sections no longer show a sliver of their first line.
+
 = 2.1.7 =
 * Changed: it's now clearer which destination you're editing — the Replacements panel names it, the selected destination tab stands out, and the progress panel says "Last sync" once a run has finished.
 
@@ -162,6 +166,9 @@ ShipStatic sends data only to destinations you configure yourself. Nothing is se
 * Text replacements, `.htaccess` + nginx config, favicon, single-page sync, and WP-CLI sync.
 
 == Upgrade Notice ==
+
+= 2.1.8 =
+Tidier GitHub Pages settings and a fix for collapsed help sections.
 
 = 2.1.7 =
 Clearer labelling of which destination you're editing.
